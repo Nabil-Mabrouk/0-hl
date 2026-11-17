@@ -30,6 +30,8 @@ Ce jalon remplace l'enchaînement P0→P4 pour le premier livrable ; il prend un
 
 **Gate de fin M1.** Un bot `PAPER` tourne 24 h sur données Kraken réelles sans intervention ; chaque trade affiché est reconstructible depuis le journal (candidat → assessment → sizing → intent → fill → sortie) ; ledger réconcilié ; redéploiement en cours de session sans doublon ; suite de tests verte (`npm run typecheck && npm run test && npm run build`, `pytest`).
 
+**Prérequis de production (ADR-011).** Accès Internet du worker et chaîne de migration `domain` livrés par le template gitsky ; sans eux, M1 est validé en local uniquement.
+
 **Hors M1.** UI-03..15 complets, backtests/replay, analytics, alertes avancées, assistant IA, LIVE.
 
 ## Organisation du dépôt visé

@@ -32,9 +32,9 @@ La topologie ci-dessus est la **cible logique**. Sur le châssis gitsky, elle es
 | Frontend React/TS/Vite | `frontend/` du châssis (React 19, Vite, Tailwind 4, React Router) ; écrans 0-hl sous `frontend/src/features/<écran>/` (nouveaux fichiers) ; tokens CSS de 02-design dans une feuille propre, sans toucher `theme.css` |
 | Gateway FastAPI (auth, RBAC, REST, WS) | service `backend` du châssis ; auth châssis (JWT) + RBAC métier (ADR-006) ; routes `/api/v1/*` et `/ws/v1/terminal` déclarées via `app/domain/routers.py` |
 | Bus Redis Streams / NATS | **outbox PostgreSQL** (`domain_event`) + curseurs par consommateur |
-| ingestor, feature/strategy/risk/execution/ledger workers, scheduler | **service `worker` du châssis**, boucle continue dans `app/domain/worker_cycle.py` (06-agents « Exécution sur le châssis ») |
+| ingestor (accès Internet requis, ADR-011), feature/strategy/risk/execution/ledger workers, scheduler | **service `worker` du châssis**, boucle continue dans `app/domain/worker_cycle.py` (06-agents « Exécution sur le châssis ») |
 | research-worker | reporté (backtests au jalon P4) |
-| PostgreSQL + Alembic | base du châssis ; modèles dans `app/domain/models.py` et sous-modules ; migrations Alembic du châssis |
+| PostgreSQL + Alembic | base du châssis ; modèles dans `app/domain/models.py` et sous-modules ; chaîne Alembic `domain` fournie par le template (ADR-011) ; `create_all` en développement uniquement |
 | Parquet / object storage | reporté ; agrégats 1 min en PostgreSQL au premier jalon |
 | Redis cache | aucun ; carnets en mémoire du worker |
 

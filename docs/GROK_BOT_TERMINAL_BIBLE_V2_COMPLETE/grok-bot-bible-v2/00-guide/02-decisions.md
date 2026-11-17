@@ -18,6 +18,8 @@ Ce registre tranche les points `[OPEN]` de la V2.0 et prime sur toute formulatio
 | ADR-008 | Premier jalon : tranche verticale paper | Actée | 2026-11-17 |
 | ADR-009 | LIVE préparé dans la conception, désactivé | Actée | 2026-11-17 |
 | ADR-010 | Paramètres paper par défaut | Actée | 2026-11-17 |
+| ADR-011 | Prérequis châssis corrigés en amont (gitsky) | Actée — réseau livré par le template, migrations `domain` à confirmer | 2026-11-18 |
+| ADR-012 | Dépendance `websockets` et environnement de développement | Actée | 2026-11-18 |
 
 ---
 
@@ -87,8 +89,34 @@ Ce registre tranche les points `[OPEN]` de la V2.0 et prime sur toute formulatio
 - `environment ∈ {DEMO, PAPER, LIVE}` existe dans le modèle, les gates (ADR-006, 12-tests « Go/No-Go LIVE ») sont modélisés ;
 - les secrets sont référencés via `CredentialRef`, jamais stockés en clair ni exposés au frontend.
 
-**Mais :** aucune clé API privée Kraken n'est configurée ni utilisée, l'implémentation privée n'est pas codée et toute commande `START` en `LIVE` retourne `LIVE_NOT_APPROVED` tant qu'une ADR ultérieure n'a pas ouvert le chantier P6. Clés futures : permissions « Query Funds », « Query/Create/Cancel Orders » uniquement, **jamais** « Withdraw Funds ».
+**Mais :** aucune clé API privée Kraken n'est configurée ni utilisée, l'implémentation privée n'est pas codée et toute commande `START` en `LIVE` retourne `LIVE_NOT_APPROVED` tant qu'une ADR ultérieure n'a pas ouvert le chantier P6. Clés futures : permissions « Query Funds », « Query/Create/Cancel Orders » uniquement, **jamais** « Withdraw Funds », et **restriction obligatoire à l'adresse IP du serveur** de production (exigence du propriétaire du châssis, 2026-11-18).
 
 ## ADR-010 — Paramètres paper par défaut
 
 **Décision.** Capital paper initial **10 000 USD** (écrit au ledger comme `CashMovement` de type dépôt, donc hors PnL) ; frais = palier de base Kraken Spot **0,25 % maker / 0,40 % taker** (paramétrable, à revérifier sur la grille Kraken en vigueur) ; ordres paper exécutés contre le **carnet réel** Kraken au moment de la décision (consommation des niveaux, fills partiels possibles), jamais au dernier prix. Interface en anglais (comme la capture canonique) avec i18n FR/EN prêt ; terminal accessible uniquement après authentification, landing publique inchangée. Aucun LLM dans la boucle de décision ; l'assistant explicatif (06-agents/02) est reporté.
+
+## ADR-011 — Prérequis châssis corrigés en amont (gitsky)
+
+**Contexte.** Deux lacunes du châssis généré (`_commit 2f53680`) empêchent M1 de fonctionner en production :
+1. **Pas d'accès Internet pour le worker.** Le service `worker` n'est relié qu'à `internal-net`, déclaré `internal: true` : il ne peut joindre ni `api.kraken.com` ni `ws.kraken.com`, alors qu'il héberge le flux Kraken et les six agents (ADR-007).
+2. **Pas de chaîne de migration pour `app/domain`.** Les tables métier ne sont créées que par `create_all` en `development` ; en production, le service `migrate` (`scripts/migrate.py`, `alembic.ini`) n'applique que les chaînes core et modules.
+
+**Décision.** Les deux points sont corrigés **dans le template gitsky** (par le propriétaire du châssis), puis propagés ici par `copier update`. Aucun patch local de `docker-compose.yml`, `alembic.ini` ou `scripts/migrate.py`.
+
+Besoin exprimé au template :
+- un service `worker` capable de sortir vers Internet (réseau de sortie dédié, sans exposition Traefik), au moins quand `MODULE_WORKER` est actif ;
+- une chaîne Alembic `domain` (ex. `alembic/domain`, table de version propre), appliquée **en dernier** par `scripts/migrate.py`, avec un emplacement de révisions appartenant au projet (non réécrit par `copier update`).
+
+**Suivi (2026-11-18).**
+- *Accès Internet du worker* : **livré par le template.** Après `copier update`, le service `worker` doit être relié à `internal-net` **et** `egress-net` ; le redéploiement crée `egress-net`, et le worker peut alors joindre `api.kraken.com` et `ws.kraken.com`. Vérification obligatoire dans `docker-compose.yml` après la mise à jour.
+- *Chaîne de migration `domain`* : non mentionnée dans la livraison du template ; **à confirmer** avant tout déploiement de tables métier en production.
+
+**Conséquences.** Le développement de M1 se poursuit en local (`create_all` en `development`, ADR-012). Les modèles de domaine sont écrits pour être migrables (pas de dépendance à `create_all`, conventions de nommage explicites). Les révisions Alembic du domaine seront produites dès que la chaîne existera. **Le déploiement en production de M1 est bloqué** jusqu'à la propagation du template ; d'ici là, un push ne doit pas activer le flux Kraken en production (le worker démarre sans erreur fatale si le réseau est injoignable et signale `PROVIDER_UNAVAILABLE`).
+
+## ADR-012 — Dépendance `websockets` et environnement de développement
+
+**Décision.**
+- Ajout de la dépendance Python `websockets` (version épinglée, ligne additive dans `requirements.txt`) pour le client Kraken WebSocket v2 ; `docker compose build` local avant tout push qui la contient (AGENTS.md).
+- Développement local via `docker-compose.dev.yml` (PostgreSQL, backend, worker) avec un `.env` local créé depuis les exemples, **jamais versionné**.
+- Les tests (`pytest`) n'accèdent jamais au réseau : le flux Kraken est remplacé par des **fixtures enregistrées** (messages WS v2 et réponses REST) rejouées par un faux transport. Un test d'intégration optionnel contre l'API publique réelle peut exister, désactivé par défaut.
+- Le worker exécute `run_cycle` comme une **boucle longue** qui ne rend la main qu'à l'arrêt (`stop_requested`) ; l'audit châssis `WorkerRun` montre donc une exécution par démarrage du worker, et la santé fine des agents est exposée par le domaine (`/api/v1/health`, UI-08).
