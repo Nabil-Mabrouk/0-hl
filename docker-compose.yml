@@ -1,0 +1,210 @@
+# docker-compose.yml — PRODUCTION, généré pour 0-hl.
+#
+# Le développement utilise docker-compose.dev.yml (hot-reload, ports exposés,
+# db exposée pour DBeaver). Ici : images buildées, rien d'exposé hors Traefik.
+#
+# Labels Traefik pointant vers le domaine du projet ; proxy-net est le réseau
+# partagé de toute la flotte (Chap 1). internal-net est privé et isolé : la db
+# n'y est JAMAIS joignable depuis Internet (Chap 23 §2.3).
+#
+# Ne pas éditer à la main : modifier le template du générateur.
+services:
+  frontend:
+    build:
+      # Un seul chemin de build pour tous les projets (Chap 24 — décision
+      # produit : cohérence du stack, réutilisation du code, plutôt que jeter
+      # la vitrine et repartir de zéro selon les modules activés).
+      context: ./frontend
+      args:
+        # Vite inline VITE_API_URL dans le bundle au BUILD (Chap 21) : l'URL de
+        # l'API doit donc arriver ici, pas dans environment:.
+        VITE_API_URL: "https://api.0-hl.com"
+    container_name: 0-hl_frontend
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend-0-hl.rule=Host(`0-hl.com`)"
+      - "traefik.http.routers.frontend-0-hl.entrypoints=websecure"
+      - "traefik.http.routers.frontend-0-hl.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend-0-hl.loadbalancer.server.port=3000"
+    networks:
+      - proxy-net
+      - internal-net
+    depends_on:
+      - backend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: 0-hl_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+      # .env.local n'existe pas pour un projet sans credential opérateur
+      # (Chap 23) — `required: false` évite l'échec de `docker compose up`
+      # que provoquerait un `env_file:` classique pointant sur un fichier
+      # absent (comportement par défaut de Compose : erreur, pas un skip
+      # silencieux). Contient les credentials sans valeur dérivable à la
+      # génération (jeton GitHub, SMTP...) ; jamais lu par Compose pour SA
+      # PROPRE substitution ${VAR} (volumes ci-dessous) — seul .env l'est.
+      - path: .env.local
+        required: false
+    environment:
+      # Chaque projet a SON conteneur PostgreSQL, sans exception (isolation
+      # CPU/IO et plafond de connexions par projet — Chap 18 §2).
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - SECRET_KEY=${SECRET_KEY}
+      - ENVIRONMENT=production
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend-0-hl.rule=Host(`api.0-hl.com`)"
+      - "traefik.http.routers.backend-0-hl.entrypoints=websecure"
+      - "traefik.http.routers.backend-0-hl.tls.certresolver=letsencrypt"
+      - "traefik.http.services.backend-0-hl.loadbalancer.server.port=8000"
+      # Rate limiting du login AU NIVEAU INFRA (doctrine Chap 14 : l'app
+      # journalise, Traefik/fail2ban bloquent). Routeur dédié plus prioritaire
+      # que le routeur backend, même service : seule /api/auth/login est
+      # limitée — chaque essai coûte un hachage argon2, sans limite c'est du
+      # credential stuffing et un DoS CPU à bas coût. Inconditionnel : l'auth
+      # est core, présente dans tout projet (Chap 2 §1).
+      - "traefik.http.middlewares.authlimit-0-hl.ratelimit.average=5"
+      - "traefik.http.middlewares.authlimit-0-hl.ratelimit.period=1m"
+      - "traefik.http.middlewares.authlimit-0-hl.ratelimit.burst=10"
+      - "traefik.http.routers.authlimit-0-hl.rule=Host(`api.0-hl.com`) && Path(`/api/auth/login`)"
+      - "traefik.http.routers.authlimit-0-hl.entrypoints=websecure"
+      - "traefik.http.routers.authlimit-0-hl.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.authlimit-0-hl.priority=100"
+      - "traefik.http.routers.authlimit-0-hl.middlewares=authlimit-0-hl"
+      - "traefik.http.routers.authlimit-0-hl.service=backend-0-hl"
+      # Même raisonnement que authlimit ci-dessus (round sécurité ai-qube,
+      # 2026-10-30) : forgot-password et reset-password n'étaient pas
+      # limitées alors qu'elles coûtent aussi un hachage/l'envoi d'un email —
+      # énumération de comptes et abus d'envoi sans cette limite.
+      - "traefik.http.middlewares.pwresetlimit-0-hl.ratelimit.average=5"
+      - "traefik.http.middlewares.pwresetlimit-0-hl.ratelimit.period=1m"
+      - "traefik.http.middlewares.pwresetlimit-0-hl.ratelimit.burst=10"
+      - "traefik.http.routers.pwresetlimit-0-hl.rule=Host(`api.0-hl.com`) && (Path(`/api/auth/forgot-password`) || Path(`/api/auth/reset-password`))"
+      - "traefik.http.routers.pwresetlimit-0-hl.entrypoints=websecure"
+      - "traefik.http.routers.pwresetlimit-0-hl.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.pwresetlimit-0-hl.priority=100"
+      - "traefik.http.routers.pwresetlimit-0-hl.middlewares=pwresetlimit-0-hl"
+      - "traefik.http.routers.pwresetlimit-0-hl.service=backend-0-hl"
+    networks:
+      - proxy-net
+      - internal-net
+      # Lecture directe de services partagés : fleet (onglet Leads, toute la
+      # flotte), module_leads (vue projet-locale du landing collector) et
+      # module_analytics (service geoip partagé, Chap 13) en ont besoin — un
+      # projet ordinaire sans aucun des trois n'a aucune raison de joindre ce
+      # réseau interne à la flotte.
+      - shared-services-net
+    depends_on:
+      db:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  db:
+    image: postgres:16.3-alpine
+    container_name: 0-hl_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    # Aucun `ports:` : la db reste strictement sur internal-net (Chap 23 §2.3).
+    networks:
+      - internal-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  migrate:
+    # Service éphémère : applique core + chaînes des modules activés, puis sort.
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: 0-hl_migrate
+    command: python -m scripts.migrate
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    networks:
+      - internal-net
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  worker:
+    # Cycle métier long-vivant (allocation/trading/bulletin, etc. — projet,
+    # app/domain/worker_cycle.py). Même image que backend/migrate ; seule la
+    # commande change (Dockerfile documenté pour cet usage : "les flags du
+    # .env décident À L'EXÉCUTION").
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: 0-hl_worker
+    command: python -m app.modules.worker.runner
+    restart: unless-stopped
+    # Un cycle métier peut prendre plusieurs dizaines de secondes (I/O externe :
+    # API d'exchange, appels LLM pour le bulletin). Le défaut Docker (10s) ne
+    # laisse pas le temps à runner.py de finir son cycle en cours après SIGTERM
+    # avant SIGKILL — 90s donne une marge raisonnable sans bloquer longtemps
+    # un redeploy (déclenché à CHAQUE push, pas seulement ceux qui touchent
+    # le worker : docker compose up -d --build reconstruit tous les services).
+    stop_grace_period: 90s
+    # Le Dockerfile sonde localhost:8000/health (process gunicorn) — worker ne
+    # sert aucun port HTTP, cette sonde échouerait toujours sans ce disable.
+    healthcheck:
+      disable: true
+    env_file:
+      - .env
+      - path: .env.local
+        required: false
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - SECRET_KEY=${SECRET_KEY}
+      - ENVIRONMENT=production
+    networks:
+      - internal-net
+    depends_on:
+      db:
+        condition: service_healthy
+
+networks:
+  proxy-net:
+    external: true
+    name: proxy-net
+  internal-net:
+    driver: bridge
+    internal: true
+  # Réseau interne de shared_services (Chap 18) — jamais créé ici, seulement
+  # rejoint. Nom réel dépendant du nom de projet Compose de shared_services
+  # sur le serveur : vérifier avec `docker network ls` au premier déploiement
+  # et corriger SHARED_SERVICES_NETWORK dans .env si besoin.
+  shared-services-net:
+    external: true
+    name: ${SHARED_SERVICES_NETWORK:-shared_services_shared-services-net}
+
+volumes:
+  db_data:

@@ -1,0 +1,39 @@
+# Fichier géré par Copier — ne pas éditer à la main.
+# Il enregistre les réponses + la version du template (_commit, _src_path),
+# ce qui rend `copier update` possible (propagation des évolutions du template).
+_commit: 2f53680
+_src_path: /opt/gitsky/gitsky-v2/src/generator
+branding:
+    font_family: Inter
+    primary_color: '#4F46E5'
+    primary_foreground: '#FFFFFF'
+data_models: []
+domain_routes: []
+fleet:
+    register: true
+landing:
+    blocks:
+    -   headline: Bienvenue
+        subhead: Une nouvelle idée à tester.
+        type: hero
+    -   cta: Rejoindre la liste
+        type: email_capture
+    skin: clean
+modules:
+    admin: true
+    agentic: true
+    analytics: true
+    fleet: false
+    i18n: true
+    leads: true
+    monetization_shop: false
+    onboarding: true
+    security_middleware: true
+    tutorials: true
+    worker: true
+postgres_password: 778360e23a14d259069710ffbef5b96043a6023c9cfd4adc09aa92046cc53087ff9a7548f5283866831bb4a5c9b017067d51918f262bc94cee18c9cc12c415f2
+project:
+    domain: 0-hl.com
+    name: 0-hl
+secret_key: ddf03d5ea2f0c87e38207b98c8952e9e77f3cb46efba0b93fa090de6b5e4e65498ae646deb8d88dd793765c7e8a2abb15076f690484fedf75774861bf5cbbe95
+

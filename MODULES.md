@@ -1,0 +1,167 @@
+# Guide des modules actifs — 0-hl
+
+Ce fichier liste, pour chaque module **actif** sur ce projet, où l'étendre
+en sécurité et ce qu'il ne faut jamais modifier directement. Régénéré à
+chaque `copier update` selon les modules réellement actifs — pas un
+document figé à tenir à jour à la main.
+
+**Règle générale** : `app/domain/models.py` et `app/domain/routers.py` sont
+le seul emplacement conçu pour votre code métier — ils survivent à
+`copier update` par construction (rien dans le template ne les régénère
+après le scaffold initial). Tout ce qui vit dans `app/modules/` ou
+`frontend/src/` (hors `frontend/src/landing-manifest.json`) est **châssis** :
+partagé, réécrit/fusionné à chaque mise à jour du template. Éditer un
+fichier châssis directement, c'est accepter de résoudre un conflit de
+fusion à chaque `copier update` futur — parfois le bon choix, mais un choix
+à faire les yeux ouverts, pas par défaut.
+
+## Admin (`MODULE_ADMIN`)
+
+**Fournit** : `app/modules/admin/router.py` — gestion des utilisateurs
+(liste, rôle) et invitations Waitlist. Rien d'autre.
+
+**Étendre en sécurité** : aucun point d'extension dans ce module. Pour un
+écran ou un endpoint admin métier, ajoutez votre propre routeur dans
+`app/domain/routers.py` (monté automatiquement, Chap 9) et votre propre page
+React, plutôt que d'éditer `app/modules/admin/`.
+
+**Ne touchez pas** : `app/modules/admin/*` — entièrement châssis.
+
+## Internationalisation (`MODULE_I18N`)
+
+**Fournit** : traductions FR/EN via `frontend/src/i18n.ts` +
+`frontend/public/locales/<lang>/common.json` (namespace unique `common`).
+
+**Étendre en sécurité** : ajouter des clés à `common.json` est additif et
+fusionne généralement bien sur `copier update`. Ajouter une langue :
+nouveau fichier `frontend/public/locales/<lang>/common.json`, puis
+l'ajouter à `supportedLngs` dans `i18n.ts` et à `supported_languages` dans
+`.env`.
+
+**Attention** : ces fichiers ne sont **pas** protégés par `_skip_if_exists`
+(seul `frontend/src/landing-manifest.json` l'est, Chap 24) — vos ajouts
+survivent en pratique à un `copier update` (fusion à 3 voies tant que le
+template ne touche pas aux mêmes lignes), mais rien ne le garantit
+formellement comme pour `app/domain/`.
+
+## Analytics (`MODULE_ANALYTICS`)
+
+**Fournit** : suivi automatique des pages vues (IP hashée, pays, ville,
+chemin) via `app/modules/analytics/middleware.py`, agrégé par
+`app/modules/analytics/router.py` (endpoints admin `/world`, `/paths`,
+`/timeline`).
+
+**Étendre en sécurité** : aucun point d'extension — pas d'API d'événements
+personnalisés, pas de champ « type d'événement ». Le tracking est purement
+automatique (page vue / pays / jour), rien à appeler depuis votre code.
+
+**Ne touchez pas** : `app/modules/analytics/*` — entièrement châssis. Un
+besoin d'événements personnalisés est un changement de châssis, à discuter
+avant de diverger plutôt qu'à patcher localement.
+
+## Onboarding (`MODULE_ONBOARDING`)
+
+**Fournit** : moteur de qualification piloté par un flow JSON
+(`app/modules/onboarding/flows/*.json` : `questions`, `scoring.rules` /
+`scoring.default`, `screens`), interprété par `engine.py`.
+
+**Étendre en sécurité** : c'est le point d'extension conçu pour ce module —
+ajoutez un **nouveau** fichier `flows/<id>.json` respectant le contrat
+`{questions, scoring, screens}` plutôt que d'éditer `user_profiling.json`
+en place, puis pointez le paramètre `flow_id` du routeur dessus. Aucune
+validation de schéma au chargement : un JSON malformé lève une `KeyError`
+à la requête, pas à la génération — testez après coup avant de déployer.
+
+**Ne touchez pas** : `engine.py` — la logique d'interprétation est châssis.
+
+## Contenu / Tutoriaux (`MODULE_TUTORIALS`)
+
+**Fournit** : catalogue `Tutorial` → `Lesson` (`app/modules/tutorials/`),
+lecture seule côté API (aucun endpoint create/update dans le module).
+
+**Étendre en sécurité** : le contenu s'ajoute via la base, pas via le
+code — utilisez `python -m scripts.seed_tutorials <slug> <dossier-markdown>`
+(fichiers `*.md` : premier `# Titre` = titre de leçon, reste = contenu ;
+upsert idempotent par `(slug, ordre)`, sûr à rejouer).
+
+**Ne touchez pas** : `app/modules/tutorials/*` — modèle et routes sont
+châssis ; le contenu vit en base, jamais dans ce dossier.
+
+## SecurityMiddleware (`MODULE_SECURITY_MIDDLEWARE`)
+
+**Fournit** : détection passive (`app/modules/security/detectors.py`) —
+chemins suspects, user-agents scanners, patterns d'injection — journalisée
+en `SecurityEvent`, **jamais bloquante** (le blocage réel reste à
+Traefik/fail2ban, en dehors de ce module).
+
+**Étendre en sécurité** : aucun point d'extension exposé — pas de registre,
+pas de fichier de règles externalisé. Des règles personnalisées signifient
+éditer `detectors.py` directement.
+
+**Ne touchez pas** : `app/modules/security/*` par défaut — si vous devez
+vraiment ajouter des règles, sachez que vous divergez sciemment du châssis,
+pas que vous utilisez un point d'extension prévu.
+
+## Framework agentic (`MODULE_AGENTIC`)
+
+**Fournit** : orchestration de services IA pilotée par
+`app/modules/agentic/agent_services.yaml` (`services: {slug: {steps,
+workflows, ...}}`), exécutée par `engine.py`, outils enregistrés dans
+`tools/__init__.py` (`TOOLS = {"nom": fonction}`).
+
+**Étendre en sécurité — deux points d'extension réels** :
+
+1. **Nouveau service agent** (LLM seul, ou réutilisant des outils
+   existants) : ajoutez une entrée sous `services:` dans
+   `agent_services.yaml` — pur YAML, additif, aucun code requis.
+2. **Nouvel outil** (appel externe) : écrivez `async def mon_outil(context,
+   step_def) -> dict` (même contrat que `tools/suno.py` — stub si clé API
+   absente, fail-closed en production), puis enregistrez-le dans le dict
+   `TOOLS` de `tools/__init__.py`. Référencez-le ensuite depuis le YAML via
+   `type: tool, tool: mon_outil`.
+
+**Attention** : `agent_services.yaml` et `tools/__init__.py` vivent dans le
+châssis (pas de `_skip_if_exists`) — des ajouts purement additifs (nouvelle
+entrée YAML, nouvelle clé de dict) fusionnent généralement bien sur
+`copier update`, mais rien ne le garantit comme pour `app/domain/`.
+
+## Worker (`MODULE_WORKER`)
+
+**Fournit** : un service `worker` dédié dans `docker-compose.yml`, une boucle
+planifiée avec arrêt propre sur SIGTERM (`app/modules/worker/runner.py`), et
+un audit minimal des exécutions (`WorkerRun` — début/fin/statut/erreur,
+consultable via `GET /api/worker/status`, réservé admin). Pas d'event store
+ni de checkpoint génériques : c'est un pur journal opérationnel.
+
+**Étendre en sécurité** : implémentez votre cycle dans
+`app/domain/worker_cycle.py` (`run_cycle(db, stop_requested)`), le seul
+point d'extension prévu. **Important** : `docker compose up -d --build`
+(déclenché à CHAQUE push, pas seulement ceux touchant le worker) redémarre
+ce service à chaque déploiement — votre cycle DOIT être idempotent/résumable
+et vérifier `stop_requested` entre ses propres étapes si un cycle peut durer
+plusieurs dizaines de secondes, plutôt que de compter uniquement sur les
+90 secondes de `stop_grace_period` avant SIGKILL.
+
+**Ne touchez pas** : `app/modules/worker/*` (mécanique châssis : recovery au
+boot, boucle, audit) — seul `app/domain/worker_cycle.py` vous appartient.
+
+## Leads (`MODULE_LEADS`)
+
+**Fournit** : vue projet-locale des emails captés par la landing publique
+(`EmailCapture.tsx` → `POST /leads` du landing collector partagé, Chap 18) —
+`GET /api/leads` (liste, réservé admin) et `POST /api/leads/convert`
+(transforme un lead en compte Waitlist invité, même mécanisme que
+`MODULE_ADMIN`). Aucune donnée n'est dupliquée localement : la liste vient
+d'un appel HTTP au landing collector (`app/modules/leads/client.py`) ; la
+seule écriture propre à ce projet est le compte `User` créé lors d'une
+conversion.
+
+**Sécurité** : l'accès au landing collector utilise `LEADS_COLLECTOR_TOKEN`
+(`.env.local`), un jeton DÉRIVÉ propre à ce projet — jamais le jeton maître
+du fleet dashboard, qui donnerait accès aux leads de toute la flotte. Voir
+`scripts/provision_leads_token.sh` s'il est absent de `.env.local`.
+
+**Étendre en sécurité** : aucun point d'extension exposé — campagnes email
+et octroi d'abonnement sont hors périmètre de ce module.
+
+**Ne touchez pas** : `app/modules/leads/*` — entièrement châssis.

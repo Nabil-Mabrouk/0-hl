@@ -1,0 +1,40 @@
+# docker-compose.maintenance.yml — page de maintenance pour 0-hl.
+# (Chap 20/23, round sécurisation)
+#
+# PAS un override de docker-compose.yml (aucune fusion) : un fichier de
+# compose AUTONOME, invoqué SEUL (lifecycle-fleet.sh, shared_services) une
+# fois que `docker compose down` a arrêté le frontend/backend réels. Les deux
+# ne tournent JAMAIS en même temps — ils réclament les mêmes routes Traefik
+# (Host(`0-hl.com`) et Host(`api.0-hl.com`)), qu'un
+# seul jeu de conteneurs à la fois peut servir.
+#
+# Un seul conteneur statique (nginx, aucun build) sert la même page sur les
+# deux domaines : pendant une vraie coupure, le frontend ET l'API sont hors
+# service, pas la peine de distinguer les deux messages.
+#
+# Ne pas éditer à la main : modifier le template du générateur.
+services:
+  maintenance:
+    image: nginx:alpine
+    container_name: 0-hl_maintenance
+    restart: unless-stopped
+    volumes:
+      - ./maintenance/index.html:/usr/share/nginx/html/index.html:ro
+    networks:
+      - proxy-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.maintenance-0-hl-front.rule=Host(`0-hl.com`)"
+      - "traefik.http.routers.maintenance-0-hl-front.entrypoints=websecure"
+      - "traefik.http.routers.maintenance-0-hl-front.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.maintenance-0-hl-front.service=maintenance-0-hl"
+      - "traefik.http.routers.maintenance-0-hl-api.rule=Host(`api.0-hl.com`)"
+      - "traefik.http.routers.maintenance-0-hl-api.entrypoints=websecure"
+      - "traefik.http.routers.maintenance-0-hl-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.maintenance-0-hl-api.service=maintenance-0-hl"
+      - "traefik.http.services.maintenance-0-hl.loadbalancer.server.port=80"
+
+networks:
+  proxy-net:
+    external: true
+    name: proxy-net
