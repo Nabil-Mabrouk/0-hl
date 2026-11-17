@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://0-hl.com/schemas/strategy.schema.json",
+  "title": "StrategyVersion",
+  "type": "object",
+  "required": [
+    "strategy_id",
+    "version",
+    "status",
+    "universe",
+    "entry",
+    "exit",
+    "risk_policy_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "strategy_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "DRAFT",
+        "IN_REVIEW",
+        "APPROVED",
+        "PUBLISHED",
+        "DEPRECATED"
+      ]
+    },
+    "universe": {
+      "type": "object",
+      "required": [
+        "venues"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "venues": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": [
+              "kraken_spot"
+            ]
+          },
+          "description": "Venues autorisées ; étendre l'enum à l'ajout d'un adaptateur."
+        },
+        "quote_currencies": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          },
+          "description": "Ex. ['USD']"
+        },
+        "top_n_by_volume": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "refresh_seconds": {
+          "type": "integer",
+          "minimum": 60
+        },
+        "exclude_stablecoins": {
+          "type": "boolean"
+        },
+        "min_volume_24h_usd": {
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?$"
+        },
+        "chains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Venues DEX uniquement."
+        },
+        "token_age_min_seconds": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "required": [
+        "operator",
+        "conditions"
+      ],
+      "properties": {
+        "operator": {
+          "enum": [
+            "AND",
+            "OR"
+          ]
+        },
+        "conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "feature",
+              "op",
+              "threshold",
+              "unit",
+              "window_seconds"
+            ],
+            "properties": {
+              "feature": {
+                "type": "string"
+              },
+              "op": {
+                "enum": [
+                  "gt",
+                  "gte",
+                  "lt",
+                  "lte"
+                ]
+              },
+              "threshold": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "window_seconds": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "ttl_ms": {
+                "type": "integer",
+                "minimum": 100
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "exit": {
+      "type": "object",
+      "properties": {
+        "initial_stop_pct": {
+          "type": "string"
+        },
+        "take_profit_r": {
+          "type": "string"
+        },
+        "max_hold_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "exit_on_status_change": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "initial_stop_pct"
+      ],
+      "additionalProperties": false
+    },
+    "risk_policy_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cooldown_seconds": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Cooldown par instrument après sortie."
+    }
+  },
+  "description": "StrategyVersion 0-hl V2.1. Universe par venue (ADR-002/003) ; 'chains' réservé aux venues DEX."
+}

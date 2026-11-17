@@ -1,0 +1,80 @@
+openapi: 3.1.0
+info:
+  title: 0-hl API — Starter contract
+  version: 2.1.0-draft
+  description: "Contrat de démarrage, non exhaustif : générer le contrat complet depuis les handlers."
+servers:
+  - url: /api/v1
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      responses:
+        '200':
+          description: Ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: {type: string}
+  /bots:
+    get:
+      operationId: listBots
+      responses:
+        '200':
+          description: List of bots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/Bot'}
+  /bots/{bot_id}/commands:
+    post:
+      operationId: commandBot
+      parameters:
+        - name: bot_id
+          in: path
+          required: true
+          schema: {type: string}
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [command]
+              properties:
+                command:
+                  type: string
+                  enum: [START, PAUSE_ENTRIES, RESUME_ENTRIES, STOP, EMERGENCY_STOP]
+                reason: {type: string}
+      responses:
+        '202':
+          description: Command accepted for processing, not necessarily executed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [command_id, status]
+                properties:
+                  command_id: {type: string}
+                  status: {type: string, enum: [PENDING]}
+        '409': {description: State conflict}
+components:
+  schemas:
+    Bot:
+      type: object
+      required: [id, name, environment, status]
+      properties:
+        id: {type: string}
+        name: {type: string}
+        environment: {type: string, enum: [DEMO, PAPER, LIVE]}
+        status: {type: string, enum: [CREATED, READY, RUNNING, PAUSED, STOPPED, DEGRADED, FAILED]}

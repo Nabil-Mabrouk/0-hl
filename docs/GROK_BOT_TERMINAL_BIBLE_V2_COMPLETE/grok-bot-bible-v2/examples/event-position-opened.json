@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-demo-001",
+  "correlation_id": "corr-demo-01",
+  "causation_id": "evt-demo-risk",
+  "aggregate_id": "position-demo-001",
+  "aggregate_sequence": 4,
+  "event_type": "POSITION_OPENED",
+  "occurred_at": "2026-11-17T10:00:00Z",
+  "received_at": "2026-11-17T10:00:01Z",
+  "source": "execution-worker",
+  "payload": {
+    "token": "GRUBZ",
+    "environment": "PAPER",
+    "quantity": "100.0",
+    "average_price": "0.00802729",
+    "fee_usd": "0.05",
+    "order_id": "ord-demo-001"
+  }
+}
