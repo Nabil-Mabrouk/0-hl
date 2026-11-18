@@ -196,6 +196,11 @@ async def test_snapshot_equity_stats_agents_scan(world, session_factory):
     assert snap["agents"]["EXECUTOR"]["last_event_type"] == "POSITION_CLOSED"
     assert snap["scan"]["evaluated"] == 1 and snap["scan"]["candidates"] == 1
     assert snap["position"] == max(e["position"] for e in snap["recent_events"])
+    # M1.5 complement: config, owner capital, entry features of the trade
+    assert snap["config"]["strategy_version"] == "0.2.0" and snap["config"]["max_slippage_pct"] == "0.5"
+    assert D(snap["owner_capital"]) == D(10000)
+    assert D(trade["entry_features"]["volume_spike"]) == D(5)
+    assert D(trade["entry_features"]["window_notional_usd"]) == D(100000)
 
 
 async def test_open_position_marks_and_stale_quality(world, session_factory):

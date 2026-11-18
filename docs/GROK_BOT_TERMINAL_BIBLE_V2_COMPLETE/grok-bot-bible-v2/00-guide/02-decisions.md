@@ -22,6 +22,7 @@ Ce registre tranche les points `[OPEN]` de la V2.0 et prime sur toute formulatio
 | ADR-012 | Dépendance `websockets` et environnement de développement | Actée | 2026-11-18 |
 | ADR-013 | Démarrage automatique du bot d'amorçage, PAPER uniquement | Actée | 2026-11-18 |
 | ADR-014 | STRAT-01 v0.2.0 : planchers d'activité ; ré-amorçage du bot jamais démarré | Actée | 2026-11-18 |
+| ADR-015 | Point d'extension des routes frontend fourni par le template gitsky | Actée — en attente template | 2026-11-18 |
 
 ---
 
@@ -140,3 +141,13 @@ Besoin exprimé au template :
 - Nouvelle version **STRAT-01 0.2.0** = 0.1.0 + deux conditions : `window_notional_usd ≥ 50000` (USD, fenêtre courante `live`) et `window_trade_count ≥ 40`. Un ordre paper type (~1 300 USD) reste sous 3 % du flux de la fenêtre. Seuils **expérimentaux**, révisables par nouvelle version.
 - La version 0.1.0 publiée reste immuable (INV-06).
 - **Ré-amorçage** : l'amorçage publie la version d'exemple courante ; le bot d'amorçage qui **n'a jamais eu de session** est relié à cette version (audit `SEED_REBIND`). Un bot ayant déjà eu une session n'est jamais modifié par l'amorçage.
+
+## ADR-015 — Point d'extension des routes frontend fourni par le template gitsky
+
+**Contexte.** Le backend dispose d'un point d'extension (`app/domain/routers.py`, variables `*_router`), pas le frontend : les routes sont déclarées dans `frontend/src/App.tsx`, fichier châssis réécrit par `copier update`.
+
+**Décision.** Comme pour ADR-011, le point d'extension est ajouté **dans le template gitsky**. Besoin exprimé :
+- un fichier projet `frontend/src/domain/routes.tsx`, **jamais réécrit** par `copier update` (`_skip_if_exists`), exportant `domainRoutes` (fragment React de `<Route>` relatifs à l'`AppShell`) ;
+- `App.tsx` l'importe et le place dans le `<Routes>` de l'`AppShell` (sous `PasswordGate`) ; le scaffold initial fournit un `domainRoutes` vide.
+
+**Conséquences.** Les écrans M1.5 sont développés et testés dans `frontend/src/features/` et déclarés dans `frontend/src/domain/routes.tsx` ; ils deviennent accessibles (`/terminal`, `/bots`) dès la propagation du template. Aucun patch local de `App.tsx`.

@@ -40,6 +40,8 @@ export default function Navbar() {
         {project}
       </a>
       <div className="site-nav-links">
+        {user && <a href="/terminal">Terminal</a>}
+        {user && <a href="/bots">Bots</a>}
         {modules.tutorials && <a href="/learn">{t("nav.learn")}</a>}
         {user?.role === "admin" && <a href="/admin">{t("admin.nav")}</a>}
         {modules.i18n && (

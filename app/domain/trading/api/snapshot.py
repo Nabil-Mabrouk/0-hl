@@ -15,7 +15,18 @@ from app.domain.trading.enums import PositionStatus
 from app.domain.trading.errors import NotFound
 from app.domain.trading.ledger import ACCOUNT_CASH, ACCOUNT_CASH_RESERVED, USD, account_balances
 from app.domain.trading.market.service import CONNECTION_FEED_ID
-from app.domain.trading.models import Bot, BotSession, DomainEvent, FeedStatus, Position
+from app.domain.trading.enums import IntentPurpose
+from app.domain.trading.models import (
+    Bot,
+    BotSession,
+    Candidate,
+    DomainEvent,
+    FeedStatus,
+    OrderIntent,
+    Position,
+    RiskPolicyVersion,
+    StrategyVersion,
+)
 
 ZERO = Decimal(0)
 MARK_MAX_AGE = timedelta(seconds=30)
@@ -144,6 +155,34 @@ def session_json(s: BotSession | None, now: datetime) -> dict[str, Any] | None:
             "strategy_sha256": s.strategy_sha256, "risk_policy_sha256": s.risk_policy_sha256}
 
 
+ENTRY_FEATURES = ("volume_spike", "buy_notional_share", "window_notional_usd", "window_trade_count",
+                  "price_change_5m", "spread_bps")
+
+
+async def entry_features(db: AsyncSession, positions: list[Position]) -> dict[uuid.UUID, dict[str, Any]]:
+    """Key features of the candidate behind each position (M1.5 « raison » of the trade)."""
+    if not positions:
+        return {}
+    rows = await db.execute(
+        select(OrderIntent.position_id, Candidate.features)
+        .join(Candidate, Candidate.id == OrderIntent.candidate_id)
+        .where(OrderIntent.position_id.in_([p.id for p in positions]),
+               OrderIntent.purpose == IntentPurpose.ENTRY))
+    out: dict[uuid.UUID, dict[str, Any]] = {}
+    for position_id, features in rows:
+        out[position_id] = {k: (features.get(k) or {}).get("value") for k in ENTRY_FEATURES}
+    return out
+
+
+async def config_json(db: AsyncSession, bot: Bot) -> dict[str, Any]:
+    sv = await db.get(StrategyVersion, bot.strategy_version_id)
+    pv = await db.get(RiskPolicyVersion, bot.risk_policy_version_id)
+    return {"strategy_id": sv.strategy_id if sv else None,
+            "strategy_version": sv.version if sv else None,
+            "max_trade_risk_pct": (pv.config or {}).get("max_trade_risk_pct") if pv else None,
+            "max_slippage_pct": (pv.config or {}).get("max_slippage_pct") if pv else None}
+
+
 async def build_snapshot(db: AsyncSession, bot_id: uuid.UUID, now: datetime) -> dict[str, Any]:
     from app.domain.trading.api.common import event_json
 
@@ -165,14 +204,22 @@ async def build_snapshot(db: AsyncSession, bot_id: uuid.UUID, now: datetime) -> 
     events = (await db.scalars(select(DomainEvent).where(
         or_(DomainEvent.bot_id == bot.id, DomainEvent.aggregate_type == "market_feed"))
         .order_by(DomainEvent.position.desc()).limit(50))).all()
+    features = await entry_features(db, [*open_pos, *trades])
+    owner = -(await account_balances(db, bot.id)).get(("owner_capital", USD), ZERO)
+
+    def with_features(p: Position) -> dict[str, Any]:
+        return position_json(p) | {"entry_features": features.get(p.id)}
+
     return {
         "generated_at": now,
         "bot": bot_json(bot),
+        "config": await config_json(db, bot),
+        "owner_capital": owner,
         "session": session_json(session, now),
         "equity": await equity_json(db, bot.id, now),
         "stats": await stats_json(db, bot.id),
-        "open_positions": [position_json(p) for p in open_pos],
-        "recent_trades": [position_json(p) for p in trades],
+        "open_positions": [with_features(p) for p in open_pos],
+        "recent_trades": [with_features(p) for p in trades],
         "agents": await agents_json(db, bot.id, now, alive),
         "scan": None if scan is None else scan.payload | {"occurred_at": scan.occurred_at},
         "feed": await feed_summary(db, now),
