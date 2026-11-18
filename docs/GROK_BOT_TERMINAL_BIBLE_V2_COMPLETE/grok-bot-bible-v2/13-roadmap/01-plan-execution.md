@@ -21,7 +21,7 @@ Ce jalon remplace l'enchaînement P0→P4 pour le premier livrable ; il prend un
 
 | Lot | Contenu | Références |
 |---|---|---|
-| M1.1 Fondations | modèles (instrument, stratégie/versions, risk policy, bot, session, candidat, décision, assessment, intent, ordre, fill, position, cash movement, ledger, event, audit, rôles) ; outbox ; RBAC métier ; amorçage stratégie + policy + bot `PAPER` | 04-metier, contracts/, ADR-006/007 |
+| M1.1 Fondations — **livré (local, 2026-11-18)** | modèles (instrument, stratégie/versions, risk policy, bot, session, candidat, décision, assessment, intent, ordre, fill, position, cash movement, ledger, event, audit, rôles) ; outbox ; RBAC métier ; amorçage stratégie + policy + bot `PAPER` | 04-metier, contracts/, **10-backend/03**, ADR-006/007 |
 | M1.2 Connecteur Kraken | référentiel `AssetPairs`, top-N USD, WS v2 `instrument/ticker/book/trade`, checksum, fraîcheur, agrégats 1 min, amorçage OHLC | 07-data/01, ADR-002/003 |
 | M1.3 Agents | SCANNER (STRAT-01 Kraken), RUG CHECK variante CEX, SIZER (05-strategies/03), EXECUTOR paper, LOGGER, EQUITY + surveillance stop/TP/temps | 06-agents/01, 08-*, ADR-004/005/010 |
 | M1.4 API & WS | `/api/v1` : health, bots, commands, strategies (lecture), portfolio, trades, events ; `/ws/v1/terminal` snapshot + deltas + gap | 10-backend/02 |

@@ -47,6 +47,7 @@
 - [02-laboratoire-quant](../09-recherche/02-laboratoire-quant.md)
 - [01-architecture-deploiement](../10-backend/01-architecture-deploiement.md)
 - [02-api-websocket-modeles](../10-backend/02-api-websocket-modeles.md)
+- [03-modele-donnees-m1](../10-backend/03-modele-donnees-m1.md)
 - [01-securite-et-conformite](../11-securite-ops/01-securite-et-conformite.md)
 - [02-runbooks-slo](../11-securite-ops/02-runbooks-slo.md)
 - [01-plan-de-recette](../12-tests/01-plan-de-recette.md)

@@ -1,27 +1,24 @@
-"""Cycle métier du worker — VOTRE code (app/domain/, Chap X, module worker).
+"""Cycle métier du worker 0-hl (app/domain/, module worker du châssis).
 
-Fichier plain (pas `.jinja`, contrairement à `models.py`/`routers.py` : rien
-de spécifique au projet à interpoler ici) — jamais retouché par le châssis
-après le scaffold initial, même mécanisme que
-`frontend/src/components/layout/Navbar.tsx` (Chap 24). Le châssis
-(`app/modules/worker/runner.py`) fournit le conteneur, l'arrêt propre et la
-cadence ; appelle ceci à intervalle régulier.
+Le châssis (`app/modules/worker/runner.py`) fournit le conteneur, l'arrêt
+propre et la cadence ; il appelle `run_cycle` à intervalle régulier.
+
+Spécification : 06-agents/01 « Exécution sur le châssis » et ADR-012 — à terme
+une boucle longue hébergeant le flux Kraken et les six agents (M1.2/M1.3).
+Lot M1.1 : seulement l'amorçage idempotent des données (10-backend/03).
 
 `stop_requested` est mis par SIGTERM (tout redéploiement redémarre ce
-service, pas seulement ceux qui le touchent) : un cycle long doit le
-vérifier entre ses propres étapes pour rendre la main proprement plutôt que
-de compter uniquement sur `stop_grace_period` (docker-compose.yml).
+service) : chaque étape doit le vérifier pour rendre la main proprement.
 """
 
 import asyncio
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.trading.seed import run_seed
+
 
 async def run_cycle(db: AsyncSession, stop_requested: asyncio.Event) -> None:
-    # TODO: implémentez votre cycle ici (allocation -> décisions -> bulletin,
-    # ou tout autre traitement périodique). Gardez-le idempotent/résumable :
-    # un déploiement redémarre ce service à CHAQUE push (docker compose up -d
-    # --build reconstruit tous les services, pas seulement ceux modifiés),
-    # donc un cycle peut être interrompu en plein milieu à tout moment.
-    pass
+    if stop_requested.is_set():
+        return
+    await run_seed(db)

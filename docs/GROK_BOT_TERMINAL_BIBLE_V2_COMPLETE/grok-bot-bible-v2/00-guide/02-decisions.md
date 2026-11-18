@@ -18,7 +18,7 @@ Ce registre tranche les points `[OPEN]` de la V2.0 et prime sur toute formulatio
 | ADR-008 | Premier jalon : tranche verticale paper | Actée | 2026-11-17 |
 | ADR-009 | LIVE préparé dans la conception, désactivé | Actée | 2026-11-17 |
 | ADR-010 | Paramètres paper par défaut | Actée | 2026-11-17 |
-| ADR-011 | Prérequis châssis corrigés en amont (gitsky) | Actée — réseau livré par le template, migrations `domain` à confirmer | 2026-11-18 |
+| ADR-011 | Prérequis châssis corrigés en amont (gitsky) | Actée — livrée par le template (réseau + chaîne `domain`), `copier update` à appliquer | 2026-11-18 |
 | ADR-012 | Dépendance `websockets` et environnement de développement | Actée | 2026-11-18 |
 
 ---
@@ -109,7 +109,8 @@ Besoin exprimé au template :
 
 **Suivi (2026-11-18).**
 - *Accès Internet du worker* : **livré par le template.** Après `copier update`, le service `worker` doit être relié à `internal-net` **et** `egress-net` ; le redéploiement crée `egress-net`, et le worker peut alors joindre `api.kraken.com` et `ws.kraken.com`. Vérification obligatoire dans `docker-compose.yml` après la mise à jour.
-- *Chaîne de migration `domain`* : non mentionnée dans la livraison du template ; **à confirmer** avant tout déploiement de tables métier en production.
+- *Chaîne de migration `domain`* : **livrée par le template** (`alembic/domain/`, appliquée par le service `migrate`). Procédure obligatoire : après `copier update`, à **chaque** modification de `app/domain/models.py` ou des modèles qu'il importe, générer une révision avec `alembic -n domain revision --autogenerate -m "<description>"`, **relire le script généré** (types `Dec`/`UtcDateTime`, contraintes nommées, ordre des tables) avant tout push, et livrer la révision dans le même commit que le changement de modèle (10-backend/03 « Migrations »).
+- *Ordre de livraison M1.1* : `copier update` poussé d'abord (sans code métier), puis code M1.1 + révision initiale `domain` dans un même push, pour que `migrate` crée les tables avant le démarrage du worker.
 
 **Conséquences.** Le développement de M1 se poursuit en local (`create_all` en `development`, ADR-012). Les modèles de domaine sont écrits pour être migrables (pas de dépendance à `create_all`, conventions de nommage explicites). Les révisions Alembic du domaine seront produites dès que la chaîne existera. **Le déploiement en production de M1 est bloqué** jusqu'à la propagation du template ; d'ici là, un push ne doit pas activer le flux Kraken en production (le worker démarre sans erreur fatale si le réseau est injoignable et signale `PROVIDER_UNAVAILABLE`).
 
@@ -117,6 +118,6 @@ Besoin exprimé au template :
 
 **Décision.**
 - Ajout de la dépendance Python `websockets` (version épinglée, ligne additive dans `requirements.txt`) pour le client Kraken WebSocket v2 ; `docker compose build` local avant tout push qui la contient (AGENTS.md).
-- Développement local via `docker-compose.dev.yml` (PostgreSQL, backend, worker) avec un `.env` local créé depuis les exemples, **jamais versionné**.
+- Développement local via `docker-compose.dev.yml` du châssis (backend sur SQLite + frontend ; **pas** de PostgreSQL ni de worker dans ce compose — précisé en [10-backend/03](../10-backend/03-modele-donnees-m1.md#environnement-de-développement-correction-dadr-012)) avec un `.env` local créé depuis les exemples, **jamais versionné** ; worker lancé localement ; PostgreSQL jetable pour les tests marqués `postgres`.
 - Les tests (`pytest`) n'accèdent jamais au réseau : le flux Kraken est remplacé par des **fixtures enregistrées** (messages WS v2 et réponses REST) rejouées par un faux transport. Un test d'intégration optionnel contre l'API publique réelle peut exister, désactivé par défaut.
 - Le worker exécute `run_cycle` comme une **boucle longue** qui ne rend la main qu'à l'arrêt (`stop_requested`) ; l'audit châssis `WorkerRun` montre donc une exécution par démarrage du worker, et la santé fine des agents est exposée par le domaine (`/api/v1/health`, UI-08).

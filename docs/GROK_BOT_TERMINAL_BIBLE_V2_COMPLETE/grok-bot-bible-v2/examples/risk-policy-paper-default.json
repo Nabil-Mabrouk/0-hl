@@ -1,0 +1,17 @@
+{
+  "policy_id": "paper-default",
+  "version": "1",
+  "max_trade_risk_pct": "0.5",
+  "max_token_exposure_pct": "25",
+  "max_portfolio_exposure_pct": "100",
+  "max_daily_loss_pct": "3",
+  "max_drawdown_pct": "15",
+  "max_slippage_pct": "0.5",
+  "max_open_positions": 5,
+  "max_spread_bps": "30",
+  "max_abnormal_move_pct": "15",
+  "min_volume_24h_usd": "1000000",
+  "cooldown_seconds": 1800,
+  "authorization_ttl_seconds": 10,
+  "kill_switch": false
+}

@@ -5,6 +5,9 @@
 
 ## Hiérarchie
 
+Les limites et seuils sont portés par la `RiskPolicy` versionnée ([`contracts/risk-policy.schema.json`](../contracts/risk-policy.schema.json), défaut paper : [`examples/risk-policy-paper-default.json`](../examples/risk-policy-paper-default.json)).
+
+
 System Hard Limits > Account Limits > Bot Limits > Strategy Limits > Order Intent. La valeur la plus restrictive prévaut ; un agent ne peut abaisser un cap. Chaque décision fournit une explication structurée de la chaîne de limites.
 
 ## Contrôles avant ordre

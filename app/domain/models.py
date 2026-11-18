@@ -1,11 +1,9 @@
-"""Modèles métier de 0-hl (généré par create-gitsky-project).
+"""Modèles métier de 0-hl.
 
-Ne pas éditer à la main pour un besoin partagé : remonter la modification dans
-le template puis propager via `copier update` (Chap 17).
+Point d'entrée imposé par le châssis : importer ce module enregistre toutes les
+tables du domaine sur `Base.metadata` (create_all en développement, chaîne
+Alembic `domain` en production — ADR-011). Le modèle physique est spécifié dans
+docs/.../10-backend/03-modele-donnees-m1.md (source unique de vérité, ADR-000).
 """
 
-from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, Text
-
-from app.core.database import Base
-
-
+from app.domain.trading.models import *  # noqa: F401,F403

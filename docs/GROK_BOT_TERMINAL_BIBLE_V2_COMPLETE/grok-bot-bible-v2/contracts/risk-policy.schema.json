@@ -1,6 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://0-hl.com/schemas/risk-policy.schema.json",
   "title": "RiskPolicy",
+  "description": "Politique de risque 0-hl V2.1 : limites (08-risque-execution/01) et seuils du contrôle de qualité de marché CEX (06-agents/01, ADR-004). Pourcentages et montants en chaînes décimales.",
   "type": "object",
   "required": [
     "policy_id",
@@ -14,36 +16,64 @@
   "additionalProperties": false,
   "properties": {
     "policy_id": {
-      "type": "string"
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$"
     },
     "version": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "max_trade_risk_pct": {
       "type": "string",
       "pattern": "^[0-9]+(\\.[0-9]+)?$"
     },
     "max_token_exposure_pct": {
-      "type": "string"
+      "type": "string",
+      "pattern": "^[0-9]+(\\.[0-9]+)?$"
     },
     "max_portfolio_exposure_pct": {
-      "type": "string"
+      "type": "string",
+      "pattern": "^[0-9]+(\\.[0-9]+)?$"
     },
     "max_daily_loss_pct": {
-      "type": "string"
+      "type": "string",
+      "pattern": "^[0-9]+(\\.[0-9]+)?$"
     },
     "max_drawdown_pct": {
-      "type": "string"
+      "type": "string",
+      "pattern": "^[0-9]+(\\.[0-9]+)?$"
     },
     "max_slippage_pct": {
-      "type": "string"
+      "type": "string",
+      "pattern": "^[0-9]+(\\.[0-9]+)?$"
+    },
+    "max_open_positions": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "max_spread_bps": {
+      "type": "string",
+      "pattern": "^[0-9]+(\\.[0-9]+)?$"
+    },
+    "max_abnormal_move_pct": {
+      "type": "string",
+      "pattern": "^[0-9]+(\\.[0-9]+)?$"
+    },
+    "min_volume_24h_usd": {
+      "type": "string",
+      "pattern": "^[0-9]+(\\.[0-9]+)?$"
     },
     "min_liquidity_usd": {
-      "type": "string"
+      "type": "string",
+      "pattern": "^[0-9]+(\\.[0-9]+)?$"
     },
     "cooldown_seconds": {
       "type": "integer",
       "minimum": 0
+    },
+    "authorization_ttl_seconds": {
+      "type": "integer",
+      "minimum": 1
     },
     "kill_switch": {
       "type": "boolean"

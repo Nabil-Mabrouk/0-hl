@@ -32,7 +32,7 @@ Toutes routes sous `/api/v1`, pagination cursor, filtres validés, retour d'erre
 
 ## Contrats embarqués
 
-Voir `../contracts/openapi-starter.yaml`, `../contracts/events.schema.json`, `../contracts/strategy.schema.json`, `../contracts/risk-policy.schema.json` et `../contracts/schema.sql`. Ce sont des **bases structurées** et non la totalité des routes/erreurs : générer OpenAPI complet et vérifier en CI. Des champs non définis doivent retourner une erreur explicite plutôt que pass-through silencieux.
+Modèle physique 0-hl : [03-modele-donnees-m1](03-modele-donnees-m1.md). Voir `../contracts/openapi-starter.yaml`, `../contracts/events.schema.json`, `../contracts/strategy.schema.json`, `../contracts/risk-policy.schema.json` et `../contracts/schema.sql`. Ce sont des **bases structurées** et non la totalité des routes/erreurs : générer OpenAPI complet et vérifier en CI. Des champs non définis doivent retourner une erreur explicite plutôt que pass-through silencieux.
 
 ## Taxonomie d'erreurs
 

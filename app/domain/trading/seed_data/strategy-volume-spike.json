@@ -1,0 +1,62 @@
+{
+  "strategy_id": "volume-spike",
+  "version": "0.1.0",
+  "status": "DRAFT",
+  "universe": {
+    "venues": [
+      "kraken_spot"
+    ],
+    "quote_currencies": [
+      "USD"
+    ],
+    "top_n_by_volume": 40,
+    "refresh_seconds": 3600,
+    "exclude_stablecoins": true,
+    "min_volume_24h_usd": "1000000"
+  },
+  "entry": {
+    "operator": "AND",
+    "conditions": [
+      {
+        "feature": "volume_spike",
+        "op": "gte",
+        "threshold": "4.0",
+        "unit": "ratio",
+        "window_seconds": 300,
+        "ttl_ms": 5000
+      },
+      {
+        "feature": "buy_notional_share",
+        "op": "gte",
+        "threshold": "0.60",
+        "unit": "fraction",
+        "window_seconds": 300,
+        "ttl_ms": 5000
+      },
+      {
+        "feature": "price_change_5m",
+        "op": "gt",
+        "threshold": "0",
+        "unit": "log_return",
+        "window_seconds": 300,
+        "ttl_ms": 5000
+      },
+      {
+        "feature": "spread_bps",
+        "op": "lte",
+        "threshold": "30",
+        "unit": "bps",
+        "window_seconds": 1,
+        "ttl_ms": 3000
+      }
+    ]
+  },
+  "exit": {
+    "initial_stop_pct": "3",
+    "take_profit_r": "2",
+    "max_hold_seconds": 3600,
+    "exit_on_status_change": true
+  },
+  "cooldown_seconds": 1800,
+  "risk_policy_id": "paper-default"
+}
