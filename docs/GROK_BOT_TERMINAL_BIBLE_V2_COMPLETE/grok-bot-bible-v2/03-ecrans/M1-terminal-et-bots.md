@@ -26,7 +26,17 @@ Ce chapitre détaille le lot **M1.5** ([13-roadmap](../13-roadmap/01-plan-execut
 
 ## UI-01 Live Terminal
 
-**Canvas canonique 550×688** reproduisant la géométrie de la capture 3 (positions du prototype `original/prototype_v1.html`), mis à l'échelle proportionnellement pour tenir dans la fenêtre (zoom ≤ 1,6), centré. Correspondance des zones (contenu 0-hl, ADR-001/004) :
+**Vue par défaut : pleine largeur (ADR-016).** Grille responsive dans le langage visuel de la capture 3, mêmes données que la réplique :
+- **barre de tête** pleine largeur : bouton pause, « **0-hl** Terminal » + version, statut et uptime, puce d'activité, badge environnement/connexion ; à droite balance (grand), trades, wins, losses ;
+- **colonne gauche** (≈ 300 px) : six cartes agents + YOU (clic ⇒ tiroir) ;
+- **centre** : flux (candidats, stations RUG CHECK et EXECUTOR, mini-cartes FILTERED / SIZER / LOGGER / EQUITY), puis deux cartes côte à côte TRADE et RESULT ;
+- **colonne droite** (≈ 380 px) : `$ tail -f night.log` sur toute la hauteur ;
+- **bas** pleine largeur : tableau LOG ; bandeau sombre de la dernière ligne.
+- Lisibilité : texte courant 13 px, libellés 11 px en capitales espacées, chiffres clés 24 à 32 px en chiffres tabulaires.
+- Responsive : sous 1200 px la colonne droite passe sous le centre ; sous 800 px une seule colonne.
+- Sélecteur « Full width / Reference canvas » en tête de page, mémorisé dans le navigateur (préférence locale).
+
+**Option « Reference canvas » : canvas canonique 550×688** reproduisant la géométrie de la capture 3 (positions du prototype `original/prototype_v1.html`), mis à l'échelle proportionnellement pour tenir dans la fenêtre (zoom ≤ 1,6), centré. Correspondance des zones (contenu 0-hl, ADR-001/004) :
 
 | Zone (capture 3) | Donnée 0-hl |
 |---|---|
@@ -69,5 +79,6 @@ Ce chapitre détaille le lot **M1.5** ([13-roadmap](../13-roadmap/01-plan-execut
 | T-M1.5-06 | bots : actions par statut ; E-stop et STOP demandent confirmation ; aucune commande envoyée sans confirmation |
 | T-M1.5-07 | `prefers-reduced-motion` : aucune classe d'animation |
 | T-M1.5-08 | `npm run typecheck && npm run test && npm run build` verts |
+| T-M1.5-09 | vue pleine largeur par défaut avec les mêmes valeurs que la réplique ; le sélecteur bascule vers la réplique 550×688 et le choix est mémorisé (ADR-016) |
 
 **Hors M1.5 (ouvert)** : la mesure de fidélité par capture Playwright 550×688 superposée à la capture 3 (02-design/03) nécessite d'ajouter Playwright, absent du châssis frontend ; elle est reportée au lot de recette M1.6 `[OPEN]`.

@@ -5,7 +5,7 @@
 
 ## Direction artistique
 
-Reproduction du style clair, dense, monospace et technique de la capture 3. L'écran canonique est un petit canvas 550×688 ; il ne doit pas être remplacé par un dashboard générique. Le Back-Office élargit la grille à 1440×900 et réutilise les mêmes couleurs fonctionnelles, microtypographie et bordures.
+Reproduction du style clair, dense, monospace et technique de la capture 3. L'écran canonique est un petit canvas 550×688 ; **depuis ADR-016**, il n'est plus la vue par défaut de UI-01 mais une option « Reference canvas » servant à la mesure de fidélité, la vue par défaut étant une disposition pleine largeur dans le même langage visuel. Le Back-Office élargit la grille à 1440×900 et réutilise les mêmes couleurs fonctionnelles, microtypographie et bordures.
 
 ## Tokens CSS de référence à recalibrer par comparaison visuelle
 

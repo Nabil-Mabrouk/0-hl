@@ -22,7 +22,8 @@ Ce registre tranche les points `[OPEN]` de la V2.0 et prime sur toute formulatio
 | ADR-012 | Dépendance `websockets` et environnement de développement | Actée | 2026-11-18 |
 | ADR-013 | Démarrage automatique du bot d'amorçage, PAPER uniquement | Actée | 2026-11-18 |
 | ADR-014 | STRAT-01 v0.2.0 : planchers d'activité ; ré-amorçage du bot jamais démarré | Actée | 2026-11-18 |
-| ADR-015 | Point d'extension des routes frontend fourni par le template gitsky | Actée — en attente template | 2026-11-18 |
+| ADR-015 | Point d'extension des routes frontend fourni par le template gitsky | Actée — livrée (châssis fd9a22b) | 2026-11-18 |
+| ADR-016 | Live Terminal pleine largeur par défaut ; réplique 550×688 en option | Actée | 2026-11-18 |
 
 ---
 
@@ -151,3 +152,12 @@ Besoin exprimé au template :
 - `App.tsx` l'importe et le place dans le `<Routes>` de l'`AppShell` (sous `PasswordGate`) ; le scaffold initial fournit un `domainRoutes` vide.
 
 **Conséquences.** Les écrans M1.5 sont développés et testés dans `frontend/src/features/` et déclarés dans `frontend/src/domain/routes.tsx` ; ils deviennent accessibles (`/terminal`, `/bots`) dès la propagation du template. Aucun patch local de `App.tsx`.
+
+## ADR-016 — Live Terminal pleine largeur par défaut ; réplique 550×688 en option
+
+**Contexte.** Livré au M1.5 conformément à 02-design/03, le Live Terminal était la réplique exacte de la capture 3 : un canevas de 550×688 px (textes de 6 à 9 px) mis à l'échelle. Jugé par l'opérateur (2026-11-18) inutilisable en usage réel : dimensions non standard, texte minuscule, écran largement vide sur un poste de bureau.
+
+**Décision.**
+- La vue **par défaut** de UI-01 est une **disposition pleine largeur** sur grille responsive standard (conçue pour 1440×900, lisible : textes de 12 à 14 px, chiffres clés de 24 à 32 px), qui reprend le **langage visuel** de la capture 3 (palette, typographie monospace, colonne des agents, flux scan → check → size → exec → log, trade, `tail -f`, résultat, journal, bandeau sombre) et **exactement les mêmes données**.
+- La **réplique exacte 550×688** reste disponible par un sélecteur « Reference canvas » (mémorisé par navigateur) et demeure la référence de la mesure de fidélité à la capture 3 (02-design/03, M1.6).
+- Remplace, pour la vue par défaut, la règle de 02-design/03 « l'écran canonique ne doit pas être remplacé par un dashboard générique ».

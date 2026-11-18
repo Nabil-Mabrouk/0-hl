@@ -3,14 +3,20 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import TerminalCanvas, { type TerminalCanvasProps } from "./TerminalCanvas";
+import TerminalWide from "./TerminalWide";
 import { ev, snapshot } from "../shared/testFixtures";
 
+// ADR-016: the full-width layout and the reference canvas must show the same data.
+describe.each([
+  ["reference canvas", TerminalCanvas],
+  ["full width", TerminalWide],
+] as const)("%s", (_name, View) => {
 function renderCanvas(overrides: Partial<TerminalCanvasProps> = {}) {
   const props: TerminalCanvasProps = {
     snapshot: snapshot(), events: [], connection: "LIVE", userLabel: "nabil", canOperate: true,
     pausePending: false, onTogglePause: vi.fn(), onOpenTrace: vi.fn(), reducedMotion: false, ...overrides,
   };
-  render(<TerminalCanvas {...props} />);
+  render(<View {...props} />);
   return props;
 }
 
@@ -70,8 +76,8 @@ describe("TerminalCanvas", () => {
     const events = [ev("CANDIDATE_DETECTED", { instrument_id: "kraken_spot:ENA/USD", features: {} })];
     renderCanvas({ events, reducedMotion: true });
     const canvas = screen.getByTestId("hl-canvas");
-    expect(canvas.className).not.toContain("hl-motion");
-    expect(canvas.querySelector(".hl-arrive")).toBeNull();
+    expect(canvas.className).not.toMatch(/-motion/);
+    expect(canvas.querySelector("[class*='-arrive']")).toBeNull();
   });
 
   it("shows the scanner fails breakdown in the agent drawer", async () => {
@@ -79,4 +85,5 @@ describe("TerminalCanvas", () => {
     await userEvent.click(screen.getByTestId("hl-agent-SCANNER"));
     expect(screen.getByTestId("hl-scan-fails")).toHaveTextContent("volume_spike=30 window_notional_usd=21");
   });
+});
 });

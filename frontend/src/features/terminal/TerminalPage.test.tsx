@@ -86,4 +86,18 @@ describe("TerminalPage", () => {
     expect(JSON.parse(String(init.body))).toEqual({ command: "PAUSE_ENTRIES", reason: "terminal button" });
     expect(new Headers(init.headers).get("Idempotency-Key")).toBeTruthy();
   });
+
+  it("defaults to the full-width layout and remembers the reference canvas choice (ADR-016)", async () => {
+    const s = snapshot();
+    vi.stubGlobal("fetch", route({
+      "/api/v1/me": () => json({ roles: ["OBSERVER"], email: "o@x.io" }),
+      "/api/v1/bots": () => json({ items: [s.bot] }),
+      "/api/v1/terminal/snapshot": () => json(s),
+    }));
+    renderPage();
+    expect((await screen.findByTestId("hl-canvas")).dataset.layout).toBe("wide");
+    await userEvent.click(screen.getByRole("button", { name: "Reference canvas 550×688" }));
+    expect(screen.getByTestId("hl-canvas").dataset.layout).toBeUndefined();
+    expect(localStorage.getItem("hl.terminal.layout")).toBe("reference");
+  });
 });

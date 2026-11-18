@@ -7,6 +7,7 @@ import { fmtTime } from "../shared/format";
 import { prefersReducedMotion, useTerminal, useTradingAccess } from "../shared/hooks";
 import type { Bot, DomainEvent } from "../shared/types";
 import TerminalCanvas from "./TerminalCanvas";
+import TerminalWide from "./TerminalWide";
 import "./terminal.css";
 
 function ErrorBox({ error }: { error: ApiError }) {
@@ -16,6 +17,26 @@ function ErrorBox({ error }: { error: ApiError }) {
       {error.correlationId && <div>correlation id: <code>{error.correlationId}</code></div>}
     </div>
   );
+}
+
+export type Layout = "wide" | "reference";
+const LAYOUT_KEY = "hl.terminal.layout";
+
+/** Per-browser preference (ADR-016); storage may be unavailable: default to wide. */
+function readLayout(): Layout {
+  try {
+    return localStorage.getItem(LAYOUT_KEY) === "reference" ? "reference" : "wide";
+  } catch {
+    return "wide";
+  }
+}
+
+function saveLayout(l: Layout): void {
+  try {
+    localStorage.setItem(LAYOUT_KEY, l);
+  } catch {
+    /* preference not persisted */
+  }
 }
 
 function useCanvasScale(): number {
@@ -39,6 +60,7 @@ export default function TerminalPage() {
   const [pending, setPending] = useState(false);
   const [actionError, setActionError] = useState<ApiError | null>(null);
   const [trace, setTrace] = useState<DomainEvent[] | null>(null);
+  const [layout, setLayout] = useState<Layout>(readLayout);
   const scale = useCanvasScale();
   const data = useTerminal(access.kind === "ready" ? botId : null);
 
@@ -93,6 +115,18 @@ export default function TerminalPage() {
     }
   }
 
+  const canvasProps = {
+    snapshot: s,
+    events: data.events,
+    connection: data.connection,
+    userLabel: access.email ? access.email.split("@")[0] : null,
+    canOperate,
+    pausePending: pending,
+    onTogglePause: togglePause,
+    onOpenTrace: openTrace,
+    reducedMotion: prefersReducedMotion(),
+  };
+
   return (
     <div className="hl-page">
       {staleReasons.length > 0 && (
@@ -106,21 +140,31 @@ export default function TerminalPage() {
           {actionError.correlationId && ` (correlation id ${actionError.correlationId})`}
         </div>
       )}
-      <div className="hl-stage" style={{ height: 688 * scale + 16 }}>
-        <div className="hl-scale" style={{ transform: `scale(${scale})`, width: 550, height: 688 }}>
-          <TerminalCanvas
-            snapshot={s}
-            events={data.events}
-            connection={data.connection}
-            userLabel={access.email ? access.email.split("@")[0] : null}
-            canOperate={canOperate}
-            pausePending={pending}
-            onTogglePause={togglePause}
-            onOpenTrace={openTrace}
-            reducedMotion={prefersReducedMotion()}
-          />
-        </div>
+      <div className="hl-layout-switch" role="group" aria-label="Terminal layout">
+        {(["wide", "reference"] as const).map((l) => (
+          <button
+            key={l}
+            type="button"
+            className={`hl-btn${layout === l ? " active" : ""}`}
+            aria-pressed={layout === l}
+            onClick={() => {
+              setLayout(l);
+              saveLayout(l);
+            }}
+          >
+            {l === "wide" ? "Full width" : "Reference canvas 550×688"}
+          </button>
+        ))}
       </div>
+      {layout === "wide" ? (
+        <TerminalWide {...canvasProps} />
+      ) : (
+        <div className="hl-stage" style={{ height: 688 * scale + 16 }}>
+          <div className="hl-scale" style={{ transform: `scale(${scale})`, width: 550, height: 688 }}>
+            <TerminalCanvas {...canvasProps} />
+          </div>
+        </div>
+      )}
       {trace && (
         <div className="hl-dialog-backdrop" onClick={() => setTrace(null)}>
           <div className="hl-dialog" role="dialog" aria-label="Trade trace" onClick={(e) => e.stopPropagation()}>

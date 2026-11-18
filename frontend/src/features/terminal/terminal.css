@@ -172,6 +172,9 @@
 .hl-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .hl-btn { border: 1px solid #c9c7d0; border-radius: 4px; padding: 4px 8px; background: #fff; cursor: pointer; font-size: 12px; min-height: 32px; }
 .hl-btn.danger { border-color: #b23c63; color: #b23c63; }
+.hl-btn.active { border-color: #0465c9; color: #0465c9; background: #eef5fd; }
+.hl-layout-switch { display: flex; gap: 6px; justify-content: flex-end; max-width: 1600px; margin: 0 auto 8px; }
+.hl-banner { max-width: 1600px; }
 .hl-btn:disabled { opacity: .5; cursor: not-allowed; }
 .hl-dialog-backdrop { position: fixed; inset: 0; background: #0006; display: grid; place-items: center; z-index: 50; }
 .hl-dialog { background: #fff; border-radius: 8px; padding: 20px; max-width: 460px; font-size: 14px; }
