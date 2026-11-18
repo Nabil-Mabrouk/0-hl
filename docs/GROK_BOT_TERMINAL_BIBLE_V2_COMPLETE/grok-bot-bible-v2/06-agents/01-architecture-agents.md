@@ -38,7 +38,7 @@ Implémentation active pour Kraken Spot. Libellé visuel inchangé (`RUG CHECK`)
 | Critère | Règle de départ | Bloquant |
 |---|---|---|
 | `pair_status` | statut Kraken = `online` (refus si `cancel_only`, `post_only`, `limit_only`, `reduce_only`, `delisted`, inconnu) | Oui |
-| `data_freshness` | dernier `book` et `trade` reçus < `ttl_ms` ; séquence carnet cohérente (checksum WS v2 valide) | Oui |
+| `data_freshness` | état du flux `LIVE` pour la paire : connexion vivante, snapshot reçu, dernier checksum valide (07-data/03) | Oui |
 | `spread` | `spread_bps ≤ max_spread_bps` (30) | Oui |
 | `entry_depth` | coût simulé d'achat de la taille proposée par consommation du carnet : glissement ≤ `max_slippage_pct` (0,5 %) | Oui |
 | `exit_depth` | vente simulée de la même quantité sur le carnet bid actuel : glissement ≤ `max_slippage_pct` ; sinon taille réduite par le SIZER ou rejet | Oui |

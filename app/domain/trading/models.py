@@ -516,6 +516,51 @@ class EquitySnapshot(Base):
 
 
 # --------------------------------------------------------------------------- #
+# Market data (M1.2, spec 07-data/03)
+# --------------------------------------------------------------------------- #
+class TradeMinute(Base):
+    __tablename__ = "hl_trade_minute"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=new_id)
+    instrument_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    minute_start: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False)
+    source: Mapped[str] = mapped_column(String(16), nullable=False)  # live | backfill
+    notional_usd: Mapped[Decimal] = mapped_column(Dec, nullable=False)
+    buy_notional_usd: Mapped[Decimal | None] = mapped_column(Dec, nullable=True)
+    sell_notional_usd: Mapped[Decimal | None] = mapped_column(Dec, nullable=True)
+    buy_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sell_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    trade_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    volume_base: Mapped[Decimal] = mapped_column(Dec, nullable=False)
+    open: Mapped[Decimal | None] = mapped_column(Dec, nullable=True)
+    high: Mapped[Decimal | None] = mapped_column(Dec, nullable=True)
+    low: Mapped[Decimal | None] = mapped_column(Dec, nullable=True)
+    close: Mapped[Decimal | None] = mapped_column(Dec, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "instrument_id", "minute_start", "source", name="uq_hl_trade_minute"
+        ),
+        CheckConstraint("source IN ('live', 'backfill')", name="ck_hl_trade_minute_source"),
+        Index("ix_hl_trade_minute_instr_time", "instrument_id", "minute_start"),
+    )
+
+
+class FeedStatus(Base):
+    __tablename__ = "hl_feed_status"
+
+    instrument_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    state: Mapped[str] = mapped_column(String(16), nullable=False)  # LIVE | STALE | UNKNOWN
+    reason: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    last_message_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    last_book_change_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    last_trade_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    last_checksum_ok_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    resync_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    updated_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
+
+
+# --------------------------------------------------------------------------- #
 # Ledger
 # --------------------------------------------------------------------------- #
 class LedgerTransaction(Base):

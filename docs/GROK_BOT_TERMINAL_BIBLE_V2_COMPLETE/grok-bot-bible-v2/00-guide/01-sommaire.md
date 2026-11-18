@@ -40,6 +40,7 @@
 - [02-ia-et-explicabilite](../06-agents/02-ia-et-explicabilite.md)
 - [01-connecteurs-et-normalisation](../07-data/01-connecteurs-et-normalisation.md)
 - [02-onchain-graph-et-rug](../07-data/02-onchain-graph-et-rug.md)
+- [03-connecteur-kraken-m1](../07-data/03-connecteur-kraken-m1.md)
 - [01-risk-engine](../08-risque-execution/01-risk-engine.md)
 - [02-execution-engine](../08-risque-execution/02-execution-engine.md)
 - [03-ledger-et-reconciliation](../08-risque-execution/03-ledger-et-reconciliation.md)

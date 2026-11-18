@@ -117,7 +117,7 @@ Besoin exprimé au template :
 ## ADR-012 — Dépendance `websockets` et environnement de développement
 
 **Décision.**
-- Ajout de la dépendance Python `websockets` (version épinglée, ligne additive dans `requirements.txt`) pour le client Kraken WebSocket v2 ; `docker compose build` local avant tout push qui la contient (AGENTS.md).
+- Ajout de la dépendance Python `websockets` (épinglée **`websockets==17.4`**, la version déjà résolue par `uvicorn[standard]==0.51.0` du châssis ; ligne additive dans `requirements.txt`) pour le client Kraken WebSocket v2 ; `docker compose build` local avant tout push qui la contient (AGENTS.md).
 - Développement local via `docker-compose.dev.yml` du châssis (backend sur SQLite + frontend ; **pas** de PostgreSQL ni de worker dans ce compose — précisé en [10-backend/03](../10-backend/03-modele-donnees-m1.md#environnement-de-développement-correction-dadr-012)) avec un `.env` local créé depuis les exemples, **jamais versionné** ; worker lancé localement ; PostgreSQL jetable pour les tests marqués `postgres`.
 - Les tests (`pytest`) n'accèdent jamais au réseau : le flux Kraken est remplacé par des **fixtures enregistrées** (messages WS v2 et réponses REST) rejouées par un faux transport. Un test d'intégration optionnel contre l'API publique réelle peut exister, désactivé par défaut.
 - Le worker exécute `run_cycle` comme une **boucle longue** qui ne rend la main qu'à l'arrêt (`stop_requested`) ; l'audit châssis `WorkerRun` montre donc une exécution par démarrage du worker, et la santé fine des agents est exposée par le domaine (`/api/v1/health`, UI-08).

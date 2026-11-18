@@ -22,6 +22,8 @@ Connecteurs hétérogènes → validation de schéma → normalisation d'unité 
 
 ## Connecteur Kraken Spot (ADR-002, ADR-003)
 
+Conception détaillée et faits vérifiés contre l'API réelle : [03-connecteur-kraken-m1](03-connecteur-kraken-m1.md) (prévaut sur cette section).
+
 Seule source active du premier jalon. Les DEX/agrégateurs du tableau ci-dessus restent des sources candidates pour de futures venues. Les points ci-dessous sont à **revérifier contre la documentation Kraken** au moment de l'implémentation (14-references) ; tout écart est consigné ici avant d'être codé (ADR-000).
 
 **Public REST** (`https://api.kraken.com/0/public/…`, sans clé) :
@@ -35,7 +37,7 @@ Seule source active du premier jalon. Les DEX/agrégateurs du tableau ci-dessus 
 
 **Normalisation.** `instrument_id = "kraken_spot:" + wsname` (ex. `kraken_spot:BTC/USD`) ; le référentiel conserve les alias REST (`XXBTZUSD`, `XBTUSD`) et les décimales. Prix et quantités sont parsés en `Decimal` depuis les chaînes, jamais via `float`. Horodatages : `provider_timestamp` (champ Kraken), `ingested_at` (horloge serveur UTC).
 
-**Fraîcheur par défaut.** `book` et `ticker` : TTL 3 s ; `trade` : la fenêtre est valide si le flux est connecté et le heartbeat < 5 s (absence de trade ≠ données périmées) ; référentiel `instrument` : 1 h.
+**Fraîcheur par défaut** (précisée et corrigée par [03-connecteur-kraken-m1](03-connecteur-kraken-m1.md#flux-websocket) : un carnet calme n'est pas périmé tant que la connexion vit et que son checksum est valide). `book` et `ticker` : TTL 3 s *(V2.0, remplacé)* ; `trade` : la fenêtre est valide si le flux est connecté et le heartbeat < 5 s (absence de trade ≠ données périmées) ; référentiel `instrument` : 1 h.
 
 **Persistance.** On ne stocke pas chaque tick en base : trades agrégés en fenêtres de 1 min (volume notionnel, notionnel acheteur/vendeur, nombre, OHLC) conservées pour les features et le replay ; carnet conservé en mémoire, avec un instantané persisté à chaque décision (entrée de l'audit de la décision et du fill paper).
 

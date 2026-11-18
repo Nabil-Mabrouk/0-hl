@@ -72,6 +72,10 @@ Ce chapitre fixe le **modèle physique** du lot M1.1 ([13-roadmap](../13-roadmap
 | `hl_position` | `id`, `bot_id`, `session_id`, `instrument_id`, `status` (`PENDING`, `OPEN`, `REDUCING`, `CLOSED`, `RECONCILIATION_REQUIRED`), `quantity`, `cost_basis`, `avg_entry_price`, `initial_stop_price`, `take_profit_price`, `r0_usd`, `opened_at`, `closed_at`, `row_version` | projection des fills ; `CLOSED → OPEN` interdit |
 | `hl_equity_snapshot` | `id`, `bot_id`, `at`, `cash`, `cash_reserved`, `positions_mark_value`, `equity`, `realized_pnl_net`, `unrealized_pnl`, `quality` (`OK`, `STALE`, `UNKNOWN`) | projection EQUITY |
 
+### Données de marché (M1.2)
+
+`hl_trade_minute` (agrégats de trades par minute, `live`/`backfill`) et `hl_feed_status` (état du flux par instrument) : spécifiées dans [07-data/03](../07-data/03-connecteur-kraken-m1.md#agrégats-de-trades).
+
 ### Ledger (08-risque-execution/03)
 
 | Table | Colonnes principales | Règles |

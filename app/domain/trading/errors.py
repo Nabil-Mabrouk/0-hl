@@ -57,6 +57,11 @@ class PermissionDenied(DomainError):
     http_status = 403
 
 
+class ProviderUnavailable(DomainError):
+    code = "PROVIDER_UNAVAILABLE"
+    http_status = 503
+
+
 class NotFound(DomainError):
     code = "NOT_FOUND"
     http_status = 404
