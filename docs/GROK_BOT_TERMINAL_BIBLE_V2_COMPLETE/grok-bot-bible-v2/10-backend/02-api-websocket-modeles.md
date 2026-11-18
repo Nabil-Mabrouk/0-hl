@@ -28,6 +28,9 @@ Toutes routes sous `/api/v1`, pagination cursor, filtres validés, retour d'erre
 
 ## WebSocket
 
+Réalisation 0-hl (authentification par premier message, contrôle d'origine, rejeu par `position`) : [04-api-m1](04-api-m1.md#websocket-wsv1terminal).
+
+
 `/ws/v1/terminal?bot_id=...` avec authentification, snapshot initial et replay depuis `last_sequence`, puis événements deltas. Heartbeat serveur, protocol `hello` (capabilities, seq), `snapshot`, `event`, `gap`, `reconnect_required`. Un retard au-delà de la capacité de replay renvoie `snapshot_required`; jamais de continuité fictive.
 
 ## Contrats embarqués

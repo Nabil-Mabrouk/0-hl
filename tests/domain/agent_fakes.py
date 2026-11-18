@@ -16,6 +16,7 @@ D = Decimal
 SYMBOL = "TEST/USD"
 IID = f"kraken_spot:{SYMBOL}"
 T_WINDOW_END = datetime(2026, 11, 18, 10, 5, tzinfo=timezone.utc)
+NOW = T_WINDOW_END + timedelta(seconds=40)
 
 
 class Clock:

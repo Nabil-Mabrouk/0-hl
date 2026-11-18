@@ -11,6 +11,7 @@ import asyncio
 import logging
 import uuid
 from collections.abc import Awaitable, Callable
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -23,6 +24,7 @@ from app.domain.trading.agents import commands as cmds
 from app.domain.trading.agents.equity import (
     compute_equity,
     daily_loss,
+    liquidation_value,
     drawdown,
     realized_pnl_net,
     reconcile,
@@ -90,6 +92,8 @@ class _Counters:
     rejected: int = 0
     entries: int = 0
     exits: int = 0
+    fails: Counter = field(default_factory=Counter)
+    unknown_reasons: Counter = field(default_factory=Counter)
 
 
 @dataclass
@@ -99,6 +103,16 @@ class _BotRuntime:
     last_reconcile: datetime | None = None
     deferred_logged: set[tuple[uuid.UUID, str]] = field(default_factory=set)
     counters: _Counters = field(default_factory=_Counters)
+    cycles: dict[datetime, _Counters] = field(default_factory=dict)
+    emitted_cycles: set[datetime] = field(default_factory=set)
+
+    def count(self, window_end: datetime, name: str, n: int = 1) -> None:
+        for c in (self.counters, self.cycles.setdefault(window_end, _Counters())):
+            setattr(c, name, getattr(c, name) + n)
+
+    def count_map(self, window_end: datetime, name: str, keys: list[str]) -> None:
+        for c in (self.counters, self.cycles.setdefault(window_end, _Counters())):
+            getattr(c, name).update(keys)
 
 
 class DecisionEngine:
@@ -248,6 +262,28 @@ class DecisionEngine:
         for bot_id in bot_ids:
             for iid, vol in sorted(universe.items()):
                 await self._scan_instrument(bot_id, iid, vol)
+            await self._maybe_emit_cycle(bot_id, [iid.split(":", 1)[1] for iid in universe])
+
+    async def _maybe_emit_cycle(self, bot_id: uuid.UUID, symbols: list[str]) -> None:
+        """SCAN_CYCLE_COMPLETED once every universe pair was evaluated for the window."""
+        rt = self._rt(bot_id)
+        window_end = self._now().replace(second=0, microsecond=0)
+        if not symbols or window_end in rt.emitted_cycles:
+            return
+        if any(rt.last_window.get(s) != window_end for s in symbols):
+            return
+        c = rt.cycles.pop(window_end, _Counters())
+        rt.emitted_cycles = {w for w in rt.emitted_cycles if w > window_end - MINUTE * 10}
+        rt.emitted_cycles.add(window_end)
+        for w in [w for w in rt.cycles if w < window_end]:
+            del rt.cycles[w]
+        async with self._sessions() as db:
+            await self._emit(db, "SCAN_CYCLE_COMPLETED", "bot", bot_id, {
+                "window_end": window_end, "evaluated": c.evaluated, "unknown": c.unknown,
+                "candidates": c.candidates, "rejected": c.rejected,
+                "fails": dict(c.fails), "unknown_reasons": dict(c.unknown_reasons)},
+                bot_id=bot_id, corr=None)
+            await db.commit()
 
     async def _scan_instrument(self, bot_id: uuid.UUID, iid: str, vol_24h: Decimal | None) -> None:
         symbol = iid.split(":", 1)[1]
@@ -275,15 +311,21 @@ class DecisionEngine:
             if incomplete and fresh and not settled:
                 return  # minute rows not flushed yet: retry this window on a later tick
             rt.last_window[symbol] = window_end
-            rt.counters.evaluated += 1
+            rt.count(window_end, "evaluated")
             if not fresh:
-                rt.counters.unknown += 1
+                rt.count(window_end, "unknown")
+                rt.count_map(window_end, "unknown_reasons", ["FEED_NOT_LIVE"])
                 return
             verdict, details = evaluate_conditions(strat.entry.model_dump(), feats)
-            if verdict == "UNKNOWN":
-                rt.counters.unknown += 1
-                return
             if verdict == "FAIL":
+                rt.count_map(window_end, "fails",
+                             [d["feature"] for d in details if d["result"] == "FAIL"])
+                return
+            if verdict == "UNKNOWN":
+                rt.count(window_end, "unknown")
+                rt.count_map(window_end, "unknown_reasons", [
+                    f"{d['feature']}:{feats[d['feature']].reason if d['feature'] in feats else 'MISSING'}"
+                    for d in details if d["result"] == "UNKNOWN"])
                 return
             # exclusions: position/intent in progress on this pair
             busy = await db.scalar(select(Position.id).where(
@@ -296,12 +338,12 @@ class DecisionEngine:
                                                      feats, details)
             if candidate is None:
                 return
-            rt.counters.candidates += 1
+            rt.count(window_end, "candidates")
             sizing = await self._assess_and_size(db, bot, candidate, iid, symbol, feats, vol_24h,
                                                  strat, policy, fresh, book, now)
             await db.commit()
         if sizing is None or not sizing.approved:
-            rt.counters.rejected += 1
+            rt.count(window_end, "rejected")
             return
         await self._sleep(self.config.latency_seconds)
         async with self._sessions() as db:
@@ -443,6 +485,14 @@ class DecisionEngine:
                     await transition_bot(db, bot, BotStatus.DEGRADED, actor=WORKER_ACTOR,
                                          reason="RECONCILIATION_FAILED")
         view = await compute_equity(db, bot.id, self.market)
+        for p in view.open_positions:  # marks for the API/terminal (10-backend/04)
+            symbol = p.instrument_id.split(":", 1)[1]
+            value = liquidation_value(p.quantity, self.market, p.instrument_id)
+            book = self.market.book(symbol)
+            p.mark_value = value
+            if value is not None:
+                p.mark_price = book.best_bid[0] if book and book.best_bid else None
+                p.marked_at = now
         if rt.last_snapshot is None or (now - rt.last_snapshot).total_seconds() >= self.config.snapshot_seconds:
             rt.last_snapshot = now
             realized = await realized_pnl_net(db, bot.id)
@@ -473,9 +523,10 @@ class DecisionEngine:
         self._last_summary = now
         for bot_id, rt in self._runtime.items():
             c = rt.counters
+            fails = " ".join(f"{k}={v}" for k, v in c.fails.most_common()) or "-"
             log.info("agents summary bot=%s: evaluated=%d unknown=%d candidates=%d rejected=%d "
-                     "entries=%d exits=%d", str(bot_id)[:8], c.evaluated, c.unknown, c.candidates,
-                     c.rejected, c.entries, c.exits)
+                     "entries=%d exits=%d fails: %s", str(bot_id)[:8], c.evaluated, c.unknown,
+                     c.candidates, c.rejected, c.entries, c.exits, fails)
             rt.counters = _Counters()
 
 

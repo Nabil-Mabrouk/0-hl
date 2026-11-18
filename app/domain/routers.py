@@ -1,10 +1,9 @@
-"""Routeurs métier de 0-hl (généré depuis domain_routes).
+"""Routeurs métier de 0-hl.
 
-Un APIRouter par route déclarée, avec un endpoint stub à implémenter. Le core
-inclut ces routeurs sous app/domain/ (Chap 3/5). Ne pas éditer pour un besoin
-partagé : modifier le template puis `copier update`.
+Point d'entrée imposé par le châssis : toute variable `*_router` de ce module est
+montée automatiquement par `app/core/main.py`. Spécification : 10-backend/04
+(source unique de vérité, ADR-000).
 """
 
-from fastapi import APIRouter
-
-
+from app.domain.trading.api.routes import router as trading_v1_router  # noqa: F401
+from app.domain.trading.api.ws import router as terminal_ws_router  # noqa: F401

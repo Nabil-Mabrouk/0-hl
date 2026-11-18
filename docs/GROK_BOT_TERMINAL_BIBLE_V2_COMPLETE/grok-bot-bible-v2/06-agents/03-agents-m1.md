@@ -110,6 +110,10 @@ Pour chaque position `OPEN`/`REDUCING`, à chaque itération, à partir du **mei
 
 `hl_position` reçoit `realized_pnl_net` (Dec), `fees_paid` (Dec, entrée + sortie), `exit_reason` (texte). Aucune autre table nouvelle.
 
+## Compléments M1.4
+
+Marquage des positions à chaque itération EQUITY et événement `SCAN_CYCLE_COMPLETED` (échecs par condition) : voir [10-backend/04](../10-backend/04-api-m1.md#persistance-ajoutée-côté-worker-complète-06-agents03).
+
 ## Journalisation (complète 07-data/03)
 
 Formats : prix et quantités journalisés avec 10 chiffres significatifs au plus (les valeurs stockées restent exactes). INFO : commande traitée, candidat détecté (paire, features clés), assessment rejeté (critères), sizing (notionnel, motif de limite), ordre exécuté (quantité, prix moyen, frais), position ouverte/fermée (motif, PnL net, R) ; **résumé toutes les 5 min** par bot (statut, paires évaluées, `UNKNOWN`, candidats, rejets, positions ouvertes, equity). WARNING : sortie différée, entrée bloquée par une limite, réconciliation en échec.

@@ -498,6 +498,10 @@ class Position(Base):
     realized_pnl_net: Mapped[Decimal | None] = mapped_column(Dec, nullable=True)
     fees_paid: Mapped[Decimal] = mapped_column(Dec, nullable=False, default=Decimal(0))
     exit_reason: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # M1.4 (10-backend/04): conservative marks written by the EQUITY step
+    mark_price: Mapped[Decimal | None] = mapped_column(Dec, nullable=True)
+    mark_value: Mapped[Decimal | None] = mapped_column(Dec, nullable=True)
+    marked_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
 
 
 class EquitySnapshot(Base):

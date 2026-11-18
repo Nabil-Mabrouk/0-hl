@@ -96,6 +96,7 @@ class MarketDataService:
         self._provider_degraded = False
         self._last_purge: datetime | None = None
         self._backfilled: set[str] = set()
+        self._persist_lock = asyncio.Lock()  # persist() is never run twice concurrently
         self._live_minutes_since_summary = 0
         self._last_summary: datetime | None = None
         self.ws = KrakenWsClient(
@@ -495,6 +496,10 @@ class MarketDataService:
 
     async def persist(self) -> None:
         """Flush minutes, queued events/status changes and feed status (one pass)."""
+        async with self._persist_lock:
+            await self._persist_once()
+
+    async def _persist_once(self) -> None:
         now = self._now()
         self._live_minutes_since_summary += await self._write_minutes(self.aggregator.flush(now))
         events, self._pending_events = self._pending_events, []
