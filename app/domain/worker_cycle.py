@@ -13,23 +13,32 @@ redéploiement) :
 """
 
 import asyncio
+import logging
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import SessionLocal
+from app.domain.trading.logging_setup import configure_logging
 from app.domain.trading.market.kraken_rest import KrakenRestClient
 from app.domain.trading.market.kraken_ws import websockets_connector
 from app.domain.trading.market.service import MarketDataService
 from app.domain.trading.seed import run_seed
 
+log = logging.getLogger("hl.worker")
+
 
 async def run_cycle(db: AsyncSession, stop_requested: asyncio.Event) -> None:
+    configure_logging()
     if stop_requested.is_set():
         return
-    await run_seed(db)
+    log.info("0-hl worker starting")
+    seed = await run_seed(db)
+    log.info("seed ok: bot %s (%s, %s)", seed.bot.name, seed.bot.environment.value,
+             seed.bot.status.value)
     async with httpx.AsyncClient(timeout=20.0) as http:
         service = MarketDataService(
             SessionLocal, KrakenRestClient(http), websockets_connector()
         )
         await service.run(stop_requested)
+    log.info("0-hl worker stopped cleanly")

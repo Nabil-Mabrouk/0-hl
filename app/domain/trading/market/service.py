@@ -64,6 +64,7 @@ class MarketDataConfig:
     retention_days: int = 7
     backfill: bool = True
     shutdown_grace_seconds: float = 20.0
+    summary_seconds: float = 300.0
 
 
 @dataclass(frozen=True)
@@ -95,6 +96,8 @@ class MarketDataService:
         self._provider_degraded = False
         self._last_purge: datetime | None = None
         self._backfilled: set[str] = set()
+        self._live_minutes_since_summary = 0
+        self._last_summary: datetime | None = None
         self.ws = KrakenWsClient(
             connect,
             on_connected=self._on_connected,
@@ -124,6 +127,7 @@ class MarketDataService:
             await asyncio.gather(*tasks, return_exceptions=True)
             self.state.connection_alive = False
             self.state.connection_reason = "WORKER_STOPPED"
+            log.info("market data stopped (worker shutdown)")
             self.aggregator.coverage_stopped_all(self._now())
             await self.persist()
 
@@ -154,6 +158,8 @@ class MarketDataService:
     # websocket callbacks
     # ------------------------------------------------------------------ #
     async def _on_connected(self) -> None:
+        log.info("kraken ws connected (connection #%d, %d pairs to subscribe)",
+                 self.ws.connections, len(self.wanted))
         self.state.connection_alive = True
         self.state.connection_reason = None
         self.state.last_message_at = self._now()
@@ -164,6 +170,7 @@ class MarketDataService:
         await self._subscribe(sorted(self.wanted))
 
     async def _on_disconnected(self, reason: str) -> None:
+        log.warning("kraken ws disconnected: reason=%s, %d pairs now STALE", reason, len(self.wanted))
         now = self._now()
         self.state.connection_alive = False
         self.state.connection_reason = reason
@@ -196,8 +203,10 @@ class MarketDataService:
             "channel": "book", "symbol": symbols, "depth": self.config.book_depth}})
         await self.ws.send({"method": "unsubscribe", "params": {"channel": "trade", "symbol": symbols}})
 
-    async def _resync_book(self, symbol: str) -> None:
+    async def _resync_book(self, symbol: str, reason: str = "CHECKSUM_MISMATCH") -> None:
         self.state.feed(symbol).resync_count += 1
+        log.warning("book resync %s: reason=%s (resync #%d)", symbol, reason,
+                    self.state.feed(symbol).resync_count)
         if not self.ws.connected:
             return
         params = {"channel": "book", "symbol": [symbol], "depth": self.config.book_depth}
@@ -240,6 +249,7 @@ class MarketDataService:
         system = data[0].get("system")
         self.state.system_status = system
         if system and system != "online":
+            log.warning("kraken system status=%s: all pairs STALE", system)
             for symbol in self.wanted:
                 self._set_feed(symbol, STALE, "VENUE_MAINTENANCE")
 
@@ -260,6 +270,7 @@ class MarketDataService:
                 self.state.rules[symbol] = rules
             elif rules.status != status:
                 iid = rules.instrument_id
+                log.warning("instrument status %s: %s -> %s", symbol, rules.status, status)
                 self._event("INSTRUMENT_STATUS_CHANGED", iid,
                             {"instrument_id": iid, "from": rules.status, "to": status})
                 self._pending_status[symbol] = status
@@ -376,6 +387,8 @@ class MarketDataService:
         for s in added:
             info = self.state.feed(s)
             info.state, info.reason = "UNKNOWN", "AWAITING_SNAPSHOT"
+        log.info("universe: %d pairs selected, %d supervised, added=%s removed=%s",
+                 len(selected), len(supervised - selected), added or "[]", removed or "[]")
         if added or removed:
             self._event("UNIVERSE_UPDATED", f"{VENUE}:universe",
                         {"added": added, "removed": removed, "size": len(new_wanted)})
@@ -411,9 +424,15 @@ class MarketDataService:
             await db.commit()
 
     async def _backfill(self, symbols: list[str], stop: asyncio.Event | None = None) -> None:
+        if not symbols:
+            return
+        started = asyncio.get_running_loop().time()
+        written = done = 0
         for symbol in symbols:
             if stop is not None and stop.is_set():
-                return  # remaining pairs are backfilled at the next start
+                log.info("backfill interrupted by shutdown: %d/%d pairs done, %d rows written "
+                         "(remaining pairs are backfilled at next start)", done, len(symbols), written)
+                return
             if symbol in self._backfilled:
                 continue
             try:
@@ -422,8 +441,12 @@ class MarketDataService:
                 log.warning("backfill %s failed: %s", symbol, exc)
                 continue
             before = self.aggregator.first_live_minute(symbol) or self._now()
-            await self._write_minutes(backfill_rows(instrument_id(symbol), entries, before=before))
+            written += await self._write_minutes(
+                backfill_rows(instrument_id(symbol), entries, before=before))
             self._backfilled.add(symbol)
+            done += 1
+        log.info("backfill done: %d/%d pairs, %d minute rows written in %.1fs", done,
+                 len(symbols), written, asyncio.get_running_loop().time() - started)
 
     async def _universe_loop(self, stop: asyncio.Event) -> None:
         while not stop.is_set():
@@ -473,7 +496,7 @@ class MarketDataService:
     async def persist(self) -> None:
         """Flush minutes, queued events/status changes and feed status (one pass)."""
         now = self._now()
-        await self._write_minutes(self.aggregator.flush(now))
+        self._live_minutes_since_summary += await self._write_minutes(self.aggregator.flush(now))
         events, self._pending_events = self._pending_events, []
         statuses, self._pending_status = self._pending_status, {}
         async with self._sessions() as db:
@@ -522,6 +545,22 @@ class MarketDataService:
             if iid not in rows and row.state != "UNKNOWN":
                 row.state, row.reason, row.updated_at = "UNKNOWN", "NOT_SUBSCRIBED", now
 
+    def _maybe_log_summary(self) -> None:
+        now = self._now()
+        if self._last_summary is None:
+            self._last_summary = now
+            return
+        if (now - self._last_summary).total_seconds() < self.config.summary_seconds:
+            return
+        live = sum(1 for s in self.wanted if self.state.is_fresh(s))
+        resyncs = sum(self.state.feed(s).resync_count for s in self.wanted)
+        log.info("feed summary: %d/%d pairs LIVE, connection=%s, %d live minutes written, "
+                 "%d resyncs total", live, len(self.wanted),
+                 "up" if self.state.connection_alive else "down",
+                 self._live_minutes_since_summary, resyncs)
+        self._live_minutes_since_summary = 0
+        self._last_summary = now
+
     async def _housekeeping_loop(self, stop: asyncio.Event) -> None:
         while not stop.is_set():
             try:
@@ -534,3 +573,4 @@ class MarketDataService:
                 await self.persist()
             except Exception:  # noqa: BLE001 — DB hiccup: retry at next tick
                 log.exception("market housekeeping failed")
+            self._maybe_log_summary()

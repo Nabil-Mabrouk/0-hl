@@ -91,6 +91,15 @@ Nouvelle table **`hl_feed_status`**, une ligne par instrument abonné plus une l
 - Le service utilise **ses propres sessions** de base (une par unité de travail), jamais une session ouverte pendant toute la vie du worker.
 - **Robustesse** : Kraken injoignable, erreur réseau ou message invalide ne font **jamais** sortir `run_cycle` ; ils produisent état `STALE`, événements et reconnexion. Seule une erreur de programmation inattendue remonte au runner du châssis (journalisée `failed`).
 
+## Journalisation du worker (constat production 2026-11-18)
+
+`docker logs 0-hl_worker` était vide : les loggers `hl.*` n'avaient aucun handler. Règles :
+- Au démarrage de `run_cycle`, le logger racine du domaine **`hl`** reçoit un handler sur **stdout**, niveau **INFO**, format `horodatage UTC ISO | niveau | logger | message` ; `propagate = False` (pas de doublon) ; configuration idempotente. Le handler vide son tampon à chaque ligne (pas de dépendance à `PYTHONUNBUFFERED`, aucun fichier châssis modifié).
+- Messages **INFO** obligatoires : démarrage du worker et fin d'amorçage ; sélection de l'univers (taille, ajouts, retraits) ; fin du backfill (paires, lignes écrites, durée) ; connexion WebSocket établie (numéro de connexion) ; **résumé périodique toutes les 5 min** (paires `LIVE`/abonnées, minutes `live` écrites depuis le dernier résumé, resyncs cumulés) ; arrêt propre.
+- Messages **WARNING** obligatoires : chaque déconnexion (motif `WATCHDOG_TIMEOUT`, `CONNECTION_LOST`, `CONNECT_FAILED`) ; chaque resync de carnet (paire, motif) ; chaque changement de statut d'instrument ; échec REST (univers, backfill) ; canal `status` hors `online`. **ERROR** (avec trace) : échec de la persistance périodique, exception d'un gestionnaire de message.
+- Les messages ne contiennent jamais de secret (aucune clé n'existe au M1).
+- Diagnostic serveur : les commandes `psql` passent par `docker exec 0-hl_db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "…"'` pour que les variables soient résolues dans le conteneur.
+
 ## Tests M1.2 (sans réseau)
 
 | ID | Vérification |
@@ -107,3 +116,4 @@ Nouvelle table **`hl_feed_status`**, une ligne par instrument abonné plus une l
 | T-M1.2-10 | `run_cycle` avec transport qui échoue toujours : aucune exception, arrêt propre sur `stop_requested` |
 | T-M1.2-11 | `hl_feed_status` persisté et cohérent avec `MarketState` |
 | T-M1.2-12 | migration `domain` des nouvelles tables (test de dérive PostgreSQL) |
+| T-M1.2-13 | journalisation : handler stdout idempotent sur `hl` ; messages INFO/WARNING obligatoires émis (univers, backfill, connexion, déconnexion, resync, résumé) |
