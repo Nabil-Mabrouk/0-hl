@@ -43,7 +43,7 @@ Sous `app/domain/trading/market/` :
 
 1. `AssetPairs` + `Ticker` (sans filtre de paire, `assetVersion=1`).
 2. Candidates : `quote = "USD"`, `aclass_base = "currency"`, statut REST `online`, base **hors** liste d'exclusion.
-3. **Exclusions** (stablecoins et fiat) : `USDT`, `USDC`, `DAI`, `PYUSD`, `RLUSD`, `USD1`, `USDQ`, `USDR`, `USDD`, `USDG`, `USDE`, `TUSD`, `FDUSD`, `AUSD`, `EURC`, `EURCV`, `EUROP`, `EUR`, `GBP`, `CAD`, `AUD`, `CHF`, `JPY`, `AED`. La liste est un paramètre du code, revue à chaque ajout constaté chez Kraken.
+3. **Exclusions** (stablecoins et fiat) : `USDT`, `USDC`, `DAI`, `PYUSD`, `RLUSD`, `USD1`, `USDQ`, `USDR`, `USDD`, `USDG`, `USDE`, `TUSD`, `FDUSD`, `AUSD`, `EURC`, `EURCV`, `EUROP`, **`PAXG`, `XAUT`** (jetons adossés à l'or, ajoutés le 2026-11-18 : leur volume suit l'or, pas le momentum crypto), `EUR`, `GBP`, `CAD`, `AUD`, `CHF`, `JPY`, `AED`. La liste est un paramètre du code, revue à chaque ajout constaté chez Kraken.
 4. `volume_24h_usd = v[1] × p[1]` ; filtre `≥ universe.min_volume_24h_usd` de la stratégie.
 5. Tri décroissant par `volume_24h_usd`, puis par symbole (déterminisme) ; on garde `top_n_by_volume`.
 6. Persistance : upsert `hl_instrument` pour toutes les candidates évaluées (`in_universe` vrai/faux, règles d'ordre, `volume_24h_usd`). Correspondance des règles : `pair_decimals → price_precision`, `lot_decimals → qty_precision`, `tick_size → price_increment`, `ordermin → qty_min`, `costmin → cost_min` ; le canal `instrument` met ensuite à jour le statut en continu.
@@ -89,6 +89,7 @@ Nouvelle table **`hl_feed_status`**, une ligne par instrument abonné plus une l
 
 - `run_cycle` : amorçage (10-backend/03), puis démarrage du `MarketDataService`, puis attente de `stop_requested` ; à l'arrêt : fermeture propre du WebSocket, annulation des tâches, dernière écriture de `hl_feed_status`.
 - Le service utilise **ses propres sessions** de base (une par unité de travail), jamais une session ouverte pendant toute la vie du worker.
+- Dans la persistance périodique, les événements en attente sont écrits **en dernier**, juste avant la validation, pour tenir le verrou du journal le moins longtemps possible (M1.3).
 - **Robustesse** : Kraken injoignable, erreur réseau ou message invalide ne font **jamais** sortir `run_cycle` ; ils produisent état `STALE`, événements et reconnexion. Seule une erreur de programmation inattendue remonte au runner du châssis (journalisée `failed`).
 
 ## Journalisation du worker (constat production 2026-11-18)

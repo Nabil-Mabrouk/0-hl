@@ -20,6 +20,8 @@ Ce registre tranche les points `[OPEN]` de la V2.0 et prime sur toute formulatio
 | ADR-010 | Paramètres paper par défaut | Actée | 2026-11-17 |
 | ADR-011 | Prérequis châssis corrigés en amont (gitsky) | Actée — livrée par le template (réseau + chaîne `domain`), `copier update` à appliquer | 2026-11-18 |
 | ADR-012 | Dépendance `websockets` et environnement de développement | Actée | 2026-11-18 |
+| ADR-013 | Démarrage automatique du bot d'amorçage, PAPER uniquement | Actée | 2026-11-18 |
+| ADR-014 | STRAT-01 v0.2.0 : planchers d'activité ; ré-amorçage du bot jamais démarré | Actée | 2026-11-18 |
 
 ---
 
@@ -121,3 +123,20 @@ Besoin exprimé au template :
 - Développement local via `docker-compose.dev.yml` du châssis (backend sur SQLite + frontend ; **pas** de PostgreSQL ni de worker dans ce compose — précisé en [10-backend/03](../10-backend/03-modele-donnees-m1.md#environnement-de-développement-correction-dadr-012)) avec un `.env` local créé depuis les exemples, **jamais versionné** ; worker lancé localement ; PostgreSQL jetable pour les tests marqués `postgres`.
 - Les tests (`pytest`) n'accèdent jamais au réseau : le flux Kraken est remplacé par des **fixtures enregistrées** (messages WS v2 et réponses REST) rejouées par un faux transport. Un test d'intégration optionnel contre l'API publique réelle peut exister, désactivé par défaut.
 - Le worker exécute `run_cycle` comme une **boucle longue** qui ne rend la main qu'à l'arrêt (`stop_requested`) ; l'audit châssis `WorkerRun` montre donc une exécution par démarrage du worker, et la santé fine des agents est exposée par le domaine (`/api/v1/health`, UI-08).
+
+## ADR-013 — Démarrage automatique du bot d'amorçage, PAPER uniquement
+
+**Contexte.** Au jalon M1.3, les agents peuvent trader en paper, mais l'API (M1.4) et l'écran (M1.5) qui permettent d'envoyer `START` n'existent pas encore.
+
+**Décision.** Le worker émet lui-même une commande `START` (acteur `system:worker`, motif « ADR-013 démarrage automatique PAPER », auditée, clé d'idempotence `autostart:<bot_id>`) pour un bot qui remplit **toutes** les conditions : `environment = PAPER`, statut `READY`, et **aucune session n'a jamais existé** pour ce bot. La commande suit exactement le même traitement qu'une commande d'opérateur.
+
+**Conséquences.** Le démarrage automatique ne se produit qu'**une fois** dans la vie d'un bot : un bot mis en pause, arrêté ou dégradé par la suite n'est jamais relancé automatiquement, y compris après un redéploiement. Un bot `LIVE` n'est jamais démarré automatiquement (ADR-009). Cette ADR pourra être retirée lorsque l'écran UI-02 permettra le démarrage manuel.
+
+## ADR-014 — STRAT-01 v0.2.0 : planchers d'activité ; ré-amorçage du bot jamais démarré
+
+**Constat (essai réel M1.3, 2026-11-18).** Les données sont exactes (chaque minute `live` est identique à la bougie OHLC Kraken), mais STRAT-01 v0.1.0 déclenche sur du bruit : sur les paires peu actives, la médiane des fenêtres de référence est quasi nulle, et quelques trades (ex. SUI/USD : 2 124 USD en 11 trades) produisent des « spikes » de 18 à 72× avec une part acheteuse de 100 %. Calibration sur 12 h réelles (35 paires) : sans plancher, 63 fenêtres « spike ≥ 4 » par heure ; avec ≥ 50 000 USD et ≥ 40 trades par fenêtre de 5 min, 15 par heure (avant filtres d'achat et de prix).
+
+**Décision.**
+- Nouvelle version **STRAT-01 0.2.0** = 0.1.0 + deux conditions : `window_notional_usd ≥ 50000` (USD, fenêtre courante `live`) et `window_trade_count ≥ 40`. Un ordre paper type (~1 300 USD) reste sous 3 % du flux de la fenêtre. Seuils **expérimentaux**, révisables par nouvelle version.
+- La version 0.1.0 publiée reste immuable (INV-06).
+- **Ré-amorçage** : l'amorçage publie la version d'exemple courante ; le bot d'amorçage qui **n'a jamais eu de session** est relié à cette version (audit `SEED_REBIND`). Un bot ayant déjà eu une session n'est jamais modifié par l'amorçage.

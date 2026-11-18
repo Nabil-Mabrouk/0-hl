@@ -13,6 +13,14 @@ from app.domain.trading.seed import run_seed
 from .market_fakes import FakeConnector, FakeTransport, rest_client, wait_until, ws_session_lines
 
 
+@pytest.fixture(autouse=True)
+def _enable_hl_loggers():
+    """alembic's fileConfig() (run by the migration test) disables existing loggers."""
+    for name, obj in logging.root.manager.loggerDict.items():
+        if (name == DOMAIN_LOGGER or name.startswith(DOMAIN_LOGGER + ".")) and isinstance(obj, logging.Logger):
+            obj.disabled = False
+
+
 @pytest.fixture
 def restore_hl_logger():
     logger = logging.getLogger(DOMAIN_LOGGER)

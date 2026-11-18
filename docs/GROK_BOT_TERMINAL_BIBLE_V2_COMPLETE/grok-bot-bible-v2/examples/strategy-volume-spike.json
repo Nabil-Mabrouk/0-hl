@@ -1,6 +1,6 @@
 {
   "strategy_id": "volume-spike",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "status": "DRAFT",
   "universe": {
     "venues": [
@@ -17,6 +17,22 @@
   "entry": {
     "operator": "AND",
     "conditions": [
+      {
+        "feature": "window_notional_usd",
+        "op": "gte",
+        "threshold": "50000",
+        "unit": "USD",
+        "window_seconds": 300,
+        "ttl_ms": 5000
+      },
+      {
+        "feature": "window_trade_count",
+        "op": "gte",
+        "threshold": "40",
+        "unit": "count",
+        "window_seconds": 300,
+        "ttl_ms": 5000
+      },
       {
         "feature": "volume_spike",
         "op": "gte",

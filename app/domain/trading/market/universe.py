@@ -13,6 +13,7 @@ EXCLUDED_BASES: frozenset[str] = frozenset(
     {
         "USDT", "USDC", "DAI", "PYUSD", "RLUSD", "USD1", "USDQ", "USDR", "USDD", "USDG",
         "USDE", "TUSD", "FDUSD", "AUSD", "EURC", "EURCV", "EUROP",
+        "PAXG", "XAUT",  # gold-backed tokens (07-data/03, 2026-11-18)
         "EUR", "GBP", "CAD", "AUD", "CHF", "JPY", "AED",
     }
 )

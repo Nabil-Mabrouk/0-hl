@@ -34,8 +34,9 @@ Première stratégie implémentée. Les seuils sont des **valeurs de départ exp
 - `buy_notional_share` = notionnel des trades dont le taker est acheteur (`side = buy`) / notionnel total sur la même fenêtre. Kraken expose le côté taker : pas d'inférence requise. Ne pas confondre avec la version comptage `buy_count_share` (05-strategies/01).
 - `price_change_5m` = rendement log du dernier prix entre `t-5min` et `t` (confirmation directionnelle, doit être > 0).
 - `spread_bps` = `(ask - bid) / mid × 10 000` depuis le carnet.
+- `window_notional_usd` = Σ notionnel de la fenêtre courante `live` ; `window_trade_count` = Σ trades de la fenêtre (ADR-014).
 
-**Entrée (toutes vraies, `UNKNOWN → SKIP`).** `volume_spike ≥ 4.0` ; `buy_notional_share ≥ 0.60` ; `price_change_5m > 0` ; `spread_bps ≤ 30` ; contrôle qualité de marché `PASS` (ADR-004) ; aucune position ouverte ni intention en cours sur la paire ; cooldown par paire 30 min après sortie.
+**Entrée (toutes vraies, `UNKNOWN → SKIP`).** *(v0.2.0, ADR-014)* `window_notional_usd ≥ 50 000` et `window_trade_count ≥ 40` (planchers d'activité de la fenêtre courante) ; `volume_spike ≥ 4.0` ; `buy_notional_share ≥ 0.60` ; `price_change_5m > 0` ; `spread_bps ≤ 30` ; contrôle qualité de marché `PASS` (ADR-004) ; aucune position ouverte ni intention en cours sur la paire ; cooldown par paire 30 min après sortie.
 
 **Sortie.** Stop initial 3 % sous le prix moyen d'entrée (R0 ancré au fill, 05-strategies/03) ; take-profit 2R ; sortie temporelle 60 min ; sortie si la paire passe hors `online`. Les stops/TP sont **surveillés par le moteur** en paper (pas d'ordre conditionnel côté venue en paper) ; en LIVE futur, ils seront posés côté Kraken lorsque possible (08-risque-execution/02).
 

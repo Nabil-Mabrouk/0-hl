@@ -30,7 +30,9 @@ from app.domain.trading.enums import (
     StrategyVersionStatus,
 )
 from app.domain.trading.ledger import record_cash_movement
-from app.domain.trading.models import Bot, CashMovement, RiskPolicyVersion, StrategyVersion
+from app.domain.trading.audit import record_audit
+from app.domain.trading.models import Bot, BotSession, CashMovement, RiskPolicyVersion, StrategyVersion
+from app.domain.trading.types import utcnow
 from app.domain.trading.versioning import (
     create_policy_version,
     create_strategy_version,
@@ -100,6 +102,20 @@ async def _ensure_bot(
         )
     if bot.status is BotStatus.CREATED:
         await transition_bot(db, bot, BotStatus.READY, actor=SEED_ACTOR, reason=SEED_REASON)
+    # ADR-014: a seed bot that never had a session follows the current seed versions
+    never_started = await db.scalar(
+        select(BotSession.id).where(BotSession.bot_id == bot.id).limit(1)) is None
+    if never_started and (bot.strategy_version_id, bot.risk_policy_version_id) != (sv.id, pv.id):
+        before = {"strategy_version_id": bot.strategy_version_id,
+                  "risk_policy_version_id": bot.risk_policy_version_id}
+        bot.strategy_version_id, bot.risk_policy_version_id = sv.id, pv.id
+        bot.row_version += 1
+        bot.updated_at = utcnow()
+        await db.flush()
+        await record_audit(db, actor=SEED_ACTOR, action="SEED_REBIND", entity_type="bot",
+                           entity_id=bot.id, reason="ADR-014 bot jamais démarré",
+                           diff={"from": before, "to": {"strategy_version_id": sv.id,
+                                                        "risk_policy_version_id": pv.id}})
     return bot
 
 

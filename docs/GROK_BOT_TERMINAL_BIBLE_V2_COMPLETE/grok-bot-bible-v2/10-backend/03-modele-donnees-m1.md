@@ -69,7 +69,7 @@ Ce chapitre fixe le **modèle physique** du lot M1.1 ([13-roadmap](../13-roadmap
 | `hl_order_intent` | `id`, `bot_id`, `session_id`, `candidate_id`, `position_id`, `instrument_id`, `side` (`BUY`, `SELL`), `purpose` (`ENTRY`, `EXIT`), `quantity`, `limit_price`, `max_notional`, `risk_approval_id → hl_sizing_decision`, `idempotency_key` (unique), `status`, `expires_at`, `created_at` | **contrainte** : `purpose = 'EXIT' OR risk_approval_id IS NOT NULL` (INV-01) ; une sortie référence sa `position_id` |
 | `hl_order` | `id`, `intent_id`, `client_order_id` (unique), `venue_order_id`, `side`, `status` (machine 08-risque-execution/02), `requested_qty`, `filled_qty`, `avg_fill_price`, `limit_price`, `submitted_at`, `acked_at`, `closed_at`, `last_error` | jamais deux ordres pour une intention sans réconciliation (INV-04) |
 | `hl_fill` | `id`, `order_id`, `venue_fill_id`, `qty`, `price`, `fee`, `fee_asset`, `liquidity`, `occurred_at`, `book_snapshot` (JSON) | unique `(order_id, venue_fill_id)` ; `qty > 0`, `price > 0` |
-| `hl_position` | `id`, `bot_id`, `session_id`, `instrument_id`, `status` (`PENDING`, `OPEN`, `REDUCING`, `CLOSED`, `RECONCILIATION_REQUIRED`), `quantity`, `cost_basis`, `avg_entry_price`, `initial_stop_price`, `take_profit_price`, `r0_usd`, `opened_at`, `closed_at`, `row_version` | projection des fills ; `CLOSED → OPEN` interdit |
+| `hl_position` | `id`, `bot_id`, `session_id`, `instrument_id`, `status` (`PENDING`, `OPEN`, `REDUCING`, `CLOSED`, `RECONCILIATION_REQUIRED`), `quantity`, `cost_basis`, `avg_entry_price`, `initial_stop_price`, `take_profit_price`, `r0_usd`, `opened_at`, `closed_at`, `row_version`, `realized_pnl_net`, `fees_paid`, `exit_reason` (M1.3, 06-agents/03) | projection des fills ; `CLOSED → OPEN` interdit |
 | `hl_equity_snapshot` | `id`, `bot_id`, `at`, `cash`, `cash_reserved`, `positions_mark_value`, `equity`, `realized_pnl_net`, `unrealized_pnl`, `quality` (`OK`, `STALE`, `UNKNOWN`) | projection EQUITY |
 
 ### Données de marché (M1.2)
@@ -104,8 +104,8 @@ Ce chapitre fixe le **modèle physique** du lot M1.1 ([13-roadmap](../13-roadmap
 
 Exécuté au démarrage du worker (et réexécutable sans effet) :
 1. Politique `paper-default` version `1` depuis [`examples/risk-policy-paper-default.json`](../examples/risk-policy-paper-default.json), publiée par `system:seed`.
-2. Stratégie `volume-spike` version `0.1.0` depuis [`examples/strategy-volume-spike.json`](../examples/strategy-volume-spike.json), publiée par `system:seed` **pour l'environnement PAPER uniquement** (audit `self_approved=true`, motif « amorçage M1 »). Toute version ultérieure suit le parcours de publication (01-produit/02).
-3. Bot `paper-kraken-01`, `PAPER`, statut `READY`, lié aux deux versions publiées.
+2. Stratégie `volume-spike` à la version de l'exemple courant (0.1.0 puis **0.2.0**, ADR-014) depuis [`examples/strategy-volume-spike.json`](../examples/strategy-volume-spike.json), publiée par `system:seed` **pour l'environnement PAPER uniquement** (audit `self_approved=true`, motif « amorçage M1 »). Toute version ultérieure suit le parcours de publication (01-produit/02).
+3. Bot `paper-kraken-01`, `PAPER`, statut `READY`, lié aux deux versions publiées ; s'il n'a **jamais eu de session**, il est relié à la version d'exemple courante (audit `SEED_REBIND`, ADR-014).
 4. Dépôt paper initial de 10 000 USD (ADR-010) : `hl_cash_movement` + transaction `DEPOSIT`.
 
 Chaque étape vérifie l'existence avant de créer ; deux exécutions successives produisent le même état.

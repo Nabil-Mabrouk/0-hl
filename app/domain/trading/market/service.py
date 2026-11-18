@@ -500,8 +500,6 @@ class MarketDataService:
         events, self._pending_events = self._pending_events, []
         statuses, self._pending_status = self._pending_status, {}
         async with self._sessions() as db:
-            for ev in events:
-                await append_event(db, **ev)
             for symbol, status in statuses.items():
                 inst = await db.get(Instrument, instrument_id(symbol))
                 if inst is not None:
@@ -512,6 +510,9 @@ class MarketDataService:
                 await db.execute(delete(TradeMinute).where(
                     TradeMinute.minute_start < now - timedelta(days=self.config.retention_days)))
                 self._last_purge = now
+            # events last: the journal lock is held only until the commit right after (M1.3)
+            for ev in events:
+                await append_event(db, **ev)
             await db.commit()
 
     async def _persist_feed_status(self, db: AsyncSession, now: datetime) -> None:

@@ -494,6 +494,10 @@ class Position(Base):
     opened_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
     closed_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
     row_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    # M1.3 (06-agents/03)
+    realized_pnl_net: Mapped[Decimal | None] = mapped_column(Dec, nullable=True)
+    fees_paid: Mapped[Decimal] = mapped_column(Dec, nullable=False, default=Decimal(0))
+    exit_reason: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
 
 class EquitySnapshot(Base):

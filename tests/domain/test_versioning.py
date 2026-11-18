@@ -69,10 +69,10 @@ async def test_draft_change_does_not_affect_published_version(db):
     await publish_strategy_version(db, v1, actor=ACTOR, reason="t", self_approved=True)
     published_hash = v1.config_sha256
     v2 = await create_strategy_version(
-        db, config=strategy_config(version="0.2.0"), name="vs", actor=ACTOR
+        db, config=strategy_config(version="0.9.0"), name="vs", actor=ACTOR
     )
     await update_strategy_draft(
-        db, v2, config=strategy_config(version="0.2.0", cooldown_seconds=10), actor=ACTOR
+        db, v2, config=strategy_config(version="0.9.0", cooldown_seconds=10), actor=ACTOR
     )
     await db.commit()
     db.expunge_all()
