@@ -49,7 +49,8 @@ async def test_mandatory_lines_are_logged(session_factory, caplog):
     second = FakeTransport(lines, then="hang")
     async with session_factory() as db:
         await run_seed(db)
-    cfg = MarketDataConfig(watchdog_seconds=0.3, housekeeping_seconds=0.05, summary_seconds=0.1)
+    cfg = MarketDataConfig(watchdog_seconds=0.3, housekeeping_seconds=0.05, summary_seconds=0.1,
+                           max_feed_lag_ms=None, book_depth=25)
     svc = MarketDataService(session_factory, rest_client(), FakeConnector([first, second]), config=cfg)
     svc.ws.backoff_initial = 0.05
     with caplog.at_level(logging.INFO, logger=DOMAIN_LOGGER):

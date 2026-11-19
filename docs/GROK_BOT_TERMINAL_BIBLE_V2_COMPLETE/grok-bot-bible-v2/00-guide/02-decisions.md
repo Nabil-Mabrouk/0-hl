@@ -24,6 +24,7 @@ Ce registre tranche les points `[OPEN]` de la V2.0 et prime sur toute formulatio
 | ADR-014 | STRAT-01 v0.2.0 : planchers d'activité ; ré-amorçage du bot jamais démarré | Actée | 2026-11-18 |
 | ADR-015 | Point d'extension des routes frontend fourni par le template gitsky | Actée — livrée (châssis fd9a22b) | 2026-11-18 |
 | ADR-016 | Live Terminal pleine largeur par défaut ; réplique 550×688 en option | Actée | 2026-11-18 |
+| ADR-017 | Flux Kraken : mesure du retard, carnet profondeur 10, réception allégée | Actée | 2026-11-19 |
 
 ---
 
@@ -161,3 +162,15 @@ Besoin exprimé au template :
 - La vue **par défaut** de UI-01 est une **disposition pleine largeur** sur grille responsive standard (conçue pour 1440×900, lisible : textes de 12 à 14 px, chiffres clés de 24 à 32 px), qui reprend le **langage visuel** de la capture 3 (palette, typographie monospace, colonne des agents, flux scan → check → size → exec → log, trade, `tail -f`, résultat, journal, bandeau sombre) et **exactement les mêmes données**.
 - La **réplique exacte 550×688** reste disponible par un sélecteur « Reference canvas » (mémorisé par navigateur) et demeure la référence de la mesure de fidélité à la capture 3 (02-design/03, M1.6).
 - Remplace, pour la vue par défaut, la règle de 02-design/03 « l'écran canonique ne doit pas être remplacé par un dashboard générique ».
+
+## ADR-017 — Flux Kraken : mesure du retard, carnet profondeur 10, réception allégée
+
+**Constat (recette du 2026-11-19).** 85 coupures du WebSocket en ~36 h, toutes `CONNECTION_LOST` avec le code `1011 keepalive ping timeout` côté client, en rafales toutes les 1 à 3 min aux heures actives (≈ 17 h UTC). Cause : le worker consomme le flux moins vite que Kraken ne l'émet (≈ 3 300 messages/s mesurés hors pointe pour 35 paires en profondeur 25) ; `websockets` 17 cesse alors de lire le socket, la réponse au ping reste derrière l'arriéré et dépasse 20 s. Défaut de sécurité associé : pendant l'arriéré, des carnets en retard de plusieurs secondes restaient `LIVE` (contraire à INV-05).
+
+**Décision.**
+1. **Mesure du retard** : pour chaque message `book`/`trade`, `retard = réception − horodatage Kraken`. Une paire dont le retard dépasse **2 s** passe `STALE` (motif `FEED_LAG`) et redevient `LIVE` au premier carnet valide reçu avec moins de **1 s** de retard. Un retard global au-delà de **15 s** provoque une **reconnexion volontaire** (motif `FEED_LAG`), qui vide l'arriéré avant le délai du ping.
+2. **Carnet en profondeur 10** au lieu de 25 (le checksum ne porte que sur 10 niveaux ; −23 % de messages mesurés). Les contrôles de liquidité (RUG CHECK, `liquidity_cap` du SIZER) ne voient plus que 10 niveaux : plus prudents, jamais plus permissifs.
+3. **Réception allégée** : plus de création de tâches asyncio par message ; le chien de garde de 5 s est un délai sur la réception elle-même.
+4. **Observabilité** : le résumé du flux (toutes les 5 min) indique le débit (messages/s), le coût moyen de traitement par message (µs) et le retard maximal observé ; chaque passage `FEED_LAG` est journalisé (WARNING).
+
+**Conséquences.** Une nouvelle fenêtre de recette de 24 h est nécessaire après ce correctif. Si le retard persiste aux heures de pointe malgré ces mesures, l'étape suivante est un processus d'ingestion séparé (07-data/03, réversibilité d'ADR-007).

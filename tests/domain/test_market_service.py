@@ -16,7 +16,8 @@ from .market_fakes import FakeConnector, FakeTransport, rest_client, wait_until,
 pytestmark = pytest.mark.anyio
 
 FAST = MarketDataConfig(watchdog_seconds=0.3, housekeeping_seconds=0.1, universe_retry_seconds=0.2,
-                        backfill=True)
+                        backfill=True, max_feed_lag_ms=None,  # recorded fixtures are old: no lag
+                        book_depth=25)  # fixtures were recorded with a depth-25 subscription
 
 
 async def _service(session_factory, transports, *, rest_fail=False) -> MarketDataService:

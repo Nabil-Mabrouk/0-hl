@@ -56,7 +56,7 @@ SUPERVISED_POSITION_STATUSES = (
 
 @dataclass
 class MarketDataConfig:
-    book_depth: int = 25
+    book_depth: int = 10  # ADR-017 (was 25)
     watchdog_seconds: float = 5.0
     housekeeping_seconds: float = 5.0
     universe_retry_seconds: float = 60.0
@@ -65,6 +65,10 @@ class MarketDataConfig:
     backfill: bool = True
     shutdown_grace_seconds: float = 20.0
     summary_seconds: float = 300.0
+    # ADR-017 feed lag thresholds (None disables lag handling, e.g. replay of old fixtures)
+    max_feed_lag_ms: int | None = 2000
+    lag_recover_ms: int = 1000
+    lag_reconnect_ms: int = 15000
 
 
 @dataclass(frozen=True)
@@ -96,6 +100,7 @@ class MarketDataService:
         self._provider_degraded = False
         self._last_purge: datetime | None = None
         self._backfilled: set[str] = set()
+        self._max_lag_ms = 0
         self._persist_lock = asyncio.Lock()  # persist() is never run twice concurrently
         self._live_minutes_since_summary = 0
         self._last_summary: datetime | None = None
@@ -286,6 +291,22 @@ class MarketDataService:
                 book.price_precision = rules.price_precision
                 book.qty_precision = rules.qty_precision
 
+    def _lag_ms(self, ts: Any, now: datetime) -> int | None:
+        if not ts:
+            return None
+        try:
+            sent = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        lag = int((now - sent).total_seconds() * 1000)
+        self._max_lag_ms = max(self._max_lag_ms, lag)
+        return lag
+
+    async def _check_global_lag(self, lag: int | None) -> None:
+        if lag is not None and self.config.max_feed_lag_ms is not None and lag > self.config.lag_reconnect_ms:
+            log.warning("kraken feed lagging %d ms behind: reconnecting to drop the backlog", lag)
+            await self.ws.request_reconnect("FEED_LAG")
+
     async def _handle_book(self, msg: dict[str, Any], now: datetime) -> None:
         msg_type = msg.get("type")
         for item in msg.get("data", []):
@@ -307,14 +328,24 @@ class MarketDataService:
             book.apply(msg_type, item.get("bids", []), item.get("asks", []))
             info = self.state.feed(symbol)
             info.last_book_change_at = now
+            lag = self._lag_ms(item.get("timestamp"), now)
+            info.lag_ms = lag
             if book.verify(int(item["checksum"])):
                 info.last_checksum_ok_at = now
-                if self.state.connection_alive and self.state.system_status in (None, "online"):
+                max_lag = self.config.max_feed_lag_ms
+                lagging = max_lag is not None and lag is not None and (
+                    lag > max_lag or (info.reason == "FEED_LAG" and lag > self.config.lag_recover_ms))
+                if lagging:
+                    if info.reason != "FEED_LAG":
+                        log.warning("feed lag %s: %d ms behind Kraken, pair STALE", symbol, lag)
+                    self._set_feed(symbol, STALE, "FEED_LAG")
+                elif self.state.connection_alive and self.state.system_status in (None, "online"):
                     self._set_feed(symbol, LIVE, None)
             else:
                 self._set_feed(symbol, STALE, "CHECKSUM_MISMATCH")
                 book.reset()
                 await self._resync_book(symbol)
+            await self._check_global_lag(lag)
 
     def _handle_trades(self, msg: dict[str, Any], now: datetime) -> None:
         for t in msg.get("data", []):
@@ -322,6 +353,7 @@ class MarketDataService:
             if symbol not in self.wanted:
                 continue
             ts = datetime.fromisoformat(str(t["timestamp"]).replace("Z", "+00:00"))
+            self._max_lag_ms = max(self._max_lag_ms, int((now - ts).total_seconds() * 1000))
             if self.aggregator.on_trade(
                 symbol, instrument_id(symbol), trade_id=int(t["trade_id"]), price=t["price"],
                 qty=t["qty"], side=str(t["side"]), timestamp=ts,
@@ -560,10 +592,14 @@ class MarketDataService:
             return
         live = sum(1 for s in self.wanted if self.state.is_fresh(s))
         resyncs = sum(self.state.feed(s).resync_count for s in self.wanted)
+        elapsed = max((now - self._last_summary).total_seconds(), 1.0)
+        messages, busy = self.ws.take_stats()
         log.info("feed summary: %d/%d pairs LIVE, connection=%s, %d live minutes written, "
-                 "%d resyncs total", live, len(self.wanted),
+                 "%d resyncs total, %.0f msg/s, %.0f us/msg, max lag %d ms", live, len(self.wanted),
                  "up" if self.state.connection_alive else "down",
-                 self._live_minutes_since_summary, resyncs)
+                 self._live_minutes_since_summary, resyncs, messages / elapsed,
+                 (busy / messages * 1e6) if messages else 0.0, self._max_lag_ms)
+        self._max_lag_ms = 0
         self._live_minutes_since_summary = 0
         self._last_summary = now
 

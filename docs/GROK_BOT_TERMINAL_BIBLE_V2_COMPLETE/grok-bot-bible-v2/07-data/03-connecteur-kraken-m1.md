@@ -53,8 +53,9 @@ Sous `app/domain/trading/market/` :
 
 ## Flux WebSocket
 
-- **Une connexion** `wss://ws.kraken.com/v2` ; abonnements : `instrument` (snapshot), `book` profondeur **25**, `trade` sans snapshot ; ajouts/retraits d'abonnements lors des changements d'univers.
+- **Une connexion** `wss://ws.kraken.com/v2` ; abonnements : `instrument` (snapshot), `book` profondeur **10** (25 jusqu'au 2026-11-19, ADR-017), `trade` sans snapshot ; ajouts/retraits d'abonnements lors des changements d'univers.
 - **Fraîcheur du carnet** (précise 07-data/01) : un carnet est **frais** si (a) la connexion est vivante (dernier message, heartbeat compris, < 5 s), (b) un snapshot a été reçu depuis la dernière (re)connexion et (c) le dernier checksum est valide. L'absence de mise à jour d'un carnet calme n'est **pas** une péremption. L'âge de la dernière modification reste exposé à titre informatif.
+- **Retard du flux (ADR-017)** : `retard = réception − horodatage Kraken` de chaque message `book`/`trade` ; paire `STALE` (motif `FEED_LAG`) au-delà de 2 s, retour `LIVE` au premier carnet valide sous 1 s ; reconnexion volontaire (motif `FEED_LAG`) si le retard dépasse 15 s. Un carnet en retard n'est jamais présenté comme frais.
 - **Checksum invalide** ⇒ carnet `STALE` (motif `CHECKSUM_MISMATCH`), désabonnement puis réabonnement du `book` pour cette paire (nouveau snapshot), compteur `resync_count`.
 - **Connexion perdue / chien de garde** ⇒ toutes les paires `STALE` (motif `CONNECTION_LOST`), événement `PROVIDER_DEGRADED`, reconnexion avec backoff exponentiel 1, 2, 4… 60 s (+ gigue) ; retour `LIVE` paire par paire au premier snapshot valide.
 - **Canal `status`** avec `system ≠ online` ⇒ toutes les paires `STALE` (motif `VENUE_MAINTENANCE`).
@@ -96,7 +97,7 @@ Nouvelle table **`hl_feed_status`**, une ligne par instrument abonné plus une l
 
 `docker logs 0-hl_worker` était vide : les loggers `hl.*` n'avaient aucun handler. Règles :
 - Au démarrage de `run_cycle`, le logger racine du domaine **`hl`** reçoit un handler sur **stdout**, niveau **INFO**, format `horodatage UTC ISO | niveau | logger | message` ; `propagate = False` (pas de doublon) ; configuration idempotente. Le handler vide son tampon à chaque ligne (pas de dépendance à `PYTHONUNBUFFERED`, aucun fichier châssis modifié).
-- Messages **INFO** obligatoires : démarrage du worker et fin d'amorçage ; sélection de l'univers (taille, ajouts, retraits) ; fin du backfill (paires, lignes écrites, durée) ; connexion WebSocket établie (numéro de connexion) ; **résumé périodique toutes les 5 min** (paires `LIVE`/abonnées, minutes `live` écrites depuis le dernier résumé, resyncs cumulés) ; arrêt propre.
+- Messages **INFO** obligatoires : démarrage du worker et fin d'amorçage ; sélection de l'univers (taille, ajouts, retraits) ; fin du backfill (paires, lignes écrites, durée) ; connexion WebSocket établie (numéro de connexion) ; **résumé périodique toutes les 5 min** (paires `LIVE`/abonnées, minutes `live` écrites depuis le dernier résumé, resyncs cumulés, et depuis ADR-017 : débit en messages/s, coût moyen de traitement en µs, retard maximal en ms) ; arrêt propre.
 - Messages **WARNING** obligatoires : chaque déconnexion (motif `WATCHDOG_TIMEOUT`, `CONNECTION_LOST`, `CONNECT_FAILED`) ; chaque resync de carnet (paire, motif) ; chaque changement de statut d'instrument ; échec REST (univers, backfill) ; canal `status` hors `online`. **ERROR** (avec trace) : échec de la persistance périodique, exception d'un gestionnaire de message.
 - Les messages ne contiennent jamais de secret (aucune clé n'existe au M1).
 - Diagnostic serveur : les commandes `psql` passent par `docker exec 0-hl_db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "…"'` pour que les variables soient résolues dans le conteneur.
@@ -117,4 +118,5 @@ Nouvelle table **`hl_feed_status`**, une ligne par instrument abonné plus une l
 | T-M1.2-10 | `run_cycle` avec transport qui échoue toujours : aucune exception, arrêt propre sur `stop_requested` |
 | T-M1.2-11 | `hl_feed_status` persisté et cohérent avec `MarketState` |
 | T-M1.2-12 | migration `domain` des nouvelles tables (test de dérive PostgreSQL) |
+| T-M1.2-14 | retard : message en retard > 2 s ⇒ paire `STALE` `FEED_LAG` ; retour `LIVE` sous 1 s ; retard > 15 s ⇒ reconnexion `FEED_LAG` ; arrêt propre de la boucle de réception sans tâche par message (ADR-017) |
 | T-M1.2-13 | journalisation : handler stdout idempotent sur `hl` ; messages INFO/WARNING obligatoires émis (univers, backfill, connexion, déconnexion, resync, résumé) |

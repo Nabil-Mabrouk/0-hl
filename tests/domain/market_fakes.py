@@ -39,12 +39,17 @@ class FakeTransport:
         self.sent.append(json.loads(text))
 
     async def recv(self) -> str:
-        if self.queue.empty() and self.then == "close":
+        if self.closed or (self.queue.empty() and self.then == "close"):
             raise ConnectionError("fake connection closed")
-        return await self.queue.get()
+        item = await self.queue.get()
+        if item is None:  # closed while waiting, like a real WebSocket
+            raise ConnectionError("fake connection closed")
+        return item
 
     async def close(self) -> None:
-        self.closed = True
+        if not self.closed:
+            self.closed = True
+            self.queue.put_nowait(None)  # type: ignore[arg-type]
 
 
 class FakeConnector:

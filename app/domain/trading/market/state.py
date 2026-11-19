@@ -33,6 +33,7 @@ class FeedInfo:
     last_trade_at: datetime | None = None
     last_checksum_ok_at: datetime | None = None
     resync_count: int = 0
+    lag_ms: int | None = None  # ADR-017: reception − Kraken timestamp of the last book message
 
 
 @dataclass

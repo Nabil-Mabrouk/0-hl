@@ -3,6 +3,9 @@
 Messages are parsed with `parse_float=Decimal`: no float ever reaches the domain.
 No message for `watchdog_seconds` (heartbeats included) ⇒ connection considered
 dead ⇒ reconnect with exponential backoff (1, 2, 4… max 60 s + jitter).
+ADR-017: the receive loop creates no task per message (a timeout on recv() is the
+watchdog), counts messages and processing time, and supports a voluntary
+reconnection (`request_reconnect`) used when the feed lags behind.
 """
 
 from __future__ import annotations
@@ -11,6 +14,7 @@ import asyncio
 import json
 import logging
 import random
+import time
 from collections.abc import Awaitable, Callable
 from decimal import Decimal
 from typing import Any, Protocol
@@ -89,6 +93,25 @@ class KrakenWsClient:
         self.connect_timeout = connect_timeout
         self._transport: WsTransport | None = None
         self.connections = 0
+        self._reconnect_reason: str | None = None
+        self.messages = 0
+        self.processing_seconds = 0.0
+
+    def take_stats(self) -> tuple[int, float]:
+        """Messages received and processing time since the last call (then reset)."""
+        stats = (self.messages, self.processing_seconds)
+        self.messages, self.processing_seconds = 0, 0.0
+        return stats
+
+    async def request_reconnect(self, reason: str) -> None:
+        """Close the current connection on purpose; `run()` reconnects with `reason`."""
+        if self._transport is None or self._reconnect_reason is not None:
+            return
+        self._reconnect_reason = reason
+        try:
+            await self._transport.close()
+        except Exception:  # noqa: BLE001
+            pass
 
     @property
     def connected(self) -> bool:
@@ -105,20 +128,25 @@ class KrakenWsClient:
             return False
 
     async def _recv_loop(self, transport: WsTransport, stop: asyncio.Event) -> None:
-        stop_wait = asyncio.ensure_future(stop.wait())
+        # stop ⇒ close the transport, which unblocks recv(); no task per message (ADR-017)
+        async def close_on_stop() -> None:
+            await stop.wait()
+            try:
+                await transport.close()
+            except Exception:  # noqa: BLE001
+                pass
+
+        closer = asyncio.create_task(close_on_stop())
         try:
             while not stop.is_set():
-                recv = asyncio.ensure_future(transport.recv())
-                done, _ = await asyncio.wait(
-                    {recv, stop_wait}, timeout=self.watchdog_seconds,
-                    return_when=asyncio.FIRST_COMPLETED,
-                )
-                if recv not in done:
-                    recv.cancel()
-                    if stop_wait in done:
+                try:
+                    async with asyncio.timeout(self.watchdog_seconds):
+                        text = await transport.recv()
+                except TimeoutError:
+                    if stop.is_set():
                         return
-                    raise WatchdogTimeout()
-                text = recv.result()
+                    raise WatchdogTimeout() from None
+                started = time.perf_counter()
                 try:
                     msg = parse_message(text)
                 except ValueError:
@@ -128,8 +156,14 @@ class KrakenWsClient:
                     await self._on_message(msg)
                 except Exception:  # noqa: BLE001 — one bad message must not kill the feed
                     log.exception("kraken ws: message handler failed")
+                self.messages += 1
+                self.processing_seconds += time.perf_counter() - started
+        except Exception:
+            if stop.is_set():
+                return
+            raise
         finally:
-            stop_wait.cancel()
+            closer.cancel()
 
     async def run(self, stop: asyncio.Event) -> None:
         backoff = self.backoff_initial
@@ -144,6 +178,7 @@ class KrakenWsClient:
                 continue
 
             self._transport = transport
+            self._reconnect_reason = None
             self.connections += 1
             reason = "CONNECTION_LOST"
             try:
@@ -153,8 +188,11 @@ class KrakenWsClient:
             except WatchdogTimeout:
                 reason = "WATCHDOG_TIMEOUT"
             except Exception as exc:  # noqa: BLE001
-                log.warning("kraken ws connection lost: %s", exc)
+                if self._reconnect_reason is None:
+                    log.warning("kraken ws connection lost: %s", exc)
             finally:
+                if self._reconnect_reason is not None:
+                    reason = self._reconnect_reason
                 self._transport = None
                 try:
                     await transport.close()
