@@ -55,6 +55,7 @@
 - [01-securite-et-conformite](../11-securite-ops/01-securite-et-conformite.md)
 - [02-runbooks-slo](../11-securite-ops/02-runbooks-slo.md)
 - [01-plan-de-recette](../12-tests/01-plan-de-recette.md)
+- [02-recette-m1](../12-tests/02-recette-m1.md)
 - [01-plan-execution](../13-roadmap/01-plan-execution.md)
 - [01-sources-et-limites](../14-references/01-sources-et-limites.md)
 

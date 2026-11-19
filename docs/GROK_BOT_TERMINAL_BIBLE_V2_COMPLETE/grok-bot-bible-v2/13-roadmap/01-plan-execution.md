@@ -26,7 +26,7 @@ Ce jalon remplace l'enchaînement P0→P4 pour le premier livrable ; il prend un
 | M1.3 Agents — **livré (local, 2026-11-18)** | SCANNER (STRAT-01 Kraken), RUG CHECK variante CEX, SIZER (05-strategies/03), EXECUTOR paper, LOGGER, EQUITY + surveillance stop/TP/temps | 06-agents/01, **06-agents/03**, 08-*, ADR-004/005/010/013 |
 | M1.4 API & WS — **livré (local, 2026-11-18)** | `/api/v1` : health, bots, commands, strategies (lecture), portfolio, trades, events ; `/ws/v1/terminal` snapshot + deltas + gap | 10-backend/02, **10-backend/04** |
 | M1.5 UI — **livré (local, 2026-11-18), non routé en attente d'ADR-015** | UI-01 Live Terminal fidèle à la capture 3, animé par les événements réels ; UI-02 minimal (liste bots, START / PAUSE_ENTRIES / RESUME_ENTRIES / EMERGENCY_STOP) | 02-design, 03-ecrans, **03-ecrans/M1-terminal-et-bots**, ADR-015 |
-| M1.6 Tests | invariants INV-01..07 applicables, QA-01, 03, 04, 05, 06, 07, 09, 10, 13, 16–20 ; tests sans réseau (fixtures Kraken enregistrées) | 12-tests |
+| M1.6 Tests — **outillage livré (local, 2026-11-18) ; fenêtre de 24 h à mener** | invariants INV-01..07 applicables, QA-01, 03, 04, 05, 06, 07, 09, 10, 13, 16–20 ; tests sans réseau (fixtures Kraken enregistrées) | 12-tests, **12-tests/02-recette-m1** |
 
 **Gate de fin M1.** Un bot `PAPER` tourne 24 h sur données Kraken réelles sans intervention ; chaque trade affiché est reconstructible depuis le journal (candidat → assessment → sizing → intent → fill → sortie) ; ledger réconcilié ; redéploiement en cours de session sans doublon ; suite de tests verte (`npm run typecheck && npm run test && npm run build`, `pytest`).
 
