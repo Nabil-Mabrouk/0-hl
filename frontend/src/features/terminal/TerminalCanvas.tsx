@@ -8,7 +8,10 @@ import {
   agentCards,
   type AgentKey,
   candidateCards,
+  entryNotional,
   logLines,
+  noSignal,
+  resultBar,
   tradeView,
 } from "./viewModel";
 import "./terminal.css";
@@ -44,12 +47,12 @@ export default function TerminalCanvas(props: TerminalCanvasProps) {
   const running = s.bot.status === "RUNNING";
   const motion = props.reducedMotion ? "" : " hl-motion";
   const lastEvent = events[events.length - 1];
-  const filtered = s.scan ? s.scan.evaluated - s.scan.candidates - s.scan.unknown : null;
+  const filtered = noSignal(s);
+  const bar = resultBar(s);
   const lastClosed = s.recent_trades[0];
   const lastOpen = s.open_positions[s.open_positions.length - 1];
-  const sizeRatio = lastOpen ? ratio(lastOpen.cost_basis, s.equity.equity ?? s.owner_capital) : null;
-  const progress = ratio(s.equity.equity, s.owner_capital);
-  const logRows = lines.filter((l) => l.kind === "ENTER" || l.kind === "EXIT" || l.kind === "FILTERED").slice(-5).reverse();
+  const sizeRatio = lastOpen ? ratio(entryNotional(lastOpen), s.owner_capital) : null;
+  const logRows = lines.filter((l) => ["ENTER", "EXIT", "FILTERED", "REFUSED"].includes(l.kind)).slice(-5).reverse();
   const tail = lines.slice(-6);
 
   return (
@@ -140,14 +143,14 @@ export default function TerminalCanvas(props: TerminalCanvasProps) {
           <div className="hl-station-title e">EXECUTOR</div>
           <div className="hl-station-sub e">{agents[3].detail}</div>
           <div className="hl-flow-mini filtered">
-            <div className="hl-heading">FILTERED</div>
+            <div className="hl-heading">NO SIGNAL</div>
             <strong>{filtered ?? DASH}</strong>
             <small>+ {s.scan?.unknown ?? DASH} unknown</small>
           </div>
           <div key={lastOpen?.id ?? "sizer"} className={`hl-flow-mini sized${motion && lastOpen ? " hl-flash" : ""}`}>
             <div className="hl-heading">SIZER</div>
-            <strong>{sizeRatio === null ? DASH : fmtPct(sizeRatio * 100, 0)} eq</strong>
-            <small>{lastOpen ? fmtUsd(lastOpen.cost_basis) : DASH}</small>
+            <strong>{sizeRatio === null ? DASH : fmtPct(sizeRatio * 100, 0)} cap</strong>
+            <small>{lastOpen ? fmtUsd(entryNotional(lastOpen)) : DASH}</small>
           </div>
           <div className="hl-flow-mini logged">
             <div className="hl-heading">LOGGER</div>
@@ -204,7 +207,10 @@ export default function TerminalCanvas(props: TerminalCanvasProps) {
           <span className="hl-startdot" />
           <span className="hl-line" />
           <span className="hl-now">NOW</span>
-          <span className="hl-progress"><span style={{ width: `${Math.max(0, Math.min(100, (progress ?? 0) * 50))}%` }} /></span>
+          <span className="hl-progress" data-testid="hl-result-bar">
+            <span className={`hl-bar ${bar.tone}`} style={{ left: `${bar.left}%`, width: `${bar.width}%` }} />
+            <i className="hl-bar-center" />
+          </span>
           <span className="hl-winloss">{s.stats.wins} W / {s.stats.losses} L</span>
           <span className="hl-bal1">{fmtUsd(s.owner_capital)}</span>
           <span className="hl-bal2" data-testid="hl-now">{fmtUsd(s.equity.equity)}</span>

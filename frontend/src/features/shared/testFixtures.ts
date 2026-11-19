@@ -19,6 +19,8 @@ export const closedTrade: PositionView = {
   realized_pnl_net: "342.52", r_multiple: "2.11", mark_price: null, mark_value: null, marked_at: null,
   unrealized_pnl: null,
   entry_features: { volume_spike: "4.1", buy_notional_share: "0.71", window_notional_usd: "182000" },
+  entry_qty: "1325.0403",
+  entry_notional: "1310.6740",
 };
 
 export function snapshot(overrides: Partial<Snapshot> = {}): Snapshot {

@@ -201,6 +201,10 @@ async def test_snapshot_equity_stats_agents_scan(world, session_factory):
     assert D(snap["owner_capital"]) == D(10000)
     assert D(trade["entry_features"]["volume_spike"]) == D(5)
     assert D(trade["entry_features"]["window_notional_usd"]) == D(100000)
+    # review 2026-11-19: entry amounts of a closed trade (cost basis is 0 after the sale)
+    assert D(trade["cost_basis"]) == 0 and D(trade["entry_notional"]) > D(1000)
+    assert D(trade["entry_qty"]) * D(trade["avg_entry_price"]) == D(trade["entry_notional"])
+    assert snap["entry_blocks"] == []
 
 
 async def test_open_position_marks_and_stale_quality(world, session_factory):
@@ -252,3 +256,30 @@ async def test_events_pagination_and_trace(world):
     trace = (await world.client.get(f"/api/v1/events/trace/{closed['correlation_id']}", headers=h)).json()
     types = [e["event_type"] for e in trace["items"]]
     assert types[0] == "CANDIDATE_DETECTED" and types[-1] == "POSITION_CLOSED"
+
+
+async def test_entry_blocks_daily_loss_and_paused(world, session_factory):
+    """The terminal shows why entries are blocked (same rules as the SIZER)."""
+    from app.domain.trading.models import EquitySnapshot
+    await world.engine.tick()                                       # RUNNING, one open position
+    async with session_factory() as db:
+        db.add(EquitySnapshot(bot_id=world.bot_id, at=NOW.replace(hour=0, minute=1), cash=D(11000),
+                              cash_reserved=D(0), positions_mark_value=D(0), equity=D(11000),
+                              realized_pnl_net=D(0), unrealized_pnl=D(0), quality="OK"))
+        await db.commit()
+    from app.domain.trading.api.snapshot import build_snapshot
+    async with session_factory() as db:
+        snap = await build_snapshot(db, world.bot_id, NOW + timedelta(seconds=5))
+    codes = {b["code"]: b for b in snap["entry_blocks"]}
+    assert "MAX_DAILY_LOSS" in codes and codes["MAX_DAILY_LOSS"]["limit"] == D("0.03")
+    assert codes["MAX_DAILY_LOSS"]["until"].hour == 0
+    r = await world.client.post(f"/api/v1/bots/{world.bot_id}/commands", json={"command": "PAUSE_ENTRIES"},
+                                headers=_h(world.admin.id, **{"Idempotency-Key": "k-pause-blk"}))
+    assert r.status_code == 202
+    world.clock.advance(seconds=5)
+    await world.engine.tick()
+    snap = (await world.client.get(f"/api/v1/terminal/snapshot?bot_id={world.bot_id}",
+                                   headers=_h(world.observer.id))).json()
+    _no_floats(snap)
+    assert any(b["code"] == "BOT_NOT_RUNNING" and b["value"] == "PAUSED" for b in snap["entry_blocks"])
+

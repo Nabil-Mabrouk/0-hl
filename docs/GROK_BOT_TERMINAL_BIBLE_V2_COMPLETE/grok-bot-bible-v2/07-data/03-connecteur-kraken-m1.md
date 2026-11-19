@@ -33,7 +33,7 @@ Sous `app/domain/trading/market/` :
 |---|---|
 | `kraken_rest.py` | client REST public (`AssetPairs`, `Ticker`, `OHLC`) au-dessus de `httpx.AsyncClient`, `assetVersion=1`, ≤ 1 req/s, erreurs Kraken (`error[]`) levées en `PROVIDER_UNAVAILABLE` |
 | `kraken_ws.py` | client WebSocket v2 : transport injectable (réel = `websockets`, test = rejeu de fixtures), abonnements, routage des messages, chien de garde, reconnexion avec backoff |
-| `book.py` | carnet d'ordres en `Decimal` : snapshot/update, troncature, checksum, meilleur bid/ask, `spread_bps` |
+| `book.py` | carnet d'ordres en `Decimal` : snapshot/update, troncature, checksum, meilleur bid/ask, `spread_bps` ; incrémental depuis ADR-018 (niveaux triés en continu, texte de checksum mis en cache par niveau) |
 | `universe.py` | sélection de l'univers (règles ci-dessous), pure et testable |
 | `aggregates.py` | agrégation des trades en minutes UTC, couverture de connexion, backfill OHLC |
 | `state.py` | `MarketState` en mémoire : instruments, carnets, état du flux par paire ; API de lecture pour les agents M1.3 |

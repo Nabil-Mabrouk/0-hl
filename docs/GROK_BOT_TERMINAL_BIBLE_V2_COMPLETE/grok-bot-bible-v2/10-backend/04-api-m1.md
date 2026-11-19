@@ -52,6 +52,7 @@ Objet unique décrivant la vue UI-01 pour un bot, construit à partir de la base
 - `feed` : connexion, paires `LIVE`/abonnées ;
 - `recent_events` : 50 derniers événements du bot et du flux ;
 - `position` : position du journal à partir de laquelle le flux WebSocket reprend ;
+- *(M1.5, revue du 2026-11-19)* `entry_blocks` : liste des blocages d'entrée en vigueur (`code` parmi `BOT_NOT_RUNNING`, `KILL_SWITCH`, `MAX_OPEN_POSITIONS`, `MAX_DAILY_LOSS`, `MAX_DRAWDOWN`, avec `value`, `limit`, `until`), calculés avec les mêmes fonctions que le SIZER ; pour chaque position, `entry_qty` et `entry_notional` (quantité et montant exécutés à l'entrée, d'après les fills de l'ordre d'entrée).
 - *(M1.5)* `config` (`strategy_version`, `max_trade_risk_pct`, `max_slippage_pct`), `owner_capital`, et pour chaque position `entry_features` (features clés du candidat d'entrée) — voir [03-ecrans/M1-terminal-et-bots](../03-ecrans/M1-terminal-et-bots.md#ui-01-live-terminal).
 
 | Agent | Événements |

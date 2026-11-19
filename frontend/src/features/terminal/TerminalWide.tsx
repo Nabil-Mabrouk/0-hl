@@ -7,7 +7,10 @@ import {
   agentCards,
   type AgentKey,
   candidateCards,
+  entryNotional,
   logLines,
+  noSignal,
+  resultBar,
   tradeView,
 } from "./viewModel";
 import type { TerminalCanvasProps } from "./TerminalCanvas";
@@ -32,12 +35,12 @@ export default function TerminalWide(props: TerminalCanvasProps) {
   const running = s.bot.status === "RUNNING";
   const motion = props.reducedMotion ? "" : " hw-motion";
   const lastEvent = events[events.length - 1];
-  const filtered = s.scan ? s.scan.evaluated - s.scan.candidates - s.scan.unknown : null;
+  const filtered = noSignal(s);
+  const bar = resultBar(s);
   const lastClosed = s.recent_trades[0];
   const lastOpen = s.open_positions[s.open_positions.length - 1];
-  const sizeRatio = lastOpen ? ratio(lastOpen.cost_basis, s.equity.equity ?? s.owner_capital) : null;
-  const progress = ratio(s.equity.equity, s.owner_capital);
-  const logRows = lines.filter((l) => l.kind === "ENTER" || l.kind === "EXIT" || l.kind === "FILTERED").slice(-12).reverse();
+  const sizeRatio = lastOpen ? ratio(entryNotional(lastOpen), s.owner_capital) : null;
+  const logRows = lines.filter((l) => ["ENTER", "EXIT", "FILTERED", "REFUSED"].includes(l.kind)).slice(-12).reverse();
   const tail = lines.slice(-40);
   const last = tail[tail.length - 1];
 
@@ -135,10 +138,10 @@ export default function TerminalWide(props: TerminalCanvasProps) {
               </div>
             </div>
             <div className="hw-minis">
-              <div className="hw-mini filtered"><em>FILTERED</em><strong>{filtered ?? DASH}</strong><small>+ {s.scan?.unknown ?? DASH} unknown</small></div>
+              <div className="hw-mini filtered"><em>NO SIGNAL</em><strong>{filtered ?? DASH}</strong><small>+ {s.scan?.unknown ?? DASH} unknown</small></div>
               <div key={lastOpen?.id ?? "sizer"} className={`hw-mini sized${motion && lastOpen ? " hw-flash" : ""}`}>
-                <em>SIZER</em><strong>{sizeRatio === null ? DASH : fmtPct(sizeRatio * 100, 0)} eq</strong>
-                <small>{lastOpen ? fmtUsd(lastOpen.cost_basis) : DASH}</small>
+                <em>SIZER</em><strong>{sizeRatio === null ? DASH : fmtPct(sizeRatio * 100, 0)} cap</strong>
+                <small>{lastOpen ? fmtUsd(entryNotional(lastOpen)) : DASH}</small>
               </div>
               <div className="hw-mini logged"><em>LOGGER</em><strong>line #{s.position}</strong><small>each with a reason</small></div>
               <div className="hw-mini equity">
@@ -177,7 +180,11 @@ export default function TerminalWide(props: TerminalCanvasProps) {
               <div className="hw-label">RESULT · start vs now <span>session {fmtUptime(s.session?.uptime_seconds)}</span></div>
               <div className="hw-result-row"><span>START</span><b>{fmtUsd(s.owner_capital)}</b></div>
               <div className="hw-result-row"><span>NOW</span><b data-testid="hl-now">{fmtUsd(s.equity.equity)}</b></div>
-              <div className="hw-progress"><span style={{ width: `${Math.max(0, Math.min(100, (progress ?? 0) * 50))}%` }} /></div>
+              <div className="hw-progress" data-testid="hl-result-bar">
+                <span className={`hw-bar ${bar.tone}`} style={{ left: `${bar.left}%`, width: `${bar.width}%` }} />
+                <i className="hw-bar-center" />
+              </div>
+              <div className="hw-result-pct">{bar.pct === null ? DASH : fmtPct(bar.pct, 2, true)} vs start</div>
               <div className="hw-result-foot">
                 <span className="hw-good">{s.stats.wins} W / {s.stats.losses} L</span>
                 <span>realized {fmtUsd(s.equity.realized_pnl_net)}</span>

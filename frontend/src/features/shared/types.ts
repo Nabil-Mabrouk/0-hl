@@ -57,6 +57,15 @@ export interface PositionView {
   marked_at: string | null;
   unrealized_pnl: Dec | null;
   entry_features: Record<string, Dec | null> | null;
+  entry_qty?: Dec | null;
+  entry_notional?: Dec | null;
+}
+
+export interface EntryBlock {
+  code: "BOT_NOT_RUNNING" | "KILL_SWITCH" | "MAX_OPEN_POSITIONS" | "MAX_DAILY_LOSS" | "MAX_DRAWDOWN";
+  value: string;
+  limit: string;
+  until: string | null;
 }
 
 export interface AgentState {
@@ -87,6 +96,7 @@ export interface Snapshot {
     max_slippage_pct: Dec | null;
   };
   owner_capital: Dec;
+  entry_blocks?: EntryBlock[];
   session: Session | null;
   equity: {
     cash: Dec;

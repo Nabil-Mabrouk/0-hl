@@ -11,7 +11,9 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.trading.agents.commands import active_session
-from app.domain.trading.enums import PositionStatus
+from app.domain.trading.agents.equity import EquityView, daily_loss, drawdown
+from app.domain.trading.config_schemas import validate_risk_policy_config
+from app.domain.trading.enums import BotStatus, PositionStatus
 from app.domain.trading.errors import NotFound
 from app.domain.trading.ledger import ACCOUNT_CASH, ACCOUNT_CASH_RESERVED, USD, account_balances
 from app.domain.trading.market.service import CONNECTION_FEED_ID
@@ -22,6 +24,7 @@ from app.domain.trading.models import (
     Candidate,
     DomainEvent,
     FeedStatus,
+    Order,
     OrderIntent,
     Position,
     RiskPolicyVersion,
@@ -174,6 +177,59 @@ async def entry_features(db: AsyncSession, positions: list[Position]) -> dict[uu
     return out
 
 
+async def entry_amounts(db: AsyncSession, positions: list[Position]) -> dict[uuid.UUID, tuple[Decimal, Decimal]]:
+    """Quantity and notional actually executed at entry (fills of the entry order)."""
+    if not positions:
+        return {}
+    rows = await db.execute(
+        select(OrderIntent.position_id, Order.filled_qty, Order.avg_fill_price)
+        .join(Order, Order.intent_id == OrderIntent.id)
+        .where(OrderIntent.position_id.in_([p.id for p in positions]),
+               OrderIntent.purpose == IntentPurpose.ENTRY))
+    out: dict[uuid.UUID, tuple[Decimal, Decimal]] = {}
+    for position_id, qty, avg in rows:
+        if qty and avg is not None:
+            prev_q, prev_n = out.get(position_id, (ZERO, ZERO))
+            out[position_id] = (prev_q + qty, prev_n + qty * avg)
+    return out
+
+
+def _next_utc_midnight(now: datetime) -> datetime:
+    return (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+async def entry_blocks(db: AsyncSession, bot: Bot, equity: dict[str, Any], open_count: int,
+                       now: datetime) -> list[dict[str, Any]]:
+    """Entry blocks in force, computed with the SIZER functions (10-backend/04)."""
+    blocks: list[dict[str, Any]] = []
+    if bot.status is not BotStatus.RUNNING:
+        blocks.append({"code": "BOT_NOT_RUNNING", "value": bot.status.value, "limit": "RUNNING", "until": None})
+    pv = await db.get(RiskPolicyVersion, bot.risk_policy_version_id)
+    if pv is None:
+        return blocks
+    policy = validate_risk_policy_config(pv.config)
+    if policy.kill_switch:
+        blocks.append({"code": "KILL_SWITCH", "value": "on", "limit": "off", "until": None})
+    if policy.max_open_positions is not None and open_count >= policy.max_open_positions:
+        blocks.append({"code": "MAX_OPEN_POSITIONS", "value": str(open_count),
+                       "limit": str(policy.max_open_positions), "until": None})
+    eq = equity["equity"]
+    max_daily = policy.dec("max_daily_loss_pct")
+    if eq is not None and max_daily is not None:
+        loss = await daily_loss(db, bot.id, eq, now)
+        if loss is not None and loss >= max_daily / 100:
+            blocks.append({"code": "MAX_DAILY_LOSS", "value": loss, "limit": max_daily / 100,
+                           "until": _next_utc_midnight(now)})
+    max_dd = policy.dec("max_drawdown_pct")
+    if eq is not None and max_dd is not None:
+        view = EquityView(equity["cash"], equity["cash_reserved"], equity["positions_value"], eq,
+                          equity["owner_capital"], equity["unrealized_pnl"])
+        dd = await drawdown(db, bot.id, view)
+        if dd is not None and dd >= max_dd / 100:
+            blocks.append({"code": "MAX_DRAWDOWN", "value": dd, "limit": max_dd / 100, "until": None})
+    return blocks
+
+
 async def config_json(db: AsyncSession, bot: Bot) -> dict[str, Any]:
     sv = await db.get(StrategyVersion, bot.strategy_version_id)
     pv = await db.get(RiskPolicyVersion, bot.risk_policy_version_id)
@@ -205,10 +261,14 @@ async def build_snapshot(db: AsyncSession, bot_id: uuid.UUID, now: datetime) -> 
         or_(DomainEvent.bot_id == bot.id, DomainEvent.aggregate_type == "market_feed"))
         .order_by(DomainEvent.position.desc()).limit(50))).all()
     features = await entry_features(db, [*open_pos, *trades])
+    amounts = await entry_amounts(db, [*open_pos, *trades])
     owner = -(await account_balances(db, bot.id)).get(("owner_capital", USD), ZERO)
+    equity = await equity_json(db, bot.id, now)
 
     def with_features(p: Position) -> dict[str, Any]:
-        return position_json(p) | {"entry_features": features.get(p.id)}
+        qty, notional = amounts.get(p.id, (None, None))
+        return position_json(p) | {"entry_features": features.get(p.id),
+                                   "entry_qty": qty, "entry_notional": notional}
 
     return {
         "generated_at": now,
@@ -216,7 +276,9 @@ async def build_snapshot(db: AsyncSession, bot_id: uuid.UUID, now: datetime) -> 
         "config": await config_json(db, bot),
         "owner_capital": owner,
         "session": session_json(session, now),
-        "equity": await equity_json(db, bot.id, now),
+        "equity": equity,
+        "entry_blocks": await entry_blocks(db, bot, equity | {"owner_capital": owner},
+                                           len(open_pos), now),
         "stats": await stats_json(db, bot.id),
         "open_positions": [with_features(p) for p in open_pos],
         "recent_trades": [with_features(p) for p in trades],

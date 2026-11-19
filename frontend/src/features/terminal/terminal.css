@@ -123,7 +123,10 @@
 .hl-startdot { position: absolute; left: 48px; top: 25px; background: #999ba6; width: 6px; height: 6px; border-radius: 50%; }
 .hl-line { position: absolute; left: 48px; top: 29px; width: 160px; height: 1px; background: #d4d2d7; }
 .hl-progress { position: absolute; left: 48px; top: 48px; width: 160px; height: 6px; background: #ececf0; border-radius: 3px; }
-.hl-progress span { display: block; background: #27a267; border-radius: 3px; height: 100%; }
+.hl-progress { overflow: hidden; }
+.hl-bar { position: absolute; top: 0; display: block; height: 100%; border-radius: 3px; }
+.hl-bar.good { background: #27a267; } .hl-bar.bad { background: #b23c63; } .hl-bar.muted { background: #c9c7d0; }
+.hl-bar-center { position: absolute; left: 50%; top: -2px; width: 1px; height: 10px; background: #55515b; }
 .hl-winloss { position: absolute; left: 48px; top: 60px; font-size: 7px; color: #379367; font-weight: bold; }
 .hl-bal1 { position: absolute; right: 5px; top: 22px; font: 11px 'Space Mono', var(--font-mono); }
 .hl-bal2 { position: absolute; right: 5px; top: 44px; font: bold 11px 'Space Mono', var(--font-mono); }
@@ -138,6 +141,9 @@
 .hl-event { width: 49px; border: 1px solid #d5d4dc; background: #fafafa; border-radius: 3px; text-align: center; padding: 1px 2px; font-size: 6px; }
 .hl-event.enter { color: #16895d; background: #e9f8f1; } .hl-event.exit { color: #a84562; background: #fff1f5; }
 .hl-event.filtered { color: #ab465c; background: #faf3f4; }
+.hl-event.refused { color: #4645a7; background: #f1f0fb; }
+.hl-banner.provenance { background: #eef5fd; color: #0d4f97; border: 1px solid #b9d4f2; }
+.hl-banner.blocked { background: #fbeff3; color: #8c2f4d; border: 1px solid #e3b3c3; font-weight: 700; }
 .hl-item { flex: 1; min-width: 0; }
 .hl-item b { font-size: 9px; }
 .hl-item small { display: block; font-size: 6px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

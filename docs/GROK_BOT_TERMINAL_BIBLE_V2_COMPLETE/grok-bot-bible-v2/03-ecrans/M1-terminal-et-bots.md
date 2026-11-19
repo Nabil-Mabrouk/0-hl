@@ -36,6 +36,14 @@ Ce chapitre détaille le lot **M1.5** ([13-roadmap](../13-roadmap/01-plan-execut
 - Responsive : sous 1200 px la colonne droite passe sous le centre ; sous 800 px une seule colonne.
 - Sélecteur « Full width / Reference canvas » en tête de page, mémorisé dans le navigateur (préférence locale).
 
+**Corrections après revue opérateur (2026-11-19), communes aux deux vues :**
+- **Bandeau de provenance** permanent pour un bot `PAPER` : « PAPER — real Kraken prices · simulated execution · fictitious capital <capital déposé> ».
+- **Bandeau d'entrées bloquées** dès qu'un blocage s'applique (liste `entry_blocks` de l'instantané) : perte du jour ≥ limite (avec valeur, limite et levée à 00:00 UTC), drawdown ≥ limite, kill switch, nombre maximal de positions atteint, bot non `RUNNING`.
+- **Refus attribué à la bonne étape** : un `RISK_REJECTED` d'étape `RUG_CHECK` est une ligne `FILTERED` (carte RUG CHECK) ; d'étape `SIZER`, une ligne `REFUSED` (carte SIZER, avec le motif). La carte RUG CHECK n'affiche que ses propres rejets.
+- **Mini-carte « NO SIGNAL »** (et non « FILTERED ») : paires évaluées au dernier scan qui ne remplissent pas les conditions de la stratégie, plus le nombre d'inconnues.
+- **Taille et résultat d'un trade** calculés sur le **montant engagé à l'entrée** (`entry_notional` de l'instantané) : taille en % du capital déposé, résultat d'un trade clos en % de ce montant (jamais sur le coût restant, nul après la vente).
+- **Barre RESULT centrée sur le capital de départ** : gain vers la droite (vert), perte vers la gauche (rose) ; la demi-barre représente ±10 % du capital, au-delà la barre est pleine et la valeur exacte reste affichée.
+
 **Option « Reference canvas » : canvas canonique 550×688** reproduisant la géométrie de la capture 3 (positions du prototype `original/prototype_v1.html`), mis à l'échelle proportionnellement pour tenir dans la fenêtre (zoom ≤ 1,6), centré. Correspondance des zones (contenu 0-hl, ADR-001/004) :
 
 | Zone (capture 3) | Donnée 0-hl |
@@ -79,6 +87,7 @@ Ce chapitre détaille le lot **M1.5** ([13-roadmap](../13-roadmap/01-plan-execut
 | T-M1.5-06 | bots : actions par statut ; E-stop et STOP demandent confirmation ; aucune commande envoyée sans confirmation |
 | T-M1.5-07 | `prefers-reduced-motion` : aucune classe d'animation |
 | T-M1.5-08 | `npm run typecheck && npm run test && npm run build` verts |
+| T-M1.5-10 | bandeaux provenance et entrées bloquées ; refus SIZER affiché `REFUSED` sur la carte SIZER ; taille et résultat sur le montant engagé ; « NO SIGNAL » ; barre RESULT centrée |
 | T-M1.5-09 | vue pleine largeur par défaut avec les mêmes valeurs que la réplique ; le sélecteur bascule vers la réplique 550×688 et le choix est mémorisé (ADR-016) |
 
 **Hors M1.5 (ouvert)** : la mesure de fidélité par capture Playwright 550×688 superposée à la capture 3 (02-design/03) nécessite d'ajouter Playwright, absent du châssis frontend ; elle est reportée au lot de recette M1.6 `[OPEN]`.

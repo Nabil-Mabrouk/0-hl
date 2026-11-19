@@ -86,4 +86,32 @@ describe("TerminalCanvas", () => {
     expect(screen.getByTestId("hl-scan-fails")).toHaveTextContent("volume_spike=30 window_notional_usd=21");
   });
 });
+
+  it("review 2026-11-19: SIZER refusals are REFUSED on the SIZER card, not RUG CHECK", () => {
+    const events = [
+      ev("CANDIDATE_DETECTED", { instrument_id: "kraken_spot:SUI/USD", features: { volume_spike: "36.7" } }, { correlation_id: "c-sui" }),
+      ev("RISK_PASSED", { stage: "RUG_CHECK" }, { correlation_id: "c-sui" }),
+      ev("RISK_REJECTED", { stage: "SIZER", reasons: ["MAX_DAILY_LOSS"] }, { correlation_id: "c-sui" }),
+    ];
+    renderCanvas({ events });
+    expect(within(screen.getByTestId("hl-log")).getByText("REFUSED")).toBeInTheDocument();
+    expect(screen.getByTestId("hl-agent-SIZER")).toHaveTextContent("refused $SUI: max_daily_loss");
+    expect(screen.getByTestId("hl-agent-RUG_CHECK")).not.toHaveTextContent("$SUI");
+  });
+
+  it("review 2026-11-19: closed trade size and result use the amount committed at entry", () => {
+    renderCanvas();
+    const trade = screen.getByTestId("hl-trade");
+    expect(trade).toHaveTextContent("13% of capital ($1,310.67)");
+    expect(trade).toHaveTextContent("+26.1% closed");            // 342.52 / 1310.67
+    expect(screen.getByText("NO SIGNAL")).toBeInTheDocument();
+  });
+
+  it("review 2026-11-19: RESULT bar is centred on the starting capital", () => {
+    const s = snapshot();
+    renderCanvas({ snapshot: { ...s, equity: { ...s.equity, equity: "9462.05" } } });
+    const bar = screen.getByTestId("hl-result-bar").querySelector("span") as HTMLElement;
+    expect(bar.className).toContain("bad");
+    expect(bar.style.left).toBe("23.1%");                         // −5.38 % ⇒ half-bar 26.9 % left of centre
+  });
 });

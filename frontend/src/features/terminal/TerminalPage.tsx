@@ -8,6 +8,8 @@ import { prefersReducedMotion, useTerminal, useTradingAccess } from "../shared/h
 import type { Bot, DomainEvent } from "../shared/types";
 import TerminalCanvas from "./TerminalCanvas";
 import TerminalWide from "./TerminalWide";
+import { blockText } from "./viewModel";
+import { fmtUsd } from "../shared/format";
 import "./terminal.css";
 
 function ErrorBox({ error }: { error: ApiError }) {
@@ -127,8 +129,20 @@ export default function TerminalPage() {
     reducedMotion: prefersReducedMotion(),
   };
 
+  const blocks = s.entry_blocks ?? [];
+
   return (
     <div className="hl-page">
+      {s.bot.environment === "PAPER" && (
+        <div className="hl-banner provenance" role="note" data-testid="hl-provenance">
+          PAPER — real Kraken prices · simulated execution · fictitious capital {fmtUsd(s.owner_capital)}
+        </div>
+      )}
+      {blocks.length > 0 && (
+        <div className="hl-banner blocked" role="status" data-testid="hl-blocked">
+          Entries blocked: {blocks.map(blockText).join(" · ")}
+        </div>
+      )}
       {staleReasons.length > 0 && (
         <div className="hl-banner stale" role="status" data-testid="hl-stale">
           stale data: {staleReasons.join(" · ")}

@@ -2,12 +2,12 @@
 // (spec 03-ecrans/M1-terminal-et-bots « UI-01 Live Terminal »). No value is invented:
 // missing data stays null and renders as "—".
 import { DASH, fmtNum, fmtPct, fmtSignedUsd, fmtTime, fmtUsd, ratio, symbolOf } from "../shared/format";
-import type { DomainEvent, PositionView, Snapshot } from "../shared/types";
+import type { DomainEvent, EntryBlock, PositionView, Snapshot } from "../shared/types";
 
 export interface LogLine {
   position: number;
   time: string;
-  kind: "ENTER" | "EXIT" | "FILTERED" | "SCAN" | "INFO";
+  kind: "ENTER" | "EXIT" | "FILTERED" | "REFUSED" | "SCAN" | "INFO";
   symbol: string;
   detail: string;
   value: string;
@@ -50,8 +50,16 @@ function symbolsByCorrelation(events: DomainEvent[]): Map<string, string> {
   return m;
 }
 
-function sizePct(p: PositionView | undefined, equity: string | null): string {
-  return p ? fmtPct((ratio(p.cost_basis, equity) ?? 0) * 100, 0) : DASH;
+/** Amount committed at entry (review 2026-11-19): never the residual cost, which is 0 once sold. */
+export function entryNotional(p: PositionView | undefined): string | null {
+  if (!p) return null;
+  return p.entry_notional ?? (p.status === "CLOSED" ? null : p.cost_basis);
+}
+
+function sizePct(p: PositionView | undefined, capital: string | null): string {
+  const n = entryNotional(p);
+  const r = ratio(n, capital);
+  return r === null ? DASH : fmtPct(r * 100, 0);
 }
 
 export function logLines(events: DomainEvent[], snap: Snapshot | null): LogLine[] {
@@ -77,9 +85,12 @@ export function logLines(events: DomainEvent[], snap: Snapshot | null): LogLine[
         break;
       }
       case "RISK_REJECTED": {
+        // RUG CHECK rejections are FILTERED; SIZER refusals (limits) are REFUSED (review 2026-11-19)
+        const sizer = p.stage === "SIZER";
         const failed = (p.failed as string[] | undefined) ?? (p.reasons as string[] | undefined) ?? [];
-        out.push({ ...base, kind: "FILTERED", symbol: sym,
-          detail: `reason: ${failed.join(", ").toLowerCase() || DASH}`, value: "not traded", tone: "muted" });
+        out.push({ ...base, kind: sizer ? "REFUSED" : "FILTERED", symbol: sym,
+          detail: `${sizer ? "sizer" : "rug check"}: ${failed.join(", ").toLowerCase() || DASH}`,
+          value: "not traded", tone: "muted" });
         break;
       }
       case "SCAN_CYCLE_COMPLETED":
@@ -112,10 +123,13 @@ export function agentCards(snap: Snapshot, events: DomainEvent[]): AgentCard[] {
   const lastOpen = snap.open_positions[snap.open_positions.length - 1];
   const lines = logLines(events, snap);
   const lastFilter = [...lines].reverse().find((l) => l.kind === "FILTERED");
+  const lastRefusal = [...lines].reverse().find((l) => l.kind === "REFUSED");
   const details: Record<AgentKey, string> = {
     SCANNER: snap.scan ? `last scan: ${snap.scan.evaluated} pairs · ${snap.scan.candidates} cand.` : "waiting for first scan",
     RUG_CHECK: lastFilter ? `filtered ${lastFilter.symbol}` : "no rejection yet",
-    SIZER: `risk ${snap.config.max_trade_risk_pct ?? DASH}% of ${fmtUsd(snap.equity.equity)}`,
+    SIZER: lastRefusal
+      ? `refused ${lastRefusal.symbol}: ${lastRefusal.detail.replace("sizer: ", "")}`
+      : `risk ${snap.config.max_trade_risk_pct ?? DASH}% of ${fmtUsd(snap.equity.equity)}`,
     EXECUTOR: lastOpen ? `LONG ${symbolOf(lastOpen.instrument_id)}` : lastClosed ? `last exit ${symbolOf(lastClosed.instrument_id)}` : "no fill yet",
     LOGGER: `line #${snap.agents.LOGGER?.position ?? snap.position}`,
     EQUITY: `${fmtUsd(snap.equity.equity)} · ${snap.stats.trades} closes`,
@@ -144,9 +158,9 @@ export function tradeView(snap: Snapshot): TradeView | null {
   const p = snap.open_positions[snap.open_positions.length - 1] ?? snap.recent_trades[0];
   if (!p) return null;
   const open = p.status !== "CLOSED";
-  const ch = open
-    ? (ratio(p.mark_price, p.avg_entry_price) === null ? null : (ratio(p.mark_price, p.avg_entry_price)! - 1) * 100)
-    : (ratio(p.realized_pnl_net, p.cost_basis) === null ? null : ratio(p.realized_pnl_net, p.cost_basis)! * 100);
+  const markRatio = ratio(p.mark_price, p.avg_entry_price);
+  const pnlRatio = ratio(p.realized_pnl_net, entryNotional(p));
+  const ch = open ? (markRatio === null ? null : (markRatio - 1) * 100) : (pnlRatio === null ? null : pnlRatio * 100);
   const f = p.entry_features ?? {};
   const reasonParts = [
     f.volume_spike ? `spike ${fmtNum(f.volume_spike, 1)}×` : null,
@@ -161,7 +175,7 @@ export function tradeView(snap: Snapshot): TradeView | null {
     exit: open ? "open" : (p.exit_reason ?? DASH).toLowerCase().replace("_", " "),
     stop: fmtNum(p.initial_stop_price),
     target: fmtNum(p.take_profit_price),
-    size: `${sizePct(p, snap.equity.equity ?? snap.owner_capital)} of equity`,
+    size: `${sizePct(p, snap.owner_capital)} of capital (${fmtUsd(entryNotional(p))})`,
     reason: reasonParts.length ? reasonParts.join(" · ") : DASH,
   };
 }
@@ -176,6 +190,46 @@ export function candidateCards(events: DomainEvent[]): { symbol: string; spike: 
       return { symbol: symbolOf(p.instrument_id), position: e.position,
         spike: p.features?.volume_spike ? `spike ${fmtNum(p.features.volume_spike, 1)}×` : DASH };
     });
+}
+
+export interface ResultBar {
+  left: number; // % of the track
+  width: number;
+  tone: "good" | "bad" | "muted";
+  pct: number | null;
+}
+
+/** RESULT bar centred on the starting capital; a half-bar is ±10 % (review 2026-11-19). */
+export function resultBar(snap: Snapshot): ResultBar {
+  const r = ratio(snap.equity.equity, snap.owner_capital);
+  if (r === null) return { left: 50, width: 0, tone: "muted", pct: null };
+  const pct = (r - 1) * 100;
+  const half = Math.round(Math.min(Math.abs(pct) / 10, 1) * 5000) / 100; // 2 decimals for CSS
+  return pct >= 0
+    ? { left: 50, width: half, tone: "good", pct }
+    : { left: Math.round((50 - half) * 100) / 100, width: half, tone: "bad", pct };
+}
+
+export function noSignal(snap: Snapshot): number | null {
+  return snap.scan ? snap.scan.evaluated - snap.scan.candidates - snap.scan.unknown : null;
+}
+
+export function blockText(b: EntryBlock): string {
+  const pct = (s: string) => fmtPct(Number(s) * 100, 1);
+  switch (b.code) {
+    case "MAX_DAILY_LOSS":
+      return `daily loss ${pct(b.value)} ≥ ${pct(b.limit)} until 00:00 UTC`;
+    case "MAX_DRAWDOWN":
+      return `drawdown ${pct(b.value)} ≥ ${pct(b.limit)}`;
+    case "KILL_SWITCH":
+      return "kill switch on";
+    case "MAX_OPEN_POSITIONS":
+      return `max open positions ${b.value}/${b.limit}`;
+    case "BOT_NOT_RUNNING":
+      return `bot ${b.value.toLowerCase()}`;
+    default:
+      return String(b.code).toLowerCase();
+  }
 }
 
 export function activityChip(snap: Snapshot, lines: LogLine[]): string {

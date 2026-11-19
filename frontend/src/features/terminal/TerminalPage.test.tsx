@@ -100,4 +100,21 @@ describe("TerminalPage", () => {
     expect(screen.getByTestId("hl-canvas").dataset.layout).toBeUndefined();
     expect(localStorage.getItem("hl.terminal.layout")).toBe("reference");
   });
+
+  it("shows the PAPER provenance and the entry-blocked banners (review 2026-11-19)", async () => {
+    const s = snapshot({ entry_blocks: [
+      { code: "MAX_DAILY_LOSS", value: "0.034", limit: "0.03", until: "2026-11-20T00:00:00Z" },
+      { code: "BOT_NOT_RUNNING", value: "PAUSED", limit: "RUNNING", until: null },
+    ] });
+    vi.stubGlobal("fetch", route({
+      "/api/v1/me": () => json({ roles: ["OBSERVER"], email: "o@x.io" }),
+      "/api/v1/bots": () => json({ items: [s.bot] }),
+      "/api/v1/terminal/snapshot": () => json(s),
+    }));
+    renderPage();
+    expect(await screen.findByTestId("hl-provenance")).toHaveTextContent(
+      "PAPER — real Kraken prices · simulated execution · fictitious capital $10,000.00");
+    expect(screen.getByTestId("hl-blocked")).toHaveTextContent(
+      "Entries blocked: daily loss 3.4% ≥ 3.0% until 00:00 UTC · bot paused");
+  });
 });

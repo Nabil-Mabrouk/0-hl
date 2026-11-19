@@ -25,6 +25,7 @@ Ce registre tranche les points `[OPEN]` de la V2.0 et prime sur toute formulatio
 | ADR-015 | Point d'extension des routes frontend fourni par le template gitsky | Actée — livrée (châssis fd9a22b) | 2026-11-18 |
 | ADR-016 | Live Terminal pleine largeur par défaut ; réplique 550×688 en option | Actée | 2026-11-18 |
 | ADR-017 | Flux Kraken : mesure du retard, carnet profondeur 10, réception allégée | Actée | 2026-11-19 |
+| ADR-018 | Carnet d'ordres incrémental (checksum sans reformatage) | Actée | 2026-11-19 |
 
 ---
 
@@ -174,3 +175,14 @@ Besoin exprimé au template :
 4. **Observabilité** : le résumé du flux (toutes les 5 min) indique le débit (messages/s), le coût moyen de traitement par message (µs) et le retard maximal observé ; chaque passage `FEED_LAG` est journalisé (WARNING).
 
 **Conséquences.** Une nouvelle fenêtre de recette de 24 h est nécessaire après ce correctif. Si le retard persiste aux heures de pointe malgré ces mesures, l'étape suivante est un processus d'ingestion séparé (07-data/03, réversibilité d'ADR-007).
+
+## ADR-018 — Carnet d'ordres incrémental (checksum sans reformatage)
+
+**Constat (production, 2026-11-19, après ADR-017).** Horloge du serveur synchronisée (NTP, écart < 1 s avec Kraken) : les `FEED_LAG` sont dus à la charge. Le traitement coûte ~200 µs par message sur le VPS (≈ 4,5× ce PC) pour 2 500 à 3 700 messages/s, avec des pics de retard de 7 à 9,5 s aux quarts d'heure ronds (rafales d'activité de marché). Profil : le **checksum représente ~67 % du coût**, car chaque message reformate les 20 meilleurs niveaux (40 décimaux) alors qu'en général un seul a changé.
+
+**Décision.** Le carnet devient incrémental :
+- le texte de checksum de chaque niveau (prix et quantité formatés selon la précision de la paire, point et zéros de tête retirés) est calculé **une fois**, à l'insertion ou à la modification du niveau, et mis en cache ; un changement de précision (canal `instrument`) invalide le cache ;
+- les prix de chaque côté sont tenus **triés en continu** (insertion et suppression par dichotomie) au lieu d'un tri complet à chaque message ;
+- l'algorithme du checksum est inchangé : il doit rester valide à 100 % sur la session Kraken réelle enregistrée (T-M1.2-01).
+
+**Suite.** Si les résumés du flux montrent encore des retards au-delà de 2 s aux heures chargées, l'étape suivante reste un processus d'ingestion séparé (ADR-017).
