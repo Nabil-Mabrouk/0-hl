@@ -21,7 +21,7 @@ Réalisation M2 de [09-recherche/01](01-backtests-et-validation.md) pour Kraken 
 
 Pas d'une minute. Pour chaque minute `m` de la période :
 
-1. Les minutes de trades **closes** (`minute_start < m`) sont copiées dans le bac à sable au fur et à mesure : le moteur ne peut pas lire une minute future, même par erreur (INV-03).
+1. Les minutes de trades sont servies au moteur par un magasin en mémoire qui ne rend que les minutes **closes** (`minute_start < m`), avec le même contrat que la lecture du SCANNER (`load_minutes` : `live` prioritaire sur `backfill`). Le moteur reçoit ce magasin à la place de la requête en base (paramètre `minutes_loader` du `DecisionEngine`, inchangé pour le bot) : il ne peut pas lire une minute future, même par erreur (INV-03).
 2. L'état de marché reçoit, pour chaque paire, le carnet de l'instantané de la minute `m` (`hl_book_snapshot`), flux `LIVE`. Sans instantané : flux `STALE` (`NO_SNAPSHOT`), donc aucune entrée et sortie différée, comme en production.
 3. L'horloge est placée à `m + 30 s` (délai `window_settle_seconds` du bot) et le moteur exécute **un** tick. Les latences paper (250 ms) avancent l'horloge sans changer le carnet.
 
@@ -29,7 +29,7 @@ Pas d'une minute. Pour chaque minute `m` de la période :
 
 ## Coûts
 
-Ceux du bot : frais taker 0,40 % (`PAPER_TAKER_FEE`), remplissage en parcourant le carnet de l'instantané (glissement réel aux 10 niveaux enregistrés), refus si la profondeur ne suffit pas. `--fee-multiplier` multiplie les frais pour le stress (09-recherche/01 : ×2 à ×5).
+Ceux du bot : frais taker 0,40 % (`PAPER_TAKER_FEE`, porté par `EngineConfig.taker_fee`, valeur inchangée pour le bot), remplissage en parcourant le carnet de l'instantané (glissement réel aux 10 niveaux enregistrés), refus si la profondeur ne suffit pas. `--fee-multiplier` multiplie les frais pour le stress (09-recherche/01 : ×2 à ×5).
 
 ## Rapport
 
@@ -38,7 +38,8 @@ Ceux du bot : frais taker 0,40 % (`PAPER_TAKER_FEE`), remplissage en parcourant 
 - **Référence** : pour les mêmes sorties, la référence sans filtre d'entrée de l'étude [03](03-etude-strat01.md) sur la même période.
 - **Trades** (`--json`) : chaque trade avec ses horodatages, prix, frais, motif et les features de son candidat.
 - **Déterminisme** : mêmes données, mêmes configurations et mêmes paramètres ⇒ rapport identique (hors identifiants internes, non affichés).
-- **Performance visée** `[INF]` : 30 jours × 36 paires en moins d'une heure sur le serveur ; `--pairs` réduit le périmètre.
+- **Performance** : mesurée à ~85 ms par minute rejouée pour 36 paires sur un poste de développement (≈ 1 h pour 30 jours) ; `--pairs` et `--from`/`--to` réduisent le périmètre.
+- **Positions ouvertes en fin de période** : non comptées dans les trades (pas de résultat réalisé), mais présentes dans le capital final au prix de liquidation.
 
 ## Hors M2.2
 
@@ -48,7 +49,7 @@ Ceux du bot : frais taker 0,40 % (`PAPER_TAKER_FEE`), remplissage en parcourant 
 
 | ID | Vérification |
 |---|---|
-| T-M2.2-01 | aucune donnée future : à l'instant du tick `m`, le bac à sable ne contient aucune minute `≥ m` ni aucun instantané `> m` |
+| T-M2.2-01 | aucune donnée future : à l'instant du tick `m`, aucune minute `≥ m` n'est lisible par le moteur et seul l'instantané de `m` est appliqué |
 | T-M2.2-02 | équivalence : sur un scénario enregistré (minutes + carnets), le backtest produit les mêmes candidats, entrées, sorties et le même résultat que le moteur des tests M1.3 |
 | T-M2.2-03 | déterminisme : deux exécutions identiques donnent le même rapport et la même empreinte de données |
 | T-M2.2-04 | instantané manquant ⇒ paire `STALE`, aucune entrée sur cette paire pendant la minute |

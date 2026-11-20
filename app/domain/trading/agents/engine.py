@@ -82,6 +82,7 @@ class EngineConfig:
     reconcile_seconds: float = 300.0
     summary_seconds: float = 300.0
     window_settle_seconds: float = 30.0
+    taker_fee: Decimal = PAPER_TAKER_FEE  # paper venue fee; the backtest may stress it (09-recherche/04)
 
 
 @dataclass
@@ -124,8 +125,10 @@ class DecisionEngine:
         config: EngineConfig | None = None,
         clock: Callable[[], datetime] = utcnow,
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+        minutes_loader: Callable[..., Awaitable[dict[datetime, Any]]] = load_minutes,
     ) -> None:
         self._sessions = session_factory
+        self._load_minutes = minutes_loader  # the backtest reads closed minutes from memory (09-recherche/04)
         self.market = market
         self.config = config or EngineConfig()
         self._now = clock
@@ -229,7 +232,8 @@ class DecisionEngine:
                 out = await execute_exit(
                     db, position=p, exit_reason=reason, book=self.market.book(symbol),
                     book_fresh=self.market.is_fresh(symbol),
-                    pair_status=rules.status if rules else None, now=now)
+                    pair_status=rules.status if rules else None, now=now,
+                    fee_rate=self.config.taker_fee)
                 rt = self._rt(bot.id)
                 if out.status == "DEFERRED":
                     key = (p.id, out.reason or "")
@@ -303,7 +307,7 @@ class DecisionEngine:
                 return
             strat = await self._strategy(db, bot.strategy_version_id)
             policy = await self._policy(db, bot.risk_policy_version_id)
-            minutes = await load_minutes(db, iid, start=window_end - MINUTE * 70, end=window_end)
+            minutes = await self._load_minutes(db, iid, start=window_end - MINUTE * 70, end=window_end)
             feats = window_features(minutes, window_end)
             feats["spread_bps"] = spread_feature(book, fresh)
             incomplete = feats["volume_spike"].reason == "CURRENT_WINDOW_INCOMPLETE"
@@ -355,7 +359,7 @@ class DecisionEngine:
                 max_slippage_pct=policy.dec("max_slippage_pct") or ZERO,
                 initial_stop_pct=Decimal(strat.exit.initial_stop_pct),
                 take_profit_r=Decimal(strat.exit.take_profit_r) if strat.exit.take_profit_r else None,
-                now=self._now())
+                now=self._now(), fee_rate=self.config.taker_fee)
             await db.commit()
         if out.position is not None:
             rt.counters.entries += 1
@@ -425,7 +429,7 @@ class DecisionEngine:
             asks=book.top_asks(book.depth), bids=book.top_bids(book.depth),
             qty_precision=rules.qty_precision, qty_min=rules.qty_min, cost_min=rules.cost_min,
             policy=policy, initial_stop_pct=Decimal(strat.exit.initial_stop_pct),
-            taker_fee=PAPER_TAKER_FEE, daily_loss=await daily_loss(db, bot.id, view.equity, now),
+            taker_fee=self.config.taker_fee, daily_loss=await daily_loss(db, bot.id, view.equity, now),
             drawdown=await drawdown(db, bot.id, view))
         res = size_position(inputs)
         input_hash = sha256_hex({"equity": view.equity, "cash": view.cash, "ask": inputs.asks[:3],
