@@ -11,7 +11,7 @@
   },
   "00-guide/02-decisions.md": {
     "path": "02-projects/0-hl/spec/registre-des-decisions-d-architecture-adr.md",
-    "sha256": "234ae96b5a1a215ead68da7fbb6bf52d560752b02156add7243c64e157c8e8d0",
+    "sha256": "056a998e186021bd109598306383e5ac193eba23fd3538fc7b24a108304f6b25",
     "order": 3
   },
   "01-produit/01-vision-et-perimetre.md": {
@@ -151,7 +151,7 @@
   },
   "06-agents/03-agents-m1.md": {
     "path": "02-projects/0-hl/spec/agents-de-decision-conception-m1-3.md",
-    "sha256": "6de4b88ed61d4eb2a9f5a742e98eb08321c0819829acdba2fc80f05e094cc014",
+    "sha256": "496241d7e377cae1908677832ef2e4ea63d7553eaae70150cc5ba4fa2abc081c",
     "order": 32
   },
   "07-data/01-connecteurs-et-normalisation.md": {
@@ -181,7 +181,7 @@
   },
   "08-risque-execution/03-ledger-et-reconciliation.md": {
     "path": "02-projects/0-hl/spec/ledger-positions-et-reconciliation.md",
-    "sha256": "8b8fd8e5a88ef32ae5b02b3e8621ef50ae4aafb004dbdd98c759e9e4ecf015e3",
+    "sha256": "2430b0d6f4f162fce2f2180c804536b74ade5fa7d3afda48f088ca2486f00a8e",
     "order": 38
   },
   "09-recherche/01-backtests-et-validation.md": {

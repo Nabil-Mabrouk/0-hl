@@ -101,7 +101,7 @@ Pour chaque position `OPEN`/`REDUCING`, à chaque itération, à partir du **mei
 
 ## EQUITY, contrôles continus et réconciliation
 
-- **Valorisation conservative** : valeur d'une position = produit de la **vente simulée** de toute sa quantité sur les bids actuels, moins les frais taker ; un carnet non `LIVE` ⇒ valeur `UNKNOWN`. `equity = cash + cash_reserved + Σ valeurs` ; `UNKNOWN` si une valeur l'est (jamais remplacée par le coût).
+- **Valorisation conservative** (ADR-022) : valeur d'une position = produit de la **vente simulée** sur les bids visibles jusqu'au plancher de sortie `best_bid × (1 − 5 %)`, la quantité restante étant comptée **au plancher** (jamais zéro), moins les frais taker ; un carnet non `LIVE` ⇒ valeur `UNKNOWN`. La part comptée au plancher est publiée dans `EQUITY_UPDATED` (`positions_value_estimated`). `equity = cash + cash_reserved + Σ valeurs` ; `UNKNOWN` si une valeur l'est (jamais remplacée par le coût).
 - **Instantané** `hl_equity_snapshot` toutes les **60 s** et après chaque fill (`quality` `OK`/`STALE`), événement `EQUITY_UPDATED` (bot).
 - **Perte du jour** = (equity courante − equity du premier instantané `OK` du jour UTC − apports nets du jour) / equity de début de jour ; bloque les entrées si ≤ −`max_daily_loss_pct` jusqu'au jour UTC suivant.
 - **Drawdown** sur la courbe de performance `P = equity − owner_capital` : `(max P − P) / (owner_capital + max P)` ; bloque les entrées au-delà de `max_drawdown_pct` (réarmement manuel ultérieur, M1.4+).

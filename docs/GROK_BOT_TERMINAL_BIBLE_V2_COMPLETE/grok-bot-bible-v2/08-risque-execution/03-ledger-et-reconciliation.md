@@ -17,7 +17,7 @@ Après chaque fill, à intervalles définis et au redémarrage : récupérer ord
 
 ## Pricing
 
-Marquer les positions à une valeur liquidative conservative (simulation de sortie à profondeur actuelle) et garder distinct le mark mid/spot. Réconciliation de change FX des tokens quote multiples et provenance des taux. Les statistiques historiques doivent conserver les conventions de mark et frais.
+Marquer les positions à une valeur liquidative conservative (simulation de sortie à profondeur actuelle ; au-delà de la profondeur visible, quantité comptée au plancher de sortie, jamais à zéro : ADR-022) et garder distinct le mark mid/spot. Réconciliation de change FX des tokens quote multiples et provenance des taux. Les statistiques historiques doivent conserver les conventions de mark et frais.
 
 ## Application paper Kraken (ADR-010)
 

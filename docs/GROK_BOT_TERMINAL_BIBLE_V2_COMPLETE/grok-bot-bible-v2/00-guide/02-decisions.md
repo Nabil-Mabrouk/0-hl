@@ -29,6 +29,7 @@ Ce registre tranche les points `[OPEN]` de la V2.0 et prime sur toute formulatio
 | ADR-019 | Suppression de la réplique 550×688 et de la mesure de fidélité à la capture 3 | Actée | 2026-11-19 |
 | ADR-020 | Pause des entrées de STRAT-01 v0.2.0 et étude hors production avant v0.3.0 | Actée | 2026-11-20 |
 | ADR-021 | Jalon M2 — laboratoire de stratégie (données longues, backtest, paramètres sans code) | Actée | 2026-11-20 |
+| ADR-022 | Valorisation d'une position au-delà de la profondeur visible du carnet | Actée | 2026-11-20 |
 
 ---
 
@@ -211,3 +212,13 @@ Besoin exprimé au template :
 **Proposition.** Le jalon M2 décrit en [13-roadmap/01 « Jalon M2 »](../13-roadmap/01-plan-execution.md#jalon-m2--laboratoire-de-stratégie-adr-021--en-cours) : rétention longue des données de marché, backtest rejouant le code des agents, publication de versions de stratégie et de policy sans code, plusieurs bots paper. Le LIVE reste exclu (ADR-009).
 
 **Statut.** Actée par l'opérateur le 2026-11-20. M2.1 (données longues) est réalisé en premier : sans lui, les données de plus de 7 jours continuent d'être purgées. Chaque lot suivant est détaillé dans la spec avant d'être codé.
+
+## ADR-022 — Valorisation d'une position au-delà de la profondeur visible du carnet
+
+**Constat (2026-11-20).** Depuis ADR-017, le carnet tenu par le worker a 10 niveaux. La valeur d'une position était le produit de sa vente simulée sur ces 10 niveaux, la quantité au-delà comptant **zéro**. Or la profondeur visible s'effondre par moments sur presque toutes les paires (minimum observé sur les instantanés M2.1 : 109 USD sur BTC/USD, 259 USD sur UNI, 298 USD sur SKY, pour des positions de 1 300 à 1 700 USD), alors que la profondeur médiane est de 3 000 à plus de 12 000 USD. Résultat : des chutes d'equity fictives (backtest du 2026-11-20 : drawdown de 12,57 % pour une perte de 1,2 %), qui alimentent aussi la perte du jour et le drawdown et peuvent bloquer les entrées sans raison. À l'entrée, le SIZER limite déjà la taille à ce que le carnet peut reprendre (`liquidity_cap`) : le défaut est dans la valorisation, pas dans la taille.
+
+**Décision.**
+1. Valeur d'une position = vente simulée sur les niveaux visibles **jusqu'au plancher de sortie** `best_bid × (1 − EXIT_FLOOR_SLIPPAGE)` (5 %, le prix le plus bas qu'accepte la sortie paper), puis la quantité restante **au plancher**, le tout moins les frais taker. Jamais zéro tant que le carnet est `LIVE` ; toujours `UNKNOWN` si le carnet ne l'est pas.
+2. Les sorties sont inchangées : une vente au-delà de la profondeur visible reste partielle, le reste est vendu aux ticks suivants ; la sortie paper n'invente jamais de liquidité.
+3. Pas de changement du nombre de niveaux (ADR-017 conservé).
+4. La part estimée au-delà du carnet visible est publiée dans l'événement `EQUITY_UPDATED` (`positions_value_estimated`) et dans le résumé du worker ; son affichage dans le Terminal est reporté.

@@ -106,6 +106,7 @@ class _BotRuntime:
     counters: _Counters = field(default_factory=_Counters)
     cycles: dict[datetime, _Counters] = field(default_factory=dict)
     emitted_cycles: set[datetime] = field(default_factory=set)
+    estimated: Decimal = ZERO          # ADR-022: positions value counted at the exit floor
 
     def count(self, window_end: datetime, name: str, n: int = 1) -> None:
         for c in (self.counters, self.cycles.setdefault(window_end, _Counters())):
@@ -489,6 +490,7 @@ class DecisionEngine:
                     await transition_bot(db, bot, BotStatus.DEGRADED, actor=WORKER_ACTOR,
                                          reason="RECONCILIATION_FAILED")
         view = await compute_equity(db, bot.id, self.market)
+        rt.estimated = view.estimated
         for p in view.open_positions:  # marks for the API/terminal (10-backend/04)
             symbol = p.instrument_id.split(":", 1)[1]
             value = liquidation_value(p.quantity, self.market, p.instrument_id)
@@ -503,6 +505,7 @@ class DecisionEngine:
             await write_snapshot(db, bot.id, view, now, realized)
             await self._emit(db, "EQUITY_UPDATED", "bot", bot.id,
                              {"equity": view.equity, "cash": view.cash, "positions_value": view.positions_value,
+                              "positions_value_estimated": view.estimated,
                               "realized_pnl_net": realized, "unrealized_pnl": view.unrealized,
                               "quality": view.quality.value}, bot_id=bot.id, corr=None)
         if bot.status is BotStatus.STOPPING and not view.open_positions:
@@ -529,8 +532,9 @@ class DecisionEngine:
             c = rt.counters
             fails = " ".join(f"{k}={v}" for k, v in c.fails.most_common()) or "-"
             log.info("agents summary bot=%s: evaluated=%d unknown=%d candidates=%d rejected=%d "
-                     "entries=%d exits=%d fails: %s", str(bot_id)[:8], c.evaluated, c.unknown,
-                     c.candidates, c.rejected, c.entries, c.exits, fails)
+                     "entries=%d exits=%d positions_beyond_book=%s fails: %s", str(bot_id)[:8],
+                     c.evaluated, c.unknown, c.candidates, c.rejected, c.entries, c.exits,
+                     _q(rt.estimated), fails)
             rt.counters = _Counters()
 
 

@@ -12,7 +12,7 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.trading.agents.sim import PAPER_TAKER_FEE, sweep
+from app.domain.trading.agents.sim import EXIT_FLOOR_SLIPPAGE, PAPER_TAKER_FEE, sweep
 from app.domain.trading.enums import CashMovementKind, LedgerKind, PositionStatus, SnapshotQuality
 from app.domain.trading.ledger import (
     ACCOUNT_CASH,
@@ -40,16 +40,26 @@ def symbol_of(instrument_id: str) -> str:
     return instrument_id.split(":", 1)[1]
 
 
-def liquidation_value(qty: Decimal, state: MarketState, instrument_id: str,
-                      fee: Decimal = PAPER_TAKER_FEE) -> Decimal | None:
-    """Proceeds of selling `qty` on current bids, minus taker fee; None if book not LIVE.
-    Quantity beyond visible depth is valued at zero (conservative)."""
+def liquidation_breakdown(qty: Decimal, state: MarketState, instrument_id: str,
+                          fee: Decimal = PAPER_TAKER_FEE) -> tuple[Decimal, Decimal] | None:
+    """(value, estimated part) of selling `qty`, net of taker fee (ADR-022). Visible bids are
+    swept down to the exit floor best_bid × (1 − EXIT_FLOOR_SLIPPAGE); the quantity left is
+    counted at that floor (never zero). None if the book is not LIVE."""
     symbol = symbol_of(instrument_id)
     book = state.book(symbol)
-    if book is None or not state.is_fresh(symbol):
+    if book is None or not state.is_fresh(symbol) or book.best_bid is None:
         return None
-    res = sweep(book.top_bids(book.depth), qty, limit=ZERO, side="sell")
-    return res.notional * (1 - fee)
+    floor = book.best_bid[0] * (1 - EXIT_FLOOR_SLIPPAGE)
+    res = sweep(book.top_bids(book.depth), qty, limit=floor, side="sell")
+    estimated = (qty - res.filled_qty) * floor
+    return (res.notional + estimated) * (1 - fee), estimated * (1 - fee)
+
+
+def liquidation_value(qty: Decimal, state: MarketState, instrument_id: str,
+                      fee: Decimal = PAPER_TAKER_FEE) -> Decimal | None:
+    """Proceeds of selling `qty` (see `liquidation_breakdown`); None if book not LIVE."""
+    out = liquidation_breakdown(qty, state, instrument_id, fee)
+    return None if out is None else out[0]
 
 
 @dataclass
@@ -61,6 +71,7 @@ class EquityView:
     owner_capital: Decimal
     unrealized: Decimal | None
     open_positions: list[Position] = field(default_factory=list)
+    estimated: Decimal = ZERO          # part of positions_value counted at the exit floor (ADR-022)
 
     @property
     def quality(self) -> SnapshotQuality:
@@ -80,17 +91,18 @@ async def compute_equity(db: AsyncSession, bot_id: uuid.UUID, state: MarketState
     owner = -bal.get(("owner_capital", USD), ZERO)
     positions = await open_positions(db, bot_id)
     value: Decimal | None = ZERO
-    cost = ZERO
+    cost = estimated = ZERO
     for p in positions:
-        v = liquidation_value(p.quantity, state, p.instrument_id)
+        out = liquidation_breakdown(p.quantity, state, p.instrument_id)
         cost += p.cost_basis
-        if v is None:
+        if out is None:
             value = None
         elif value is not None:
-            value += v
+            value += out[0]
+            estimated += out[1]
     equity = None if value is None else cash + reserved + value
     unrealized = None if value is None else value - cost
-    return EquityView(cash, reserved, value, equity, owner, unrealized, positions)
+    return EquityView(cash, reserved, value, equity, owner, unrealized, positions, estimated)
 
 
 async def write_snapshot(db: AsyncSession, bot_id: uuid.UUID, view: EquityView, now: datetime,
