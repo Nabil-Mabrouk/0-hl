@@ -87,6 +87,30 @@ describe("TerminalPage", () => {
     expect(new Headers(init.headers).get("Idempotency-Key")).toBeTruthy();
   });
 
+  it("fix 2026-11-20: resuming needs a confirmation and a paused bot shows a banner", async () => {
+    const base = snapshot();
+    const s = { ...base, bot: { ...base.bot, status: "PAUSED", updated_at: "2026-11-20T06:37:17Z" } };
+    const fetchMock = route({
+      "/api/v1/me": () => json({ roles: ["OPERATOR"], email: "op@x.io" }),
+      "/api/v1/bots/bot-1/commands": () => json({ command_id: "cmd-2", status: "PENDING" }, 202),
+      "/api/v1/commands/cmd-2": () => json({ command_id: "cmd-2", status: "COMPLETED", rejection_code: null }),
+      "/api/v1/bots": () => json({ items: [s.bot] }),
+      "/api/v1/terminal/snapshot": () => json(s),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderPage();
+    expect(await screen.findByTestId("hl-paused")).toHaveTextContent("ENTRIES PAUSED since 06:37 UTC");
+    const posts = () => fetchMock.mock.calls.filter(([, i]) => (i as RequestInit | undefined)?.method === "POST");
+    await userEvent.click(screen.getByRole("button", { name: "Resume entries" }));
+    expect(screen.getByRole("dialog", { name: "Confirm resume" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "keep paused" }));
+    expect(posts()).toHaveLength(0);                                   // nothing sent without confirmation
+    await userEvent.click(screen.getByRole("button", { name: "Resume entries" }));
+    await userEvent.click(screen.getByRole("button", { name: "confirm resume" }));
+    await waitFor(() => expect(posts()).toHaveLength(1));
+    expect(JSON.parse(String((posts()[0][1] as RequestInit).body))).toEqual({ command: "RESUME_ENTRIES", reason: "terminal button" });
+  });
+
   it("renders the single full-width terminal, without any layout switch (ADR-019)", async () => {
     const s = snapshot();
     vi.stubGlobal("fetch", route({

@@ -49,7 +49,7 @@ Ce chapitre détaille le lot **M1.5** ([13-roadmap](../13-roadmap/01-plan-execut
 | Zone (capture 3) | Donnée 0-hl |
 |---|---|
 | barre système : titre | `0-hl — <environnement> · six agents · log first` ; à droite l'identifiant de l'utilisateur, badge d'environnement (`PAPER`) et indicateur de connexion |
-| bouton pause | `PAUSE_ENTRIES` / `RESUME_ENTRIES` selon le statut (Operator ; désactivé sinon) ; état « en attente » jusqu'à `COMMAND_COMPLETED`/`REJECTED` |
+| bouton pause | **libellé explicite** (correctif du 2026-11-20 : un bouton-icône unique avait relancé deux fois les entrées par erreur) : « ⏸ Pause entries » quand le bot tourne, « ▶ Resume entries » d'une autre couleur quand il est en pause ; la pause part tout de suite, la **reprise demande une confirmation** (« le bot ouvrira de nouveau des positions ») ; Operator ; désactivé sinon ; état « en attente » jusqu'à `COMMAND_COMPLETED`/`REJECTED`. Tant que le bot est `PAUSED`, bandeau permanent « ENTRIES PAUSED since HH:MM UTC — open positions stay protected » |
 | titre + version | « **0-hl** Terminal » + badge `v<version de stratégie>` |
 | statut + uptime | statut du bot en minuscules + uptime de session `hh:mm:ss` |
 | puce d'activité | dernier événement EXECUTOR (`EXECUTOR · ENTERED $SYM`) sinon dernier scan (`SCANNER · checked N`) |
@@ -71,7 +71,7 @@ Ce chapitre détaille le lot **M1.5** ([13-roadmap](../13-roadmap/01-plan-execut
 ## UI-02 Bots & Sessions (minimal)
 
 - Tableau : nom, environnement, statut, version de stratégie, uptime, lien « ouvrir le terminal ».
-- Actions selon le statut (transitions de 10-backend/03) : `START` (READY), `PAUSE_ENTRIES` (RUNNING), `RESUME_ENTRIES` (PAUSED), `STOP` et `EMERGENCY_STOP` (RUNNING/PAUSED/DEGRADED). Boutons masqués pour un utilisateur sans rôle Operator (E-stop visible aussi pour Risk Officer) — confort uniquement, le backend décide.
+- Actions selon le statut (transitions de 10-backend/03) : `START` (READY), `PAUSE_ENTRIES` (RUNNING), `RESUME_ENTRIES` (PAUSED), `STOP` et `EMERGENCY_STOP` (RUNNING/PAUSED/DEGRADED). `RESUME_ENTRIES`, `STOP` et `EMERGENCY_STOP` demandent une confirmation (correctif du 2026-11-20 pour la reprise). Boutons masqués pour un utilisateur sans rôle Operator (E-stop visible aussi pour Risk Officer) — confort uniquement, le backend décide.
 - `STOP` et `EMERGENCY_STOP` exigent un **dialogue de confirmation** récapitulant bot, environnement, version de stratégie, effet attendu et conséquence sur les positions (E-stop : liquidation immédiate des positions).
 - Chaque clic génère une `Idempotency-Key` (`crypto.randomUUID`) ; affichage `PENDING` puis `COMPLETED` ou `REJECTED` (code) par interrogation de `/api/v1/commands/{id}` toutes les secondes (max 30 s).
 
@@ -83,7 +83,7 @@ Ce chapitre détaille le lot **M1.5** ([13-roadmap](../13-roadmap/01-plan-execut
 | T-M1.5-02 | client WS : `hello` avec `last_position`, snapshot remplace l'état, événements ajoutés, reconnexion avec la dernière position, `4401` ⇒ refresh puis reconnexion |
 | T-M1.5-03 | terminal : rend les valeurs de l'instantané (equity, trades, wins/losses, agents, scan, position, log) ; `null` ⇒ `—` |
 | T-M1.5-04 | terminal : bandeau `stale` si worker arrêté ou flux non `LIVE` ; état forbidden sur `403` ; erreur avec `correlation_id` |
-| T-M1.5-05 | bouton pause : envoie `PAUSE_ENTRIES` avec `Idempotency-Key`, état en attente, puis statut |
+| T-M1.5-05 | bouton pause : envoie `PAUSE_ENTRIES` avec `Idempotency-Key`, état en attente, puis statut ; en pause, « Resume entries » n'envoie rien sans confirmation, bandeau « ENTRIES PAUSED » affiché |
 | T-M1.5-06 | bots : actions par statut ; E-stop et STOP demandent confirmation ; aucune commande envoyée sans confirmation |
 | T-M1.5-07 | `prefers-reduced-motion` : aucune classe d'animation |
 | T-M1.5-08 | `npm run typecheck && npm run test && npm run build` verts |

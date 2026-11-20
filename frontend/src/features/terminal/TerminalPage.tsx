@@ -30,6 +30,7 @@ export default function TerminalPage() {
   const [pending, setPending] = useState(false);
   const [actionError, setActionError] = useState<ApiError | null>(null);
   const [trace, setTrace] = useState<DomainEvent[] | null>(null);
+  const [confirmResume, setConfirmResume] = useState(false);
   const data = useTerminal(access.kind === "ready" ? botId : null);
 
   useEffect(() => {
@@ -69,6 +70,11 @@ export default function TerminalPage() {
 
   async function togglePause() {
     if (!botId) return;
+    if (s.bot.status === "PAUSED" && !confirmResume) {
+      setConfirmResume(true);             // resuming opens positions again: always confirmed
+      return;
+    }
+    setConfirmResume(false);
     setPending(true);
     setActionError(null);
     try {
@@ -120,6 +126,23 @@ export default function TerminalPage() {
       {s.bot.environment === "PAPER" && (
         <div className="hl-banner provenance" role="note" data-testid="hl-provenance">
           PAPER — real Kraken prices · simulated execution · fictitious capital {fmtUsd(s.owner_capital)}
+        </div>
+      )}
+      {s.bot.status === "PAUSED" && (
+        <div className="hl-banner blocked" role="status" data-testid="hl-paused">
+          ENTRIES PAUSED since {fmtTime(s.bot.updated_at ?? null)} UTC — open positions stay protected
+        </div>
+      )}
+      {confirmResume && (
+        <div className="hl-dialog-backdrop">
+          <div className="hl-dialog" role="dialog" aria-label="Confirm resume">
+            <h3>Resume entries?</h3>
+            <p>The bot <strong>{s.bot.name}</strong> will open new positions again, with strategy v{s.config.strategy_version ?? "—"}.</p>
+            <div className="hl-actions">
+              <button type="button" className="hl-btn" onClick={() => setConfirmResume(false)}>keep paused</button>
+              <button type="button" className="hl-btn danger" onClick={() => void togglePause()}>confirm resume</button>
+            </div>
+          </div>
         </div>
       )}
       {blocks.length > 0 && (

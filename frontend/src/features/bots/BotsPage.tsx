@@ -25,7 +25,7 @@ export const ACTIONS_BY_STATUS: Record<string, Cmd[]> = {
   PAUSED: ["RESUME_ENTRIES", "STOP", "EMERGENCY_STOP"],
   DEGRADED: ["STOP", "EMERGENCY_STOP"],
 };
-const NEEDS_CONFIRM: Cmd[] = ["STOP", "EMERGENCY_STOP"];
+const NEEDS_CONFIRM: Cmd[] = ["RESUME_ENTRIES", "STOP", "EMERGENCY_STOP"];   // resume: fix 2026-11-20
 const EFFECT: Record<Cmd, string> = {
   START: "starts a new session; entries allowed",
   PAUSE_ENTRIES: "no new entries; open positions stay protected",

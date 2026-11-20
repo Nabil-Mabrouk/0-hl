@@ -25,6 +25,7 @@ export interface Bot {
   row_version: number;
   strategy_version_id: string;
   risk_policy_version_id: string;
+  updated_at?: string;
 }
 
 export interface Session {

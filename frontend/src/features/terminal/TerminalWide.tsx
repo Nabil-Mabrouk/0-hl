@@ -59,15 +59,18 @@ export default function TerminalWide(props: TerminalViewProps) {
   return (
     <div className={`hw-root${paused ? " hw-paused" : ""}${motion}`} data-testid="hl-canvas">
       <header className="hw-head">
+        {/* explicit label (fix 2026-11-20: an icon-only toggle resumed entries by mistake);
+            resuming is confirmed by the page */}
         <button
-          className={`hw-pause${paused ? " playing" : ""}`}
+          className={`hw-pause${paused ? " playing hw-resume" : ""}`}
           type="button"
           aria-label={paused ? "Resume entries" : "Pause entries"}
-          title={props.canOperate ? (paused ? "Resume entries" : "Pause entries") : "Operator role required"}
+          title={props.canOperate ? (paused ? "Resume entries (asks for confirmation)" : "Pause entries") : "Operator role required"}
           disabled={!props.canOperate || props.pausePending || !(paused || running)}
           onClick={props.onTogglePause}
         >
           <span className="hw-pause-symbol"><i /><i /></span>
+          <span className="hw-pause-label">{paused ? "Resume entries" : "Pause entries"}</span>
         </button>
         <div className="hw-ident">
           <div className="hw-title">
