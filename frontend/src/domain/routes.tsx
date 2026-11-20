@@ -3,11 +3,18 @@
 // this extension point — App.tsx (chassis) is never patched locally.
 import { Route } from "react-router-dom";
 import BotsPage from "../features/bots/BotsPage";
+import RiskPage from "../features/risk/RiskPage";
+import StrategiesPage from "../features/strategies/StrategiesPage";
+import StrategyEditor from "../features/strategies/StrategyEditor";
 import TerminalPage from "../features/terminal/TerminalPage";
 
 export const domainRoutes = (
   <>
     <Route path="terminal" element={<TerminalPage />} />
     <Route path="bots" element={<BotsPage />} />
+    {/* M2.3 (spec 05-strategies/04 « Écrans ») */}
+    <Route path="strategies" element={<StrategiesPage />} />
+    <Route path="strategies/:vid" element={<StrategyEditor />} />
+    <Route path="risk" element={<RiskPage />} />
   </>
 );

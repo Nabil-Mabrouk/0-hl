@@ -133,3 +133,73 @@ export interface CommandView {
 }
 
 export type ConnectionState = "CONNECTING" | "LIVE" | "RECONNECTING" | "OFFLINE";
+
+// M2.3 versions (spec 05-strategies/04). Configs stay plain JSON: decimals as strings.
+export type VersionStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "PUBLISHED" | "DEPRECATED";
+
+export interface StrategyCondition {
+  feature: string;
+  op: "gt" | "gte" | "lt" | "lte";
+  threshold: string;
+  unit: string;
+  window_seconds: number;
+  ttl_ms?: number;
+}
+
+export interface StrategyConfig {
+  strategy_id: string;
+  version: string;
+  universe: Record<string, unknown>;
+  entry: { operator: "AND" | "OR"; conditions: StrategyCondition[] };
+  exit: { initial_stop_pct: string; take_profit_r?: string; max_hold_seconds?: number; exit_on_status_change?: boolean };
+  cooldown_seconds?: number;
+  risk_policy_id: string;
+  [k: string]: unknown;
+}
+
+export interface StrategyVersionView {
+  id: string;
+  strategy_id: string;
+  version: string;
+  status: VersionStatus;
+  config_sha256: string;
+  config: StrategyConfig;
+  created_by: string;
+  created_at: string;
+  published_by: string | null;
+  published_at: string | null;
+  bots: string[];
+}
+
+export interface PolicyVersionView {
+  id: string;
+  policy_id: string;
+  version: string;
+  status: VersionStatus;
+  config_sha256: string;
+  config: Record<string, unknown>;
+  created_by: string;
+  created_at: string;
+  published_by: string | null;
+  published_at: string | null;
+  pending_publication: { requested_at: string; requested_by: string; reason: string; confirm_after: string } | null;
+  bots: string[];
+  compared_to?: { id: string; version: string } | null;
+  changes?: Change[];
+  outcome?: "PUBLISHED" | "PENDING";
+  loosened?: Change[];
+  confirm_after?: string | null;
+}
+
+export interface Change {
+  path: string;
+  before: unknown;
+  after: unknown;
+  effect?: "plus strict" | "plus souple" | "neutre";
+}
+
+export interface FeatureInfo {
+  name: string;
+  unit: string;
+  description: string;
+}

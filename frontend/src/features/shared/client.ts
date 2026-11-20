@@ -8,6 +8,7 @@ export class ApiError extends Error {
     public code: string,
     public detail: string,
     public correlationId: string | null,
+    public extra: Record<string, unknown> | null = null,
   ) {
     super(`${status} ${code}: ${detail}`);
   }
@@ -15,7 +16,7 @@ export class ApiError extends Error {
 
 async function parse<T>(res: Response): Promise<T> {
   if (res.ok) return (await res.json()) as T;
-  let body: { code?: string; detail?: string; correlation_id?: string } = {};
+  let body: { code?: string; detail?: string; correlation_id?: string; extra?: Record<string, unknown> } = {};
   try {
     body = await res.json();
   } catch {
@@ -26,6 +27,30 @@ async function parse<T>(res: Response): Promise<T> {
     body.code ?? `HTTP_${res.status}`,
     body.detail ?? res.statusText,
     body.correlation_id ?? res.headers.get("X-Correlation-ID"),
+    body.extra ?? null,
+  );
+}
+
+/** Field errors of a 422 (`extra.errors[].path/message`), keyed by path. */
+export function fieldErrors(e: unknown): Record<string, string> {
+  if (!(e instanceof ApiError)) return {};
+  const raw = (e.extra?.errors ?? []) as { path?: string; message?: string }[];
+  return Object.fromEntries(raw.filter((x) => x && typeof x === "object").map((x) => [x.path ?? "", x.message ?? ""]));
+}
+
+/** JSON write (POST/PUT/DELETE) with optional extra headers (If-Match, Idempotency-Key). */
+export async function sendJson<T>(
+  method: "POST" | "PUT" | "DELETE",
+  path: string,
+  body?: unknown,
+  headers: Record<string, string> = {},
+): Promise<T> {
+  return parse<T>(
+    await apiFetch(path, {
+      method,
+      headers: { "Content-Type": "application/json", ...headers },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }),
   );
 }
 

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { ApiError, getJson, sendCommand, waitForCommand } from "../shared/client";
+import BindDialog, { REBINDABLE } from "./BindDialog";
 import { DASH, fmtUptime } from "../shared/format";
 import { useTradingAccess } from "../shared/hooks";
 import type { Bot, Session } from "../shared/types";
@@ -36,6 +37,7 @@ export default function BotsPage() {
   const [error, setError] = useState<ApiError | null>(null);
   const [confirm, setConfirm] = useState<{ bot: BotDetail; cmd: Cmd } | null>(null);
   const [status, setStatus] = useState<Record<string, string>>({});
+  const [binding, setBinding] = useState<BotDetail | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -57,6 +59,7 @@ export default function BotsPage() {
 
   const roles = access.roles;
   const allowed = (cmd: Cmd) => roles.includes("OPERATOR") || (cmd === "EMERGENCY_STOP" && roles.includes("RISK_OFFICER"));
+  const canBind = roles.includes("OPERATOR") && roles.includes("RISK_OFFICER");
 
   async function run(bot: BotDetail, cmd: Cmd) {
     setConfirm(null);
@@ -103,6 +106,13 @@ export default function BotsPage() {
                         {cmd === "EMERGENCY_STOP" ? "E-STOP" : cmd.replace("_ENTRIES", "").replace("_", " ")}
                       </button>
                     ))}
+                    {canBind && b.environment === "PAPER" && (
+                      <button type="button" className="hl-btn" disabled={!REBINDABLE.includes(b.status)}
+                        title={REBINDABLE.includes(b.status) ? "attach published versions" : "stop the bot first (STOP, then wait for STOPPED)"}
+                        onClick={() => setBinding(b)}>
+                        Change strategy
+                      </button>
+                    )}
                   </div>
                   {status[b.id] && <div role="status">{status[b.id]}</div>}
                 </td>
@@ -110,6 +120,10 @@ export default function BotsPage() {
             ))}
           </tbody>
         </table>
+      )}
+      {binding && (
+        <BindDialog bot={binding} onClose={() => setBinding(null)}
+          onDone={(msg) => { setBinding(null); setStatus((s) => ({ ...s, [binding.id]: msg })); void load(); }} />
       )}
       {confirm && (
         <div className="hl-dialog-backdrop">
