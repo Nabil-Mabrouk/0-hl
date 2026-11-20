@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { ApiError, getJson, sendCommand, waitForCommand } from "../shared/client";
 import BindDialog, { REBINDABLE } from "./BindDialog";
-import { DASH, fmtUptime } from "../shared/format";
+import CreateBotDialog from "./CreateBotDialog";
+import { DASH, fmtUptime, fmtUsd } from "../shared/format";
 import { useTradingAccess } from "../shared/hooks";
 import type { Bot, Session } from "../shared/types";
 import "../terminal/terminal.css";
@@ -12,6 +13,8 @@ import "../terminal/terminal.css";
 interface BotDetail extends Bot {
   session: Session | null;
   strategy: { strategy_id: string; version: string };
+  risk_policy?: { policy_id: string; version: string };
+  capital_usd?: string | null;
 }
 
 type Cmd = "START" | "PAUSE_ENTRIES" | "RESUME_ENTRIES" | "STOP" | "EMERGENCY_STOP";
@@ -38,11 +41,15 @@ export default function BotsPage() {
   const [confirm, setConfirm] = useState<{ bot: BotDetail; cmd: Cmd } | null>(null);
   const [status, setStatus] = useState<Record<string, string>>({});
   const [binding, setBinding] = useState<BotDetail | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const list = await getJson<{ items: Bot[] }>("/api/v1/bots");
-      setBots(await Promise.all(list.items.map((b) => getJson<BotDetail>(`/api/v1/bots/${b.id}`))));
+      const list = await getJson<{ items: (Bot & { capital_usd?: string | null })[] }>("/api/v1/bots");
+      setBots(await Promise.all(list.items.map(async (b) => ({
+        ...(await getJson<BotDetail>(`/api/v1/bots/${b.id}`)), capital_usd: b.capital_usd ?? null,
+      }))));
     } catch (e) {
       setError(e instanceof ApiError ? e : new ApiError(0, "NETWORK", String(e), null));
     }
@@ -77,14 +84,18 @@ export default function BotsPage() {
 
   return (
     <div className="hl-page">
-      <h1 style={{ maxWidth: 1000, margin: "0 auto 12px", fontSize: 20 }}>Bots &amp; Sessions</h1>
+      <div style={{ maxWidth: 1000, margin: "0 auto 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1 style={{ fontSize: 20, margin: 0 }}>Bots &amp; Sessions</h1>
+        {canBind && <button type="button" className="hl-btn" onClick={() => setCreating(true)}>New bot</button>}
+      </div>
+      {notice && <div className="hl-banner provenance" role="status">{notice}</div>}
       {error && <div className="hl-banner error" role="alert">{error.code} — {error.detail}</div>}
       {!bots && !error && <div className="hl-state-box">loading bots…</div>}
       {bots && bots.length === 0 && <div className="hl-state-box">No bot yet.</div>}
       {bots && bots.length > 0 && (
         <table className="hl-table">
           <thead>
-            <tr><th>bot</th><th>env</th><th>status</th><th>strategy</th><th>uptime</th><th>actions</th></tr>
+            <tr><th>bot</th><th>env</th><th>status</th><th>strategy</th><th>policy</th><th>capital</th><th>uptime</th><th>actions</th></tr>
           </thead>
           <tbody>
             {bots.map((b) => (
@@ -93,6 +104,8 @@ export default function BotsPage() {
                 <td>{b.environment}</td>
                 <td>{b.status}</td>
                 <td>{b.strategy ? `${b.strategy.strategy_id} v${b.strategy.version}` : DASH}</td>
+                <td>{b.risk_policy ? `${b.risk_policy.policy_id} v${b.risk_policy.version}` : DASH}</td>
+                <td>{fmtUsd(b.capital_usd ?? null, 0)}</td>
                 <td>{fmtUptime(b.session?.uptime_seconds)}</td>
                 <td>
                   <div className="hl-actions">
@@ -120,6 +133,10 @@ export default function BotsPage() {
             ))}
           </tbody>
         </table>
+      )}
+      {creating && (
+        <CreateBotDialog onClose={() => setCreating(false)}
+          onDone={(name) => { setCreating(false); setNotice(`bot ${name} created — READY, press START to run it`); void load(); }} />
       )}
       {binding && (
         <BindDialog bot={binding} onClose={() => setBinding(null)}

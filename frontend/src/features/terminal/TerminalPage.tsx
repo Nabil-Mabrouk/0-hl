@@ -22,8 +22,9 @@ function ErrorBox({ error }: { error: ApiError }) {
 
 export default function TerminalPage() {
   const access = useTradingAccess();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const [botId, setBotId] = useState<string | null>(params.get("bot"));
+  const [bots, setBots] = useState<Bot[]>([]);
   const [botsError, setBotsError] = useState<ApiError | null>(null);
   const [noBot, setNoBot] = useState(false);
   const [pending, setPending] = useState(false);
@@ -32,11 +33,20 @@ export default function TerminalPage() {
   const data = useTerminal(access.kind === "ready" ? botId : null);
 
   useEffect(() => {
-    if (access.kind !== "ready" || botId) return;
+    if (access.kind !== "ready") return;
     getJson<{ items: Bot[] }>("/api/v1/bots")
-      .then((r) => (r.items.length ? setBotId(r.items[0].id) : setNoBot(true)))
+      .then((r) => {
+        setBots(r.items);
+        if (!r.items.length) setNoBot(true);
+        else setBotId((current) => current ?? r.items[0].id);
+      })
       .catch((e: unknown) => setBotsError(e instanceof ApiError ? e : new ApiError(0, "NETWORK", String(e), null)));
-  }, [access.kind, botId]);
+  }, [access.kind]);
+
+  function chooseBot(id: string) {
+    setBotId(id);
+    setParams({ bot: id });                 // M2.4: the choice is kept in the URL
+  }
 
   if (access.kind === "unauthenticated") return <Navigate to="/login" replace />;
   if (access.kind === "loading") return <div className="hl-state-box">loading…</div>;
@@ -98,6 +108,15 @@ export default function TerminalPage() {
 
   return (
     <div className="hl-page">
+      {bots.length > 1 && (
+        <div className="hl-botbar" data-testid="hl-bot-picker">
+          <label>bot{" "}
+            <select aria-label="bot" value={botId ?? ""} onChange={(e) => chooseBot(e.target.value)}>
+              {bots.map((b) => <option key={b.id} value={b.id}>{b.name} — {b.status}</option>)}
+            </select>
+          </label>
+        </div>
+      )}
       {s.bot.environment === "PAPER" && (
         <div className="hl-banner provenance" role="note" data-testid="hl-provenance">
           PAPER — real Kraken prices · simulated execution · fictitious capital {fmtUsd(s.owner_capital)}

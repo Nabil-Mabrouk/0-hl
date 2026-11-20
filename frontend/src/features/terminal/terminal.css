@@ -16,3 +16,5 @@
 .hl-dialog-backdrop { position: fixed; inset: 0; background: #0006; display: grid; place-items: center; z-index: 50; }
 .hl-dialog { background: #fff; border-radius: 8px; padding: 20px; max-width: 460px; font-size: 14px; }
 .hl-dialog dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 12px 0; }
+.hl-botbar { max-width: 1600px; margin: 0 auto 8px; font-size: 13px; }
+.hl-botbar select { font: inherit; padding: 4px 6px; min-height: 32px; border: 1px solid #c9c7d0; border-radius: 4px; }
