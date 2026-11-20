@@ -7,6 +7,7 @@ Usage (production): docker exec 0-hl_worker python -m app.domain.trading.admin -
            publish ID@VER --reason R [--backtest-ref SHA] | deprecate ID@VER --reason R
   policy   (same verbs) | confirm ID@VER
   bot      list | bind NAME --strategy ID@VER --policy ID@VER --reason R
+           create NAME --strategy ID@VER --policy ID@VER [--capital 10000] --reason R
 
 Calls the same domain functions as the API (same validation, audits and errors); the user
 named by --as must hold the role the API would require. --dry-run validates and shows the
@@ -45,7 +46,7 @@ NEEDS: dict[tuple[str, str], tuple[TradingRole, ...]] = {
     ("strategy", "delete"): (A,), ("strategy", "publish"): (R,), ("strategy", "deprecate"): (R,),
     **{("policy", v): (R,) for v in ("create", "duplicate", "edit", "delete", "publish", "confirm",
                                      "deprecate")},
-    ("bot", "bind"): (O, R),
+    ("bot", "bind"): (O, R), ("bot", "create"): (O, R),
 }
 
 
@@ -97,6 +98,16 @@ async def run(db: AsyncSession, args: argparse.Namespace) -> Any:
     if kind == "bot":
         if verb == "list":
             return [bot_json(b) for b in (await db.scalars(select(Bot).order_by(Bot.name))).all()]
+        if verb == "create":
+            from decimal import Decimal, InvalidOperation
+            try:
+                capital = Decimal(args.capital or lc.DEFAULT_CAPITAL)
+            except InvalidOperation as exc:
+                raise ValidationFailed("--capital : montant décimal attendu") from exc
+            bot = await lc.create_paper_bot(db, name=args.target or "", strategy_version=await _strategy(db, args.strategy),
+                                            risk_policy_version=await _policy(db, args.policy), capital=capital,
+                                            actor=actor, reason=args.reason or "")
+            return bot_json(bot) | {"capital_usd": capital}
         bot = await db.scalar(select(Bot).where(Bot.name == args.target))
         if bot is None:
             raise NotFound(f"bot {args.target} introuvable")
@@ -171,6 +182,7 @@ def parser() -> argparse.ArgumentParser:
     ap.add_argument("--backtest-ref")
     ap.add_argument("--strategy")
     ap.add_argument("--policy")
+    ap.add_argument("--capital")
     return ap
 
 

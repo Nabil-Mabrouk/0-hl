@@ -8,6 +8,7 @@ both apply exactly the same rules and audits.
 from __future__ import annotations
 
 import copy
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -17,10 +18,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.trading.audit import record_audit
-from app.domain.trading.bots import transition_bot
+from app.domain.trading.bots import create_bot, transition_bot
 from app.domain.trading.config_schemas import validate_risk_policy_config, validate_strategy_config
 from app.domain.trading.enums import (
     BotStatus,
+    CashMovementKind,
     Environment,
     PolicyVersionStatus,
     PositionStatus,
@@ -36,6 +38,7 @@ from app.domain.trading.errors import (
     VersionImmutable,
 )
 from app.domain.trading.events import append_event
+from app.domain.trading.ledger import record_cash_movement
 from app.domain.trading.models import Bot, Position, RiskPolicyVersion, StrategyVersion
 from app.domain.trading.types import utcnow
 from app.domain.trading.versioning import (
@@ -49,6 +52,10 @@ from app.domain.trading.versioning import (
 )
 
 REVIEW_DELAY = timedelta(minutes=10)                   # ADR-006 solo rule
+# M2.4 (06-agents/04, validated 2026-11-20)
+MAX_ACTIVE_BOTS = 5
+MIN_CAPITAL, MAX_CAPITAL, DEFAULT_CAPITAL = Decimal(100), Decimal(1_000_000), Decimal(10_000)
+BOT_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$")
 REBINDABLE = (BotStatus.READY, BotStatus.STOPPED)
 OPEN_POSITIONS = (PositionStatus.PENDING, PositionStatus.OPEN, PositionStatus.REDUCING,
                   PositionStatus.RECONCILIATION_REQUIRED)
@@ -381,3 +388,56 @@ async def bots_bound_to(db: AsyncSession) -> dict[Any, list[str]]:
         out.setdefault(b.risk_policy_version_id, []).append(b.name)
     return out
 
+
+class BotLimitReached(StateConflict):
+    code = "BOT_LIMIT_REACHED"
+
+
+async def create_paper_bot(db: AsyncSession, *, name: str, strategy_version: StrategyVersion,
+                           risk_policy_version: RiskPolicyVersion, capital: Decimal, actor: str,
+                           reason: str) -> Bot:
+    """New PAPER bot, READY, funded with `capital` (06-agents/04 « Ce que M2.4 ajoute » 2–3).
+    It never starts by itself: START is an operator command."""
+    errors: list[dict[str, str]] = []
+    if not BOT_NAME.match(name or ""):
+        errors.append({"path": "name", "message": "3 à 64 caractères : minuscules, chiffres et « - »"})
+    if not (MIN_CAPITAL <= capital <= MAX_CAPITAL):
+        errors.append({"path": "capital_usd", "message": f"entre {MIN_CAPITAL} et {MAX_CAPITAL} USD"})
+    if not reason or not reason.strip():
+        errors.append({"path": "reason", "message": "motif obligatoire"})
+    if strategy_version.config.get("risk_policy_id") != risk_policy_version.policy_id:
+        errors.append({"path": "risk_policy_version_id", "message":
+                       f"la stratégie exige la policy « {strategy_version.config.get('risk_policy_id')} »"})
+    if errors:
+        raise ValidationFailed("invalid bot", details={"errors": errors})
+    if strategy_version.status is not StrategyVersionStatus.PUBLISHED:
+        raise StrategyNotPublished(f"strategy version is {strategy_version.status.value}")
+    if risk_policy_version.status is not PolicyVersionStatus.PUBLISHED:
+        raise StrategyNotPublished(f"risk policy version is {risk_policy_version.status.value}")
+    if await db.scalar(select(Bot.id).where(Bot.name == name)) is not None:
+        raise StateConflict(f"a bot named {name} already exists")
+    active = len((await db.scalars(select(Bot.id).where(Bot.status != BotStatus.STOPPED))).all())
+    if active >= MAX_ACTIVE_BOTS:
+        raise BotLimitReached(f"at most {MAX_ACTIVE_BOTS} bots that are not STOPPED",
+                              details={"active": active, "limit": MAX_ACTIVE_BOTS})
+    bot = await create_bot(db, name=name, environment=Environment.PAPER, strategy_version=strategy_version,
+                           risk_policy_version=risk_policy_version, actor=actor)
+    await transition_bot(db, bot, BotStatus.READY, actor=actor, reason=reason)
+    await record_cash_movement(db, bot_id=bot.id, kind=CashMovementKind.DEPOSIT, amount=capital,
+                               actor=actor, reason=f"capital paper initial — {reason}")
+    await record_audit(db, actor=actor, action="BOT_CREATED_BY_OPERATOR", entity_type="bot",
+                       entity_id=bot.id, reason=reason, self_approved=True,
+                       diff={"name": name, "capital_usd": format(capital, "f"),
+                             "strategy": f"{strategy_version.strategy_id}@{strategy_version.version}",
+                             "risk_policy": f"{risk_policy_version.policy_id}@{risk_policy_version.version}"})
+    return bot
+
+
+async def initial_capital(db: AsyncSession) -> dict[Any, Decimal]:
+    """bot id -> total deposited (paper capital contributed)."""
+    from app.domain.trading.models import CashMovement
+    rows = await db.execute(select(CashMovement.bot_id, CashMovement.kind, CashMovement.amount))
+    out: dict[Any, Decimal] = {}
+    for bot_id, kind, amount in rows:
+        out[bot_id] = out.get(bot_id, Decimal(0)) + (amount if kind is CashMovementKind.DEPOSIT else -amount)
+    return out

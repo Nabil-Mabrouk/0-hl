@@ -48,10 +48,13 @@ async def create_command(
 
 
 async def ensure_autostart(db: AsyncSession) -> list[Command]:
-    """ADR-013: PAPER + READY + never had a session ⇒ one START, ever."""
+    """ADR-013: the seed bot only — PAPER + READY + never had a session ⇒ one START, ever.
+    Bots created by the operator (M2.4) start on an operator START only."""
+    from app.domain.trading.seed import SEED_BOT_NAME
     created: list[Command] = []
     bots = (await db.scalars(select(Bot).where(
-        Bot.environment == Environment.PAPER, Bot.status == BotStatus.READY))).all()
+        Bot.environment == Environment.PAPER, Bot.status == BotStatus.READY,
+        Bot.name == SEED_BOT_NAME))).all()
     for bot in bots:
         had_session = await db.scalar(select(BotSession.id).where(BotSession.bot_id == bot.id).limit(1))
         if had_session is not None:

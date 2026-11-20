@@ -80,8 +80,16 @@ async def health(p: Reader, db: DB):
 
 @router.get("/bots")
 async def list_bots(p: Reader, db: DB):
+    from app.domain.trading.lifecycle import initial_capital
     bots = (await db.scalars(select(Bot).order_by(Bot.name))).all()
-    return ok({"items": [bot_json(b) for b in bots]})
+    capital = await initial_capital(db)
+    sv = {v.id: v for v in (await db.scalars(select(StrategyVersion))).all()}
+    pv = {v.id: v for v in (await db.scalars(select(RiskPolicyVersion))).all()}
+    return ok({"items": [bot_json(b) | {
+        "capital_usd": capital.get(b.id),
+        "strategy": {"strategy_id": sv[b.strategy_version_id].strategy_id, "version": sv[b.strategy_version_id].version},
+        "risk_policy": {"policy_id": pv[b.risk_policy_version_id].policy_id, "version": pv[b.risk_policy_version_id].version},
+    } for b in bots]})
 
 
 @router.get("/bots/{bot_id}")

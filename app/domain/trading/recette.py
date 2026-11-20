@@ -282,6 +282,22 @@ async def info_strategy(db: AsyncSession, bot: Bot, since: datetime) -> Check:
                  {"cycles": cycles, "evaluated": evaluated, "fails": dict(fails), "unknown": dict(unknown)})
 
 
+async def info_other_bots(db: AsyncSession, bot: Bot, since: datetime) -> Check:
+    """M2.4 (06-agents/04 « Recette »): one summary line per other bot."""
+    others = (await db.scalars(select(Bot).where(Bot.id != bot.id).order_by(Bot.name))).all()
+    details, data = [], {}
+    for b in others:
+        nets = (await db.scalars(select(Position.realized_pnl_net).where(
+            Position.bot_id == b.id, Position.status == PositionStatus.CLOSED,
+            Position.closed_at >= since))).all()
+        net = sum((n for n in nets if n is not None), ZERO)
+        details.append(f"{b.name} : {b.status.value}, {len(nets)} trades clos, résultat net {net:.2f} USD")
+        data[b.name] = {"status": b.status.value, "trades": len(nets), "net_usd": f"{net:.2f}"}
+    if not details:
+        details = ["aucun autre bot"]
+    return Check("R-13", "autres bots", "INFO", False, details, data)
+
+
 async def build_report(sessions: async_sessionmaker[AsyncSession], *, bot_name: str | None = None,
                        hours: float = 24.0, now: datetime | None = None) -> Report:
     now = now or utcnow()
@@ -304,6 +320,7 @@ async def build_report(sessions: async_sessionmaker[AsyncSession], *, bot_name: 
             await info_coverage(db, since, now),
             await info_activity(db, bot, since),
             await info_strategy(db, bot, since),
+            await info_other_bots(db, bot, since),
         ]
     return Report(bot=bot.name, generated_at=now, window_hours=hours, checks=checks)
 

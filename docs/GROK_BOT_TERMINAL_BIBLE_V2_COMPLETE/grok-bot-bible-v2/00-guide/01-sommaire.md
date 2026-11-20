@@ -42,6 +42,7 @@
 - [01-architecture-agents](../06-agents/01-architecture-agents.md)
 - [02-ia-et-explicabilite](../06-agents/02-ia-et-explicabilite.md)
 - [03-agents-m1](../06-agents/03-agents-m1.md)
+- [04-plusieurs-bots-m2](../06-agents/04-plusieurs-bots-m2.md)
 - [01-connecteurs-et-normalisation](../07-data/01-connecteurs-et-normalisation.md)
 - [02-onchain-graph-et-rug](../07-data/02-onchain-graph-et-rug.md)
 - [03-connecteur-kraken-m1](../07-data/03-connecteur-kraken-m1.md)

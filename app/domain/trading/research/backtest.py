@@ -274,6 +274,11 @@ async def prepare_sandbox(sessions: async_sessionmaker[AsyncSession], ds: Datase
         bot = await create_bot(db, name=BT_BOT, environment=Environment.PAPER, strategy_version=sv,
                                risk_policy_version=pv, actor=BT_ACTOR)
         await transition_bot(db, bot, BotStatus.READY, actor=BT_ACTOR, reason="backtest")
+        # explicit START: autostart (ADR-013) is reserved to the seed bot since M2.4
+        from app.domain.trading.agents.commands import create_command
+        from app.domain.trading.enums import CommandType
+        await create_command(db, bot_id=bot.id, command=CommandType.START, actor=BT_ACTOR,
+                             idempotency_key=f"backtest-start:{bot.id}", reason="backtest")
         await record_cash_movement(db, bot_id=bot.id, kind=CashMovementKind.DEPOSIT, amount=capital,
                                    actor=BT_ACTOR, reason="capital du backtest")
         # simulated time, not the wall clock: a deposit dated « now » would count as a capital

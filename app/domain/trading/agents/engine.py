@@ -55,6 +55,7 @@ from app.domain.trading.enums import (
 )
 from app.domain.trading.events import append_event
 from app.domain.trading.market.state import MarketState
+from app.domain.trading.market.universe import EXCLUDED_BASES
 from app.domain.trading.models import (
     Bot,
     Candidate,
@@ -259,12 +260,29 @@ class DecisionEngine:
         rows = await db.execute(select(Instrument.id, Instrument.volume_24h_usd, Instrument.in_universe))
         return {iid: vol for iid, vol, inu in rows if inu}
 
+    @staticmethod
+    def bot_universe(strat: Any, instruments: list[tuple[str, Decimal | None, str, str]]) -> dict[str, Decimal | None]:
+        """M2.4 (06-agents/04 « Ce que M2.4 ajoute » 1): the pairs of the shared universe that the
+        bot's own strategy selects — quote, stablecoins, minimum volume, top N by 24 h volume."""
+        u = strat.universe
+        quotes = set(u.quote_currencies or ["USD"])
+        minimum = Decimal(u.min_volume_24h_usd) if u.min_volume_24h_usd else None
+        exclude = u.exclude_stablecoins is not False
+        eligible = [(iid, vol) for iid, vol, base, quote in instruments
+                    if quote in quotes and vol is not None
+                    and not (exclude and base in EXCLUDED_BASES)
+                    and (minimum is None or vol >= minimum)]
+        eligible.sort(key=lambda x: (-x[1], x[0]))  # type: ignore[operator]
+        return dict(eligible[: u.top_n_by_volume or len(eligible)])
+
     async def step_entries(self) -> None:
         async with self._sessions() as db:
             bots = (await db.scalars(select(Bot).where(Bot.status == BotStatus.RUNNING))).all()
-            bot_ids = [b.id for b in bots]
-            universe = await self._volume_24h(db)
-        for bot_id in bot_ids:
+            rows = (await db.execute(select(Instrument.id, Instrument.volume_24h_usd, Instrument.base,
+                                            Instrument.quote).where(Instrument.in_universe))).all()
+            universes = {b.id: self.bot_universe(await self._strategy(db, b.strategy_version_id),
+                                                 [tuple(r) for r in rows]) for b in bots}
+        for bot_id, universe in universes.items():
             for iid, vol in sorted(universe.items()):
                 await self._scan_instrument(bot_id, iid, vol)
             await self._maybe_emit_cycle(bot_id, [iid.split(":", 1)[1] for iid in universe])

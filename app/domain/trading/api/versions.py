@@ -59,6 +59,13 @@ class ValidateBody(_Body):
     config: dict[str, Any]
 
 
+class CreateBotBody(Reasoned):
+    name: str = Field(min_length=1, max_length=64)
+    strategy_version_id: str
+    risk_policy_version_id: str
+    capital_usd: str = "10000"
+
+
 class BindBody(Reasoned):
     strategy_version_id: str
     risk_policy_version_id: str
@@ -280,6 +287,24 @@ async def policy_deprecate(vid: str, body: Reasoned, p: RiskOfficer, db: DB):
 
 
 # ---------------------------------------------------------------- bots
+
+@router.post("/bots")
+async def create_bot_route(body: CreateBotBody, p: Binder, db: DB):
+    """M2.4 (06-agents/04): new PAPER bot, READY, funded; starts only on an operator START."""
+    from decimal import Decimal, InvalidOperation
+    if not (p.has_any(TradingRole.OPERATOR) and p.has_any(TradingRole.RISK_OFFICER)):
+        raise PermissionDenied("creating a bot requires OPERATOR and RISK_OFFICER")
+    try:
+        capital = Decimal(body.capital_usd)
+    except InvalidOperation as exc:
+        raise ValidationFailed("invalid bot", details={"errors": [
+            {"path": "capital_usd", "message": "montant décimal attendu"}]}) from exc
+    bot = await lc.create_paper_bot(db, name=body.name, strategy_version=await _sv(db, body.strategy_version_id),
+                                    risk_policy_version=await _pv(db, body.risk_policy_version_id),
+                                    capital=capital, actor=p.actor, reason=body.reason)
+    await db.commit()
+    return ok(bot_json(bot) | {"capital_usd": capital}, status=201, headers={"ETag": f'"{bot.row_version}"'})
+
 
 @router.post("/bots/{bot_id}/bind")
 async def bind(bot_id: str, body: BindBody, p: Binder, db: DB,
