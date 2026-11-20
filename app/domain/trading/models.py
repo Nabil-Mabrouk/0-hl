@@ -248,6 +248,10 @@ class RiskPolicyVersion(Base):
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
     published_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
     published_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    # M2.3: pending publication of a loosened policy (ADR-006 review delay)
+    publish_requested_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    publish_requested_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    publish_request_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     __table_args__ = (
         UniqueConstraint("policy_id", "version", name="uq_hl_risk_policy_version"),

@@ -31,7 +31,14 @@ from app.domain.trading.enums import (
 )
 from app.domain.trading.ledger import record_cash_movement
 from app.domain.trading.audit import record_audit
-from app.domain.trading.models import Bot, BotSession, CashMovement, RiskPolicyVersion, StrategyVersion
+from app.domain.trading.models import (
+    AuditEvent,
+    Bot,
+    BotSession,
+    CashMovement,
+    RiskPolicyVersion,
+    StrategyVersion,
+)
 from app.domain.trading.types import utcnow
 from app.domain.trading.versioning import (
     create_policy_version,
@@ -105,7 +112,11 @@ async def _ensure_bot(
     # ADR-014: a seed bot that never had a session follows the current seed versions
     never_started = await db.scalar(
         select(BotSession.id).where(BotSession.bot_id == bot.id).limit(1)) is None
-    if never_started and (bot.strategy_version_id, bot.risk_policy_version_id) != (sv.id, pv.id):
+    # M2.3: a binding chosen by the operator (BOT_REBOUND) is never undone by the seed
+    rebound = await db.scalar(select(AuditEvent.id).where(
+        AuditEvent.entity_type == "bot", AuditEvent.entity_id == str(bot.id),
+        AuditEvent.action == "BOT_REBOUND").limit(1)) is not None
+    if never_started and not rebound and (bot.strategy_version_id, bot.risk_policy_version_id) != (sv.id, pv.id):
         before = {"strategy_version_id": bot.strategy_version_id,
                   "risk_policy_version_id": bot.risk_policy_version_id}
         bot.strategy_version_id, bot.risk_policy_version_id = sv.id, pv.id

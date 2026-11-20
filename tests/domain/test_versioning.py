@@ -23,7 +23,15 @@ from .factories import ACTOR, SPEC_ROOT, policy_config, spec_json, strategy_conf
 pytestmark = pytest.mark.anyio
 
 
-async def test_example_strategy_is_valid_and_hash_excludes_status(db):
+@pytest.fixture
+async def strategy_ready(db):
+    """M2.3: a strategy's `risk_policy_id` must name an existing policy."""
+    from app.domain.trading.models import RiskPolicy
+    db.add(RiskPolicy(id=policy_config()["policy_id"], name="pd"))
+    await db.flush()
+
+
+async def test_example_strategy_is_valid_and_hash_excludes_status(db, strategy_ready):
     sv = await create_strategy_version(db, config=strategy_config(), name="vs", actor=ACTOR)
     assert sv.status is StrategyVersionStatus.DRAFT
     assert "status" not in sv.config
@@ -50,7 +58,7 @@ async def test_invalid_strategy_refused(db, mutation):
         await create_strategy_version(db, config=cfg, name="vs", actor=ACTOR)
 
 
-async def test_published_strategy_is_immutable(db):
+async def test_published_strategy_is_immutable(db, strategy_ready):
     sv = await create_strategy_version(db, config=strategy_config(), name="vs", actor=ACTOR)
     changed = strategy_config(cooldown_seconds=60)
     await update_strategy_draft(db, sv, config=changed, actor=ACTOR)  # DRAFT: allowed
@@ -63,7 +71,7 @@ async def test_published_strategy_is_immutable(db):
         await db.flush()
 
 
-async def test_draft_change_does_not_affect_published_version(db):
+async def test_draft_change_does_not_affect_published_version(db, strategy_ready):
     """INV-06: a new DRAFT never changes the hash of a published version."""
     v1 = await create_strategy_version(db, config=strategy_config(), name="vs", actor=ACTOR)
     await publish_strategy_version(db, v1, actor=ACTOR, reason="t", self_approved=True)

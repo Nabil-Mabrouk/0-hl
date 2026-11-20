@@ -132,8 +132,8 @@ async def test_bot_requires_published_versions(db):
 
     from .factories import policy_config
 
-    sv = await create_strategy_version(db, config=strategy_config(), name="vs", actor=ACTOR)
     pv = await create_policy_version(db, config=policy_config(), name="pd", actor=ACTOR)
+    sv = await create_strategy_version(db, config=strategy_config(), name="vs", actor=ACTOR)
     with pytest.raises(StrategyNotPublished):
         await create_bot(db, name="x", environment=Environment.PAPER, strategy_version=sv,
                          risk_policy_version=pv, actor=ACTOR)

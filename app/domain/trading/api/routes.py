@@ -152,19 +152,20 @@ async def get_command(command_id: str, p: Reader, db: DB):
 async def strategies(p: Reader, db: DB):
     rows = (await db.scalars(select(StrategyVersion).order_by(
         StrategyVersion.strategy_id, StrategyVersion.created_at))).all()
-    return ok({"items": [{"id": v.id, "strategy_id": v.strategy_id, "version": v.version,
-                          "status": v.status.value, "config_sha256": v.config_sha256,
-                          "config": v.config, "published_at": v.published_at,
-                          "published_by": v.published_by} for v in rows]})
+    from app.domain.trading.api.versions import strategy_json
+    from app.domain.trading.lifecycle import bots_bound_to
+    bound = await bots_bound_to(db)
+    return ok({"items": [strategy_json(v, bound) for v in rows]})
 
 
 @router.get("/risk-policies")
 async def risk_policies(p: Reader, db: DB):
     rows = (await db.scalars(select(RiskPolicyVersion).order_by(
         RiskPolicyVersion.policy_id, RiskPolicyVersion.created_at))).all()
-    return ok({"items": [{"id": v.id, "policy_id": v.policy_id, "version": v.version,
-                          "status": v.status.value, "config_sha256": v.config_sha256,
-                          "config": v.config, "effective_from": v.effective_from} for v in rows]})
+    from app.domain.trading.api.versions import policy_json
+    from app.domain.trading.lifecycle import bots_bound_to
+    bound = await bots_bound_to(db)
+    return ok({"items": [policy_json(v, bound) for v in rows]})
 
 
 @router.get("/terminal/snapshot")

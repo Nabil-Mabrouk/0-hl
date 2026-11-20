@@ -50,10 +50,10 @@ async def make_user(db: AsyncSession, email: str, role: UserRole = UserRole.user
 async def make_bot(
     db: AsyncSession, *, name: str = "bot-test", environment: Environment = Environment.PAPER
 ) -> Bot:
-    sv = await create_strategy_version(db, config=strategy_config(), name="vs", actor=ACTOR)
-    await publish_strategy_version(db, sv, actor=ACTOR, reason="test", self_approved=True)
     pv = await create_policy_version(db, config=policy_config(), name="pd", actor=ACTOR)
     await publish_policy_version(db, pv, actor=ACTOR, reason="test", self_approved=True)
+    sv = await create_strategy_version(db, config=strategy_config(), name="vs", actor=ACTOR)
+    await publish_strategy_version(db, sv, actor=ACTOR, reason="test", self_approved=True)
     return await create_bot(
         db, name=name, environment=environment, strategy_version=sv, risk_policy_version=pv,
         actor=ACTOR,

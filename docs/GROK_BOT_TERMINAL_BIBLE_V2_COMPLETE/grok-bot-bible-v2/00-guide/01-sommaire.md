@@ -37,6 +37,7 @@
 - [01-theorie-signaux](../05-strategies/01-theorie-signaux.md)
 - [02-catalogue-strategies](../05-strategies/02-catalogue-strategies.md)
 - [03-risque-mathematique](../05-strategies/03-risque-mathematique.md)
+- [04-versions-sans-code-m2](../05-strategies/04-versions-sans-code-m2.md)
 - [01-architecture-agents](../06-agents/01-architecture-agents.md)
 - [02-ia-et-explicabilite](../06-agents/02-ia-et-explicabilite.md)
 - [03-agents-m1](../06-agents/03-agents-m1.md)

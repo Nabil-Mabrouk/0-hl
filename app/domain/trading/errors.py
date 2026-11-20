@@ -65,3 +65,22 @@ class ProviderUnavailable(DomainError):
 class NotFound(DomainError):
     code = "NOT_FOUND"
     http_status = 404
+
+
+class PreconditionFailed(DomainError):
+    """`If-Match` does not match the current resource (M2.3, 05-strategies/04)."""
+
+    code = "PRECONDITION_FAILED"
+    http_status = 412
+
+
+class ReviewDelayPending(DomainError):
+    """Loosened policy: confirmation before the 10-minute review delay (ADR-006)."""
+
+    code = "REVIEW_DELAY_PENDING"
+    http_status = 409
+
+
+class BotNotRebindable(DomainError):
+    code = "BOT_NOT_REBINDABLE"
+    http_status = 409

@@ -6,11 +6,13 @@ immutable and identified by `config_sha256` (status excluded from the hash).
 
 from __future__ import annotations
 
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.trading.agents.features import FEATURE_CATALOGUE
 from app.domain.trading.audit import record_audit
 from app.domain.trading.config_schemas import (
     stored_policy_config,
@@ -25,6 +27,46 @@ from app.domain.trading.models import RiskPolicy, RiskPolicyVersion, Strategy, S
 from app.domain.trading.types import sha256_hex, utcnow
 
 _PUBLISHABLE_STRATEGY = {StrategyVersionStatus.DRAFT, StrategyVersionStatus.APPROVED}
+
+
+async def strategy_coherence_errors(db: AsyncSession, config: Any) -> list[dict[str, str]]:
+    """Rules beyond the JSON schema (05-strategies/04 « Règles » 2): known feature and unit,
+    sane exits, existing risk policy. Returns [] when coherent."""
+    errors: list[dict[str, str]] = []
+    for i, cond in enumerate(config.entry.conditions):
+        path = f"entry.conditions[{i}]"
+        known = FEATURE_CATALOGUE.get(cond.feature)
+        if known is None:
+            errors.append({"path": f"{path}.feature", "message":
+                           f"feature inconnue « {cond.feature} » (catalogue : {', '.join(FEATURE_CATALOGUE)})"})
+        elif cond.unit != known[0]:
+            errors.append({"path": f"{path}.unit",
+                           "message": f"unité « {cond.unit} » au lieu de « {known[0]} » pour {cond.feature}"})
+
+    def dec(value: str | None) -> Decimal | None:
+        try:
+            return None if value is None else Decimal(value)
+        except InvalidOperation:
+            return None
+
+    stop = dec(config.exit.initial_stop_pct)
+    if stop is None or not (Decimal(0) < stop < Decimal(100)):
+        errors.append({"path": "exit.initial_stop_pct", "message": "doit être > 0 et < 100"})
+    tp = dec(config.exit.take_profit_r)
+    if config.exit.take_profit_r is not None and (tp is None or tp <= 0):
+        errors.append({"path": "exit.take_profit_r", "message": "doit être > 0"})
+    if config.exit.max_hold_seconds is not None and config.exit.max_hold_seconds < 60:
+        errors.append({"path": "exit.max_hold_seconds", "message": "doit être ≥ 60"})
+    if await db.get(RiskPolicy, config.risk_policy_id) is None:
+        errors.append({"path": "risk_policy_id",
+                       "message": f"policy « {config.risk_policy_id} » inexistante"})
+    return errors
+
+
+async def _ensure_coherent(db: AsyncSession, config: Any) -> None:
+    errors = await strategy_coherence_errors(db, config)
+    if errors:
+        raise ValidationFailed("incoherent strategy config", details={"errors": errors})
 
 
 # --------------------------------------------------------------------------- #
@@ -46,6 +88,7 @@ async def create_strategy_version(
     parsed = validate_strategy_config(config)
     if parsed.status != "DRAFT":
         raise ValidationFailed("a new strategy version is always created as DRAFT")
+    await _ensure_coherent(db, parsed)
     if await get_strategy_version(db, parsed.strategy_id, parsed.version) is not None:
         raise StateConflict(f"strategy {parsed.strategy_id} v{parsed.version} already exists")
     if await db.get(Strategy, parsed.strategy_id) is None:
@@ -78,6 +121,7 @@ async def update_strategy_draft(
     parsed = validate_strategy_config({**config, "status": "DRAFT"})
     if (parsed.strategy_id, parsed.version) != (sv.strategy_id, sv.version):
         raise ValidationFailed("strategy_id/version cannot change on a draft update")
+    await _ensure_coherent(db, parsed)
     stored = stored_strategy_config(parsed)
     before = sv.config_sha256
     sv.config = stored
@@ -97,9 +141,11 @@ async def publish_strategy_version(
     actor: str,
     reason: str,
     self_approved: bool,
+    backtest_ref: str | None = None,
 ) -> StrategyVersion:
     if sv.status not in _PUBLISHABLE_STRATEGY:
         raise StateConflict(f"cannot publish a {sv.status.value} strategy version")
+    await _ensure_coherent(db, validate_strategy_config({**sv.config, "status": "DRAFT"}))
     previous = sv.status
     sv.status = StrategyVersionStatus.PUBLISHED
     sv.published_by = actor
@@ -109,7 +155,8 @@ async def publish_strategy_version(
         db, actor=actor, action="STRATEGY_PUBLISHED", entity_type="strategy_version",
         entity_id=sv.id, reason=reason, self_approved=self_approved,
         diff={"status": {"from": previous.value, "to": sv.status.value},
-              "config_sha256": sv.config_sha256},
+              "config_sha256": sv.config_sha256}
+        | ({"backtest_ref": backtest_ref} if backtest_ref else {}),
     )
     await append_event(
         db, event_type="STRATEGY_PUBLISHED", aggregate_type="strategy_version",

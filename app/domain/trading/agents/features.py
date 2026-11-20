@@ -27,6 +27,17 @@ ZERO = Decimal(0)
 OK = "OK"
 UNKNOWN = "UNKNOWN"
 
+# Features the SCANNER computes (06-agents/03): name -> (unit, description). A strategy
+# condition on anything else would stay UNKNOWN forever (05-strategies/04 « Règles » 2).
+FEATURE_CATALOGUE: dict[str, tuple[str, str]] = {
+    "volume_spike": ("ratio", "notionnel de la fenêtre de 5 min / médiane des 12 fenêtres précédentes"),
+    "buy_notional_share": ("fraction", "part acheteuse du notionnel de la fenêtre"),
+    "price_change_5m": ("log_return", "log(dernier close / close précédant la fenêtre)"),
+    "spread_bps": ("bps", "écart achat/vente du carnet en points de base"),
+    "window_notional_usd": ("USD", "notionnel échangé sur la fenêtre de 5 min"),
+    "window_trade_count": ("count", "nombre de trades sur la fenêtre de 5 min"),
+}
+
 
 @dataclass(frozen=True)
 class Feature:
