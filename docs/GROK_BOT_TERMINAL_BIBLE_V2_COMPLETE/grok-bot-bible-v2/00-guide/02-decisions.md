@@ -27,6 +27,7 @@ Ce registre tranche les points `[OPEN]` de la V2.0 et prime sur toute formulatio
 | ADR-017 | Flux Kraken : mesure du retard, carnet profondeur 10, réception allégée | Actée | 2026-11-19 |
 | ADR-018 | Carnet d'ordres incrémental (checksum sans reformatage) | Actée | 2026-11-19 |
 | ADR-019 | Suppression de la réplique 550×688 et de la mesure de fidélité à la capture 3 | Actée | 2026-11-19 |
+| ADR-020 | Pause des entrées de STRAT-01 v0.2.0 et étude hors production avant v0.3.0 | Actée | 2026-11-20 |
 
 ---
 
@@ -193,3 +194,9 @@ Besoin exprimé au template :
 **Décision (opérateur, 2026-11-19).** La réplique exacte 550×688 de la capture 3 n'est plus maintenue : le sélecteur « Reference canvas » d'ADR-016 et son code sont retirés, la vue pleine largeur est l'unique vue de UI-01. L'exigence de mesure de fidélité (captures Playwright 550×688 superposées à la capture 3, 02-design/03) est **abandonnée**.
 
 **Conséquences.** La capture 3 reste une **inspiration visuelle** (palette, typographie monospace, organisation agents → flux → trade → journal), sans contrôle pixel. Remplace l'option de la réplique d'ADR-016 et les passages de 02-design/03, UI-01, 03-ecrans/M1, 12-tests/02 et du jalon P0 qui en dépendaient. La préférence de vue mémorisée dans le navigateur n'a plus d'objet.
+
+## ADR-020 — Pause des entrées de STRAT-01 v0.2.0 et étude hors production avant v0.3.0
+
+**Constat.** Deux recettes (2026-11-19, 2026-11-20) : 103 trades, 14 gagnants ; second jour négatif même avant frais ; 101 sorties sur 103 au temps limite. La stratégie n'a pas d'avantage mesurable ; continuer ne produit plus d'information, seulement des pertes fictives.
+
+**Décision.** Les entrées du bot `paper-kraken-01` sont mises en pause par l'opérateur (`PAUSE_ENTRIES`, auditée ; positions ouvertes protégées). Aucune STRAT-01 v0.3.0 n'est publiée avant l'**étude hors production** décrite en [09-recherche/03](../09-recherche/03-etude-strat01.md) et sa validation par l'opérateur.
