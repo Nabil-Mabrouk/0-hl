@@ -431,12 +431,14 @@ class BacktestReport:
     top_pairs: list[tuple[str, Decimal]]
     baseline: dict[str, Any]
     trades: list[TradeOut]
+    drawdown_at: dict[str, Any] | None = None
 
     def as_json(self, *, with_trades: bool = True) -> dict[str, Any]:
         out = {"header": self.header, "known_gaps": list(KNOWN_GAPS),
                "capital": f"{self.capital:.2f}",
                "final_equity": None if self.final_equity is None else f"{self.final_equity:.2f}",
                "max_drawdown_pct": None if self.max_drawdown_pct is None else f"{self.max_drawdown_pct:.2f}",
+               "max_drawdown_at": self.drawdown_at,
                "overall": self.overall.as_json(), "first_part": self.first.as_json(),
                "second_part": self.second.as_json(), "rejections": self.rejections,
                "top_pairs": [{"instrument_id": i, "net_usd": f"{n:.2f}"} for i, n in self.top_pairs],
@@ -465,7 +467,11 @@ class BacktestReport:
             "",
             f"capital {self.capital:.2f} → "
             f"{'—' if self.final_equity is None else f'{self.final_equity:.2f}'} USD, "
-            f"drawdown max {'—' if self.max_drawdown_pct is None else f'{self.max_drawdown_pct:.2f}'} %",
+            f"drawdown max {'—' if self.max_drawdown_pct is None else f'{self.max_drawdown_pct:.2f}'} %"
+            + ("" if not self.drawdown_at else
+               f" (au plus bas le {self.drawdown_at['at']} : equity {self.drawdown_at['equity']} = cash "
+               f"{self.drawdown_at['cash']} + réservé {self.drawdown_at['cash_reserved']} + positions "
+               f"{self.drawdown_at['positions_value'] or '—'})"),
             line("total", self.overall), line("partie 1", self.first), line("partie 2", self.second),
             "",
             "entrées refusées : " + (", ".join(f"{k}={v}" for k, v in self.rejections.items()) or "—"),
@@ -554,8 +560,9 @@ async def _report(sessions, ds: Dataset, *, strategy, policy, strategy_ref, poli
                            notional[(p.id, IntentPurpose.ENTRY)], notional[(p.id, IntentPurpose.EXIT)],
                            p.realized_pnl_net if p.status is PositionStatus.CLOSED else None,
                            p.fees_paid, p.exit_reason) for p in positions]
-        equities = [e for e in (await db.scalars(select(EquitySnapshot.equity)
-                                                 .order_by(EquitySnapshot.at))).all() if e is not None]
+        snaps = [s for s in (await db.scalars(select(EquitySnapshot).order_by(EquitySnapshot.at))).all()
+                 if s.equity is not None]
+        equities = [s.equity for s in snaps]
         rejected = (await db.scalars(select(DomainEvent).where(
             DomainEvent.event_type == "RISK_REJECTED"))).all()
     rejections: Counter = Counter()
@@ -563,12 +570,18 @@ async def _report(sessions, ds: Dataset, *, strategy, policy, strategy_ref, poli
         p = ev.payload or {}
         for reason in (p.get("failed") or p.get("reasons") or ["?"]):
             rejections[f"{p.get('stage', '?')}:{reason}"] += 1
-    peak, mdd = None, None
-    for e in equities:
+    peak, mdd, trough = None, None, None
+    for s in snaps:
+        e = s.equity
         peak = e if peak is None or e > peak else peak
         if peak and peak > ZERO:
             dd = (peak - e) / peak * HUNDRED
-            mdd = dd if mdd is None or dd > mdd else mdd
+            if mdd is None or dd > mdd:
+                mdd, trough = dd, s
+    drawdown_at = None if trough is None or not mdd else {
+        "at": f"{trough.at:%Y-%m-%d %H:%M}", "equity": f"{trough.equity:.2f}", "cash": f"{trough.cash:.2f}",
+        "cash_reserved": f"{trough.cash_reserved:.2f}",
+        "positions_value": None if trough.positions_mark_value is None else f"{trough.positions_mark_value:.2f}"}
     by_pair: dict[str, Decimal] = defaultdict(lambda: ZERO)
     for t in trades:
         if t.realized_pnl_net is not None:
@@ -591,7 +604,7 @@ async def _report(sessions, ds: Dataset, *, strategy, policy, strategy_ref, poli
         first=PartStats.of([t for t in trades if t.opened_at < cut]),
         second=PartStats.of([t for t in trades if t.opened_at >= cut]),
         rejections=dict(sorted(rejections.items())), top_pairs=top,
-        baseline=_baseline(ds, strategy, cut), trades=trades)
+        baseline=_baseline(ds, strategy, cut), trades=trades, drawdown_at=drawdown_at)
 
 
 # ---------------------------------------------------------------- CLI

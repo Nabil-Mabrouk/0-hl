@@ -35,7 +35,7 @@ Ceux du bot : frais taker 0,40 % (`PAPER_TAKER_FEE`, porté par `EngineConfig.ta
 ## Rapport
 
 - **En-tête de reproductibilité** : sha git du code (variable `GIT_SHA` si disponible, sinon `unknown`), empreinte SHA-256 du jeu de données (minutes et instantanés lus, dans l'ordre), empreintes des configurations de stratégie et de policy, paramètres du rejeu, période, paires.
-- **Résultats**, globalement puis pour chaque partie du découpage temporel (`--split`, 60 % / 40 % par défaut) : capital initial et final, résultat net et frais, nombre de trades, taux de gain, résultat moyen par trade, profit factor, drawdown maximal, sorties par motif, entrées refusées par motif, part du résultat apportée par les trois meilleures paires.
+- **Résultats**, globalement puis pour chaque partie du découpage temporel (`--split`, 60 % / 40 % par défaut) : capital initial et final, résultat net et frais, nombre de trades, taux de gain, résultat moyen par trade, profit factor, drawdown maximal (avec l'instant le plus bas et sa décomposition cash / réservé / positions), sorties par motif, entrées refusées par motif, part du résultat apportée par les trois meilleures paires.
 - **Référence** : pour les mêmes sorties, la référence sans filtre d'entrée de l'étude [03](03-etude-strat01.md) sur la même période.
 - **Trades** (`--json`) : chaque trade avec ses horodatages, prix, frais, motif et les features de son candidat.
 - **Déterminisme** : mêmes données, mêmes configurations et mêmes paramètres ⇒ rapport identique (hors identifiants internes, non affichés).
