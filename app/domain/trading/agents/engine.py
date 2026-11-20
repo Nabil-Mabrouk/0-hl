@@ -37,7 +37,8 @@ from app.domain.trading.agents.features import (
     evaluate_conditions,
     load_minutes,
     spread_feature,
-    window_features,
+    HISTORY_MINUTES,
+    scanner_features,
 )
 from app.domain.trading.agents.gate import evaluate_market_gate
 from app.domain.trading.agents.sim import PAPER_LATENCY_SECONDS, PAPER_TAKER_FEE
@@ -326,8 +327,9 @@ class DecisionEngine:
                 return
             strat = await self._strategy(db, bot.strategy_version_id)
             policy = await self._policy(db, bot.risk_policy_version_id)
-            minutes = await self._load_minutes(db, iid, start=window_end - MINUTE * 70, end=window_end)
-            feats = window_features(minutes, window_end)
+            minutes = await self._load_minutes(db, iid, start=window_end - MINUTE * HISTORY_MINUTES,
+                                               end=window_end)
+            feats = scanner_features(minutes, window_end)
             feats["spread_bps"] = spread_feature(book, fresh)
             incomplete = feats["volume_spike"].reason == "CURRENT_WINDOW_INCOMPLETE"
             settled = (now - window_end).total_seconds() >= self.config.window_settle_seconds

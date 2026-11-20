@@ -58,6 +58,27 @@ Première stratégie implémentée. Les seuils sont des **valeurs de départ exp
 
 **État de validation par défaut :** `RESEARCH_ONLY` ; aucune activation LIVE automatique.
 
+## STRAT-02 — Variante Kraken Spot « Breakout 1h » (ADR-023)
+
+Deuxième stratégie implémentée, **candidate du gate M2** (13-roadmap « Jalon M2 »). Leçon d'ADR-020 : à frais taker (≈ 0,9 % par aller-retour avec le glissement), une stratégie doit viser des mouvements de **plusieurs heures** et **peu de trades**. Seuils de départ expérimentaux, à confirmer par l'étude [09-recherche/05](../09-recherche/05-etude-strat02.md) ; paramètres de la `StrategyVersion` [`examples/strategy-breakout-1h.json`](../examples/strategy-breakout-1h.json), publiée **sans code** (05-strategies/04).
+
+**Hypothèse testable.** Quand le prix clôture au-dessus du plus haut de l'heure précédente, avec un volume supérieur à la normale et dans une tendance de fond haussière, la hausse se prolonge en moyenne de plus que le coût d'un aller-retour sur les heures qui suivent.
+
+**Univers.** Celui de STRAT-01 (top 40 USD Kraken Spot, hors stablecoins).
+
+**Features nouvelles (SCANNER, 06-agents/03).** Calculées sur les minutes closes, `UNKNOWN → SKIP` :
+- `breakout_1h` (log_return) = ln(close de la dernière minute / plus haut des 60 minutes précédentes). > 0 : le prix vient de sortir par le haut du range de l'heure.
+- `range_1h` (log_return) = ln(plus haut / plus bas des mêmes 60 minutes) : largeur du range cassé.
+- `trend_4h` (log_return) = ln(close de la dernière minute / close d'il y a 240 minutes) : tendance de fond.
+
+**Entrée v0.1.0 (toutes vraies).** `window_notional_usd ≥ 25 000` ; `volume_spike ≥ 2.0` ; `breakout_1h > 0` et `breakout_1h ≤ 0.01` (pas d'achat d'un mouvement déjà parti de plus de 1 %) ; `range_1h ≥ 0.008` et `range_1h ≤ 0.05` (un range assez large pour que la cassure ait un sens, pas un marché désordonné) ; `trend_4h > 0` ; `spread_bps ≤ 30` ; contrôle qualité `PASS` ; une position par paire ; cooldown par paire **4 h** après sortie.
+
+**Sortie v0.1.0.** Stop initial 2,5 % sous le prix d'entrée ; take-profit 2R (+5 %) ; sortie temporelle **6 h** ; sortie si la paire passe hors `online`. Aucun nouveau type de sortie : le schéma de sortie de STRAT-01 suffit.
+
+**Coûts.** Identiques à STRAT-01 (frais taker ADR-010, glissement par le carnet) ; le résultat est jugé **net de frais**.
+
+**État de validation.** `RESEARCH_ONLY` pour le LIVE (ADR-009). Lancement en `PAPER` sur un bot dédié `paper-kraken-02` **seulement** si l'étude 09-recherche/05 remplit ses critères sur la période de contrôle (ADR-023).
+
 ## STRAT-03 — Launch Discovery
 
 **Hypothèse testable :** des pools récents liquides offrent de courts épisodes de découverte du prix

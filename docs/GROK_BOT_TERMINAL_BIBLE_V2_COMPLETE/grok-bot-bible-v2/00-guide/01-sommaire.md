@@ -54,6 +54,7 @@
 - [02-laboratoire-quant](../09-recherche/02-laboratoire-quant.md)
 - [03-etude-strat01](../09-recherche/03-etude-strat01.md)
 - [04-backtest-m2](../09-recherche/04-backtest-m2.md)
+- [05-etude-strat02](../09-recherche/05-etude-strat02.md)
 - [01-architecture-deploiement](../10-backend/01-architecture-deploiement.md)
 - [02-api-websocket-modeles](../10-backend/02-api-websocket-modeles.md)
 - [03-modele-donnees-m1](../10-backend/03-modele-donnees-m1.md)

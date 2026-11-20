@@ -222,3 +222,16 @@ Besoin exprimé au template :
 2. Les sorties sont inchangées : une vente au-delà de la profondeur visible reste partielle, le reste est vendu aux ticks suivants ; la sortie paper n'invente jamais de liquidité.
 3. Pas de changement du nombre de niveaux (ADR-017 conservé).
 4. La part estimée au-delà du carnet visible est publiée dans l'événement `EQUITY_UPDATED` (`positions_value_estimated`) et dans le résumé du worker ; son affichage dans le Terminal est reporté.
+
+## ADR-023 — STRAT-02 « Breakout 1h », candidate du gate M2
+
+**Constat.** STRAT-01 n'a pas d'avantage (ADR-020) : le coût d'un aller-retour (≈ 0,9 %) dépasse de loin les mouvements de 5 à 60 minutes qu'elle vise. Le gate M2 demande une nouvelle stratégie publiée sans code, backtestée et lancée sur un bot dédié à côté d'un autre.
+
+**Proposition.**
+1. STRAT-02 « Breakout 1h » ([05-strategies/02](../05-strategies/02-catalogue-strategies.md)) : cassure du plus haut de l'heure précédente, volume confirmé, tendance 4 h haussière ; stop 2,5 %, objectif 2R, détention ≤ 6 h, cooldown 4 h.
+2. Trois features ajoutées au SCANNER (`breakout_1h`, `range_1h`, `trend_4h`) et historique chargé porté à 250 minutes ; c'est le seul code. La stratégie elle-même est une `StrategyVersion` publiée par l'éditeur (M2.3).
+3. Étude hors production ([09-recherche/05](../09-recherche/05-etude-strat02.md)) avec critères de lancement fixés **avant** d'en voir le résultat ; si elle passe : backtest M2.2 de la version, puis bot `paper-kraken-02` (M2.4), comparé à `paper-kraken-01` dans UI-12. Sinon : étude relancée chaque semaine.
+4. STRAT-01 reste en pause ; le LIVE reste exclu (ADR-009).
+
+**Statut.** Actée par l'opérateur le 2026-11-21 (« validé ok pour tout »). S2.1 et S2.2 livrés le même jour ; S2.3 dépend du verdict de l'étude.
+

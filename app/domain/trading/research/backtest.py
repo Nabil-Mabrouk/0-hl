@@ -32,7 +32,7 @@ import app.core.models  # noqa: F401  (users table, FK target of the domain sche
 import app.domain.models  # noqa: F401  (hl_* tables)
 from app.core.database import Base
 from app.domain.trading.agents.engine import DecisionEngine, EngineConfig
-from app.domain.trading.agents.features import MINUTE, MinuteData
+from app.domain.trading.agents.features import HISTORY_MINUTES, MINUTE, MinuteData
 from app.domain.trading.agents.sim import PAPER_TAKER_FEE
 from app.domain.trading.audit import system_actor
 from app.domain.trading.bots import create_bot, transition_bot
@@ -84,7 +84,7 @@ HUNDRED = D(100)
 BT_ACTOR = system_actor("backtest")
 BT_BOT = "backtest"
 SETTLE = timedelta(seconds=30)        # EngineConfig.window_settle_seconds
-HISTORY = MINUTE * 70                 # what the SCANNER reads before a window end
+HISTORY = MINUTE * HISTORY_MINUTES  # what the SCANNER reads before a window end
 DEFAULT_DAYS = 30
 KNOWN_GAPS = (
     "un tick par minute (le bot : toutes les 5 s)",
@@ -301,8 +301,7 @@ class MinuteStore:
             for r in rows:
                 if r.minute_start in d and d[r.minute_start].source == "live":
                     continue
-                d[r.minute_start] = MinuteData(r.notional_usd, r.buy_notional_usd, r.close, r.source,
-                                               r.trade_count)
+                d[r.minute_start] = MinuteData.of(r)
             self._data[iid] = d
 
     async def __call__(self, _db: Any, instrument_id: str, *, start: datetime,
@@ -507,8 +506,7 @@ def _baseline(ds: Dataset, strategy: dict[str, Any], cut: datetime) -> dict[str,
         for r in ds.minutes.get(inst.id, []):
             if r.minute_start in mins and mins[r.minute_start].source == "live":
                 continue
-            mins[r.minute_start] = MinuteData(r.notional_usd, r.buy_notional_usd, r.close, r.source,
-                                              r.trade_count)
+            mins[r.minute_start] = MinuteData.of(r)
             bars[r.minute_start] = Bar(r.open, r.high, r.low, r.close)
         trades += run_pair(inst.id, bars, compute_signals(mins, ds.start, ds.end), rule, ds.end)
     return {"exit": rule.label,

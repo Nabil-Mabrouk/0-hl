@@ -51,6 +51,14 @@ Objectif : pouvoir juger une stratégie **avant** de la faire tourner, sur des s
 
 **Gate de fin M2.** Une nouvelle stratégie est décrite, publiée en version, backtestée sur au moins 4 semaines avec un résultat net reproductible jugé sur une période non utilisée pour la choisir, puis lancée sur un bot paper dédié à côté d'un autre bot, sans écrire de code ; les résultats des deux bots se comparent dans UI-12.
 
+**STRAT-02, candidate du gate (ADR-023, actée le 2026-11-21).**
+
+| Lot | Contenu | Références |
+|---|---|---|
+| S2.1 Features — **livré (local, 2026-11-21)** | `breakout_1h`, `range_1h`, `trend_4h` dans le SCANNER et le catalogue de l'éditeur ; historique chargé 250 min ; tests T-R11/12 | 05-strategies/02, 06-agents/03 |
+| S2.2 Étude — **livré (local, 2026-11-21)** ; exécution en production à faire | `strat02_study` (grille, référence, partie de contrôle, verdict des 5 critères) ; exécution en production, résultats consignés | **09-recherche/05** |
+| S2.3 Lancement *(si l'étude passe)* | publication de STRAT-02 v0.1.0 (ou de la variante retenue) par l'éditeur, backtest M2.2, bot `paper-kraken-02` | 05-strategies/04, 09-recherche/04, 06-agents/04 |
+
 **Ordre proposé.** M2.1 d'abord (chaque jour d'attente est un jour d'historique perdu), puis M2.2, M2.3, M2.5, M2.4.
 
 **Hors M2.** LIVE (ADR-009), autres venues que Kraken, assistant IA, alertes avancées.

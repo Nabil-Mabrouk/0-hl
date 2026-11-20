@@ -82,8 +82,7 @@ async def load_series(db: AsyncSession, start: datetime, end: datetime) -> dict[
             prev = pd.minutes.get(r.minute_start)
             if prev is not None and prev.source == "live":
                 continue
-            pd.minutes[r.minute_start] = MinuteData(r.notional_usd, r.buy_notional_usd, r.close,
-                                                    r.source, r.trade_count)
+            pd.minutes[r.minute_start] = MinuteData.of(r)
             pd.bars[r.minute_start] = Bar(r.open, r.high, r.low, r.close)
         out[iid] = pd
     return out

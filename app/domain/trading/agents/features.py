@@ -1,4 +1,4 @@
-"""SCANNER features for STRAT-01 Kraken (spec 06-agents/03 « SCANNER »).
+"""SCANNER features for STRAT-01 and STRAT-02 Kraken (spec 06-agents/03 « SCANNER », ADR-023).
 
 All values are Decimal; a missing input yields UNKNOWN (never zero).
 """
@@ -23,6 +23,11 @@ BASELINE_WINDOWS = 12
 MIN_BASELINE_WINDOWS = 6
 EPSILON_USD = Decimal(1)
 ZERO = Decimal(0)
+HISTORY_MINUTES = 250        # minutes the SCANNER reads before a window end (trend_4h, ADR-023)
+RANGE_MINUTES = 60
+MIN_RANGE_MINUTES = 54
+TREND_MINUTES = 240
+TREND_TOLERANCE_MINUTES = 10
 
 OK = "OK"
 UNKNOWN = "UNKNOWN"
@@ -36,6 +41,9 @@ FEATURE_CATALOGUE: dict[str, tuple[str, str]] = {
     "spread_bps": ("bps", "écart achat/vente du carnet en points de base"),
     "window_notional_usd": ("USD", "notionnel échangé sur la fenêtre de 5 min"),
     "window_trade_count": ("count", "nombre de trades sur la fenêtre de 5 min"),
+    "breakout_1h": ("log_return", "log(dernier close / plus haut des 60 minutes précédentes)"),
+    "range_1h": ("log_return", "log(plus haut / plus bas des 60 minutes précédant la dernière minute)"),
+    "trend_4h": ("log_return", "log(dernier close / close d'il y a 240 minutes)"),
 }
 
 
@@ -65,6 +73,14 @@ class MinuteData:
     close: Decimal | None
     source: str
     trade_count: int = 0
+    high: Decimal | None = None
+    low: Decimal | None = None
+
+    @classmethod
+    def of(cls, r: Any) -> "MinuteData":
+        """From a `TradeMinute` row (or any object with the same fields)."""
+        return cls(r.notional_usd, r.buy_notional_usd, r.close, r.source, r.trade_count,
+                   r.high, r.low)
 
 
 async def load_minutes(
@@ -82,8 +98,7 @@ async def load_minutes(
     for r in rows.all():
         if r.minute_start in out and out[r.minute_start].source == "live":
             continue
-        out[r.minute_start] = MinuteData(r.notional_usd, r.buy_notional_usd, r.close, r.source,
-                                         r.trade_count)
+        out[r.minute_start] = MinuteData.of(r)
     return out
 
 
@@ -146,6 +161,48 @@ def window_features(
         trades = Feature("window_trade_count",
                          Decimal(sum(m.trade_count for m in current)), "count")  # type: ignore[union-attr]
     return {f.name: f for f in (spike, share, change, notional, trades)}
+
+
+def breakout_features(
+    minutes: dict[datetime, MinuteData], window_end: datetime
+) -> dict[str, Feature]:
+    """STRAT-02 (05-strategies/02, 06-agents/03): last minute t−1 must be live with a close; the
+    range is read on [t−61 min, t−1 min) (≥ 54 of 60 minutes); trend reference close at t−240 min,
+    or the nearest of the 10 minutes before it. Only minutes before `window_end` are read."""
+    names = (("breakout_1h", "log_return"), ("range_1h", "log_return"))
+    last = minutes.get(window_end - MINUTE)
+    if last is None or last.source != "live" or last.close is None or last.close <= ZERO:
+        out = {n: _unknown(n, u, "LAST_MINUTE_NOT_LIVE") for n, u in names}
+        out["trend_4h"] = _unknown("trend_4h", "log_return", "LAST_MINUTE_NOT_LIVE")
+        return out
+    highs: list[Decimal] = []
+    lows: list[Decimal] = []
+    for k in range(2, RANGE_MINUTES + 2):
+        m = minutes.get(window_end - MINUTE * k)
+        if m is not None and m.high is not None and m.low is not None and m.low > ZERO:
+            highs.append(m.high)
+            lows.append(m.low)
+    out: dict[str, Feature] = {}
+    if len(highs) < MIN_RANGE_MINUTES:
+        out.update({n: _unknown(n, u, "INSUFFICIENT_HISTORY") for n, u in names})
+    else:
+        hi, lo = max(highs), min(lows)
+        out["breakout_1h"] = Feature("breakout_1h", (last.close / hi).ln(), "log_return")
+        out["range_1h"] = Feature("range_1h", (hi / lo).ln(), "log_return")
+    ref = None
+    for k in range(TREND_MINUTES, TREND_MINUTES + TREND_TOLERANCE_MINUTES + 1):
+        m = minutes.get(window_end - MINUTE * k)
+        if m is not None and m.close is not None and m.close > ZERO:
+            ref = m.close
+            break
+    out["trend_4h"] = (_unknown("trend_4h", "log_return", "INSUFFICIENT_HISTORY") if ref is None
+                       else Feature("trend_4h", (last.close / ref).ln(), "log_return"))
+    return out
+
+
+def scanner_features(minutes: dict[datetime, MinuteData], window_end: datetime) -> dict[str, Feature]:
+    """Every catalogue feature except the spread (which needs the live book)."""
+    return {**window_features(minutes, window_end), **breakout_features(minutes, window_end)}
 
 
 def spread_feature(book: OrderBook | None, fresh: bool) -> Feature:
