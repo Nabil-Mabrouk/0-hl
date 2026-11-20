@@ -47,4 +47,4 @@ Les lectures sont `GET /api/v1/...` filtrées par `bot_id`/`session_id` lorsque 
 
 ## Réplique canonique
 
-Le terminal doit conserver la géométrie et la hiérarchie visuelle de `capture_03_canonique.png`. Les autres vues PNG sont conceptuelles. À 550×688 le canvas demeure visible d’un bloc ; un zoom proportionnel reste permis. La fidélité est contrôlée par overlay et captures automatisées.
+*Retirée par ADR-019.* `capture_03_canonique.png` est une inspiration visuelle (palette, hiérarchie agents → flux → trade → journal) ; le terminal est une vue pleine largeur ([03-ecrans/M1](M1-terminal-et-bots.md#ui-01-live-terminal)), sans contrôle par overlay.

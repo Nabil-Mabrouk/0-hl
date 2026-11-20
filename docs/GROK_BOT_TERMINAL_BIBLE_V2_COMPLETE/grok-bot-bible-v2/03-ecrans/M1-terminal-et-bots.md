@@ -26,7 +26,7 @@ Ce chapitre détaille le lot **M1.5** ([13-roadmap](../13-roadmap/01-plan-execut
 
 ## UI-01 Live Terminal
 
-**Vue par défaut : pleine largeur (ADR-016).** Grille responsive dans le langage visuel de la capture 3, mêmes données que la réplique :
+**Vue unique : pleine largeur (ADR-016, ADR-019).** Grille responsive dans le langage visuel de la capture 3 :
 - **barre de tête** pleine largeur : bouton pause, « **0-hl** Terminal » + version, statut et uptime, puce d'activité, badge environnement/connexion ; à droite balance (grand), trades, wins, losses ;
 - **colonne gauche** (≈ 300 px) : six cartes agents + YOU (clic ⇒ tiroir) ;
 - **centre** : flux (candidats, stations RUG CHECK et EXECUTOR, mini-cartes FILTERED / SIZER / LOGGER / EQUITY), puis deux cartes côte à côte TRADE et RESULT ;
@@ -34,17 +34,17 @@ Ce chapitre détaille le lot **M1.5** ([13-roadmap](../13-roadmap/01-plan-execut
 - **bas** pleine largeur : tableau LOG ; bandeau sombre de la dernière ligne.
 - Lisibilité : texte courant 13 px, libellés 11 px en capitales espacées, chiffres clés 24 à 32 px en chiffres tabulaires.
 - Responsive : sous 1200 px la colonne droite passe sous le centre ; sous 800 px une seule colonne.
-- Sélecteur « Full width / Reference canvas » en tête de page, mémorisé dans le navigateur (préférence locale).
 
-**Corrections après revue opérateur (2026-11-19), communes aux deux vues :**
+**Corrections après revue opérateur (2026-11-19) :**
 - **Bandeau de provenance** permanent pour un bot `PAPER` : « PAPER — real Kraken prices · simulated execution · fictitious capital <capital déposé> ».
 - **Bandeau d'entrées bloquées** dès qu'un blocage s'applique (liste `entry_blocks` de l'instantané) : perte du jour ≥ limite (avec valeur, limite et levée à 00:00 UTC), drawdown ≥ limite, kill switch, nombre maximal de positions atteint, bot non `RUNNING`.
 - **Refus attribué à la bonne étape** : un `RISK_REJECTED` d'étape `RUG_CHECK` est une ligne `FILTERED` (carte RUG CHECK) ; d'étape `SIZER`, une ligne `REFUSED` (carte SIZER, avec le motif). La carte RUG CHECK n'affiche que ses propres rejets.
 - **Mini-carte « NO SIGNAL »** (et non « FILTERED ») : paires évaluées au dernier scan qui ne remplissent pas les conditions de la stratégie, plus le nombre d'inconnues.
 - **Taille et résultat d'un trade** calculés sur le **montant engagé à l'entrée** (`entry_notional` de l'instantané) : taille en % du capital déposé, résultat d'un trade clos en % de ce montant (jamais sur le coût restant, nul après la vente).
+- **Symbole toujours résolu** (2026-11-20) : depuis `instrument_id` du payload, à défaut depuis la position de l'instantané dont l'identifiant est l'agrégat de l'événement, à défaut depuis le candidat de même `correlation_id` ; jamais `—` pour un événement de position.
 - **Barre RESULT centrée sur le capital de départ** : gain vers la droite (vert), perte vers la gauche (rose) ; la demi-barre représente ±10 % du capital, au-delà la barre est pleine et la valeur exacte reste affichée.
 
-**Option « Reference canvas » : canvas canonique 550×688** reproduisant la géométrie de la capture 3 (positions du prototype `original/prototype_v1.html`), mis à l'échelle proportionnellement pour tenir dans la fenêtre (zoom ≤ 1,6), centré. Correspondance des zones (contenu 0-hl, ADR-001/004) :
+**Contenu des zones** (hérité de la capture 3, contenu 0-hl, ADR-001/004) ; la réplique 550×688 qui reproduisait sa géométrie est retirée (ADR-019) :
 
 | Zone (capture 3) | Donnée 0-hl |
 |---|---|
@@ -88,6 +88,6 @@ Ce chapitre détaille le lot **M1.5** ([13-roadmap](../13-roadmap/01-plan-execut
 | T-M1.5-07 | `prefers-reduced-motion` : aucune classe d'animation |
 | T-M1.5-08 | `npm run typecheck && npm run test && npm run build` verts |
 | T-M1.5-10 | bandeaux provenance et entrées bloquées ; refus SIZER affiché `REFUSED` sur la carte SIZER ; taille et résultat sur le montant engagé ; « NO SIGNAL » ; barre RESULT centrée |
-| T-M1.5-09 | vue pleine largeur par défaut avec les mêmes valeurs que la réplique ; le sélecteur bascule vers la réplique 550×688 et le choix est mémorisé (ADR-016) |
+| T-M1.5-09 | vue pleine largeur unique, sans sélecteur de réplique (ADR-016, ADR-019) |
 
-**Hors M1.5 (ouvert)** : la mesure de fidélité par capture Playwright 550×688 superposée à la capture 3 (02-design/03) nécessite d'ajouter Playwright, absent du châssis frontend ; elle est reportée au lot de recette M1.6 `[OPEN]`.
+*La mesure de fidélité par capture Playwright 550×688 est abandonnée (ADR-019).*

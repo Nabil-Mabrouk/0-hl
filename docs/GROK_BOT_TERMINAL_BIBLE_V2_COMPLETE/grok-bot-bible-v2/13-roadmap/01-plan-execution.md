@@ -7,7 +7,7 @@
 
 | Phase | Livrable | Gate de fin |
 |---|---|---|
-| P0 | Réplique visuelle et tokens CSS | Overlay 550×688 documenté |
+| P0 | Réplique visuelle et tokens CSS | *Overlay 550×688 abandonné (ADR-019)* |
 | P1 | API, Auth, events, ledger, schemas | Tests invariants + contract |
 | P2 | 15 écrans admin en paper | Parcours E2E sans ordre réel |
 | P3 | Connecteurs et scanner/rug, risk | Sources TTL et rejection tests |

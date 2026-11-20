@@ -411,10 +411,10 @@ class DecisionEngine:
         if verdict != "PASS":
             cand.status = CandidateStatus.REJECTED
             await self._emit(db, "RISK_REJECTED", "candidate", cand.id,
-                             {"stage": "RUG_CHECK", "failed": failed}, bot_id=bot.id, corr=cand.id)
+                             {"stage": "RUG_CHECK", "failed": failed, "instrument_id": iid}, bot_id=bot.id, corr=cand.id)
             log.info("rug check %s %s: REJECT %s", bot.name, symbol, failed)
             return None
-        await self._emit(db, "RISK_PASSED", "candidate", cand.id, {"stage": "RUG_CHECK"},
+        await self._emit(db, "RISK_PASSED", "candidate", cand.id, {"stage": "RUG_CHECK", "instrument_id": iid},
                          bot_id=bot.id, corr=cand.id)
 
         view = await compute_equity(db, bot.id, self.market)
@@ -441,7 +441,7 @@ class DecisionEngine:
         await db.flush()
         if res.approved:
             await self._emit(db, "POSITION_SIZED", "candidate", cand.id,
-                             {"quantity": res.quantity, "notional": res.notional_approved,
+                             {"instrument_id": iid, "quantity": res.quantity, "notional": res.notional_approved,
                               "binding_limit": res.limits_applied.get("binding"),
                               "risk_budget": res.risk_budget}, bot_id=bot.id, corr=cand.id)
             log.info("sizing %s %s: qty=%s notional=%s (binding %s)", bot.name, symbol, _g(res.quantity),
@@ -449,7 +449,7 @@ class DecisionEngine:
         else:
             cand.status = CandidateStatus.REJECTED
             await self._emit(db, "RISK_REJECTED", "candidate", cand.id,
-                             {"stage": "SIZER", "reasons": res.rejection_reasons},
+                             {"stage": "SIZER", "reasons": res.rejection_reasons, "instrument_id": iid},
                              bot_id=bot.id, corr=cand.id)
             log.warning("sizing %s %s refused: %s", bot.name, symbol, res.rejection_reasons)
         return sizing

@@ -1,5 +1,5 @@
-// UI-01 default full-width layout (ADR-016, spec 03-ecrans/M1-terminal-et-bots « Vue par défaut »).
-// Same data and view model as the 550×688 reference canvas, on a standard responsive grid.
+// UI-01 Live Terminal — full-width layout, the only view (ADR-016, ADR-019;
+// spec 03-ecrans/M1-terminal-et-bots « UI-01 Live Terminal »).
 import { useMemo, useState } from "react";
 import { DASH, fmtPct, fmtUptime, fmtUsd, ratio } from "../shared/format";
 import {
@@ -13,8 +13,20 @@ import {
   resultBar,
   tradeView,
 } from "./viewModel";
-import type { TerminalCanvasProps } from "./TerminalCanvas";
+import type { ConnectionState, DomainEvent, Snapshot } from "../shared/types";
 import "./terminal-wide.css";
+
+export interface TerminalViewProps {
+  snapshot: Snapshot;
+  events: DomainEvent[];
+  connection: ConnectionState;
+  userLabel: string | null;
+  canOperate: boolean;
+  pausePending: boolean;
+  onTogglePause: () => void;
+  onOpenTrace: (correlationId: string) => void;
+  reducedMotion: boolean;
+}
 
 const AGENT_CLASS: Record<AgentKey, string> = {
   SCANNER: "scanner", RUG_CHECK: "rug", SIZER: "sizer", EXECUTOR: "executor",
@@ -24,7 +36,7 @@ const AGENT_ICON: Record<AgentKey, string> = {
   SCANNER: "◫", RUG_CHECK: "⚠", SIZER: "◈", EXECUTOR: "◧", LOGGER: "⬡", EQUITY: "♟",
 };
 
-export default function TerminalWide(props: TerminalCanvasProps) {
+export default function TerminalWide(props: TerminalViewProps) {
   const { snapshot: s, events, connection } = props;
   const [drawer, setDrawer] = useState<AgentKey | null>(null);
   const lines = useMemo(() => logLines(events, s), [events, s]);
@@ -45,7 +57,7 @@ export default function TerminalWide(props: TerminalCanvasProps) {
   const last = tail[tail.length - 1];
 
   return (
-    <div className={`hw-root${paused ? " hw-paused" : ""}${motion}`} data-testid="hl-canvas" data-layout="wide">
+    <div className={`hw-root${paused ? " hw-paused" : ""}${motion}`} data-testid="hl-canvas">
       <header className="hw-head">
         <button
           className={`hw-pause${paused ? " playing" : ""}`}

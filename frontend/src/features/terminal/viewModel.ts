@@ -64,12 +64,19 @@ function sizePct(p: PositionView | undefined, capital: string | null): string {
 
 export function logLines(events: DomainEvent[], snap: Snapshot | null): LogLine[] {
   const syms = symbolsByCorrelation(events);
+  // events recorded before 2026-11-20 may lack instrument_id: fall back on the snapshot position
+  const positionSyms = new Map<string, string>();
+  for (const pos of [...(snap?.open_positions ?? []), ...(snap?.recent_trades ?? [])]) {
+    positionSyms.set(pos.id, symbolOf(pos.instrument_id));
+  }
   const equity = snap?.equity.equity ?? snap?.owner_capital ?? null;
   const out: LogLine[] = [];
   for (const e of events) {
     const p = e.payload as Record<string, unknown>;
     const base = { position: e.position, time: fmtTime(e.occurred_at), correlationId: e.correlation_id };
-    const sym = syms.get(e.correlation_id) ?? symbolOf(p.instrument_id as string | undefined);
+    const sym = p.instrument_id
+      ? symbolOf(p.instrument_id as string)
+      : positionSyms.get(e.aggregate_id) ?? syms.get(e.correlation_id) ?? DASH;
     switch (e.event_type) {
       case "POSITION_OPENED":
         out.push({ ...base, kind: "ENTER", symbol: sym,

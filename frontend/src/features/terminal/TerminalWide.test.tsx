@@ -1,26 +1,20 @@
-// T-M1.5-03 / 07 — the canvas renders API values, "—" for unknown, and no motion when reduced.
+// T-M1.5-03 / 07 / 10 — the terminal renders API values, "—" for unknown, and no motion when reduced.
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import TerminalCanvas, { type TerminalCanvasProps } from "./TerminalCanvas";
-import TerminalWide from "./TerminalWide";
+import TerminalWide, { type TerminalViewProps } from "./TerminalWide";
 import { ev, snapshot } from "../shared/testFixtures";
 
-// ADR-016: the full-width layout and the reference canvas must show the same data.
-describe.each([
-  ["reference canvas", TerminalCanvas],
-  ["full width", TerminalWide],
-] as const)("%s", (_name, View) => {
-function renderCanvas(overrides: Partial<TerminalCanvasProps> = {}) {
-  const props: TerminalCanvasProps = {
+function renderCanvas(overrides: Partial<TerminalViewProps> = {}) {
+  const props: TerminalViewProps = {
     snapshot: snapshot(), events: [], connection: "LIVE", userLabel: "nabil", canOperate: true,
     pausePending: false, onTogglePause: vi.fn(), onOpenTrace: vi.fn(), reducedMotion: false, ...overrides,
   };
-  render(<View {...props} />);
+  render(<TerminalWide {...props} />);
   return props;
 }
 
-describe("TerminalCanvas", () => {
+describe("TerminalWide", () => {
   it("shows balance, trades, wins/losses, scan and the last trade", () => {
     renderCanvas();
     expect(screen.getByTestId("hl-balance")).toHaveTextContent("$10,745.21");
@@ -85,7 +79,6 @@ describe("TerminalCanvas", () => {
     await userEvent.click(screen.getByTestId("hl-agent-SCANNER"));
     expect(screen.getByTestId("hl-scan-fails")).toHaveTextContent("volume_spike=30 window_notional_usd=21");
   });
-});
 
   it("review 2026-11-19: SIZER refusals are REFUSED on the SIZER card, not RUG CHECK", () => {
     const events = [
@@ -113,5 +106,14 @@ describe("TerminalCanvas", () => {
     const bar = screen.getByTestId("hl-result-bar").querySelector("span") as HTMLElement;
     expect(bar.className).toContain("bad");
     expect(bar.style.left).toBe("23.1%");                         // −5.38 % ⇒ half-bar 26.9 % left of centre
+  });
+
+  it("2026-11-20: an EXIT always shows its symbol, even when the candidate event is gone", () => {
+    const closed = ev("POSITION_CLOSED", { reason: "TIME", realized_pnl_net: "-24.52" },
+      { aggregate_type: "position", aggregate_id: "p1", correlation_id: "c-old" });  // p1 = $XRP in the snapshot
+    renderCanvas({ events: [closed] });
+    const log = screen.getByTestId("hl-log");
+    expect(within(log).getByText("$XRP")).toBeInTheDocument();
+    expect(screen.getByTestId("hl-activity")).toHaveTextContent("EXECUTOR · EXITED $XRP");
   });
 });

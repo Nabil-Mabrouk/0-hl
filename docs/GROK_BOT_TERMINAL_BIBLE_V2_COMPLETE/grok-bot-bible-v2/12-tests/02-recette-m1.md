@@ -37,6 +37,6 @@ Test automatisé : un moteur de décision traite une fenêtre jusqu'au sizing, p
 3. À H+24 : exécuter le script ; joindre le rapport au ticket de recette.
 4. Gate M1 franchi si R-01 à R-08 sont `OK`. Les critères d'information alimentent la décision STRAT-01 v0.3.0 (R-12) et le suivi d'exploitation.
 
-## Fidélité visuelle (reportée)
+## Fidélité visuelle
 
-La comparaison Playwright de la réplique 550×688 avec la capture 3 (02-design/03, ADR-016) sera outillée dans un dossier séparé `tools/visual/` (son propre `package.json`, pour ne pas modifier celui du châssis frontend) ; non bloquante pour le gate M1.
+*Abandonnée par ADR-019* : plus de comparaison Playwright avec la capture 3.

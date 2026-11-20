@@ -52,10 +52,12 @@ def entry_intent_id(sizing_id: uuid.UUID) -> uuid.UUID:
     return uuid.uuid5(INTENT_NAMESPACE, f"entry:{sizing_id}")
 
 
-async def _emit(db, event_type, aggregate_type, aggregate_id, payload, *, bot_id, correlation_id):
+async def _emit(db, event_type, aggregate_type, aggregate_id, payload, *, bot_id, correlation_id,
+                instrument_id):
+    # every order/position/ledger event carries instrument_id (06-agents/03, 2026-11-20)
     await append_event(db, event_type=event_type, aggregate_type=aggregate_type,
-                       aggregate_id=aggregate_id, payload=payload, source=SOURCE,
-                       bot_id=bot_id, correlation_id=correlation_id)
+                       aggregate_id=aggregate_id, payload={"instrument_id": instrument_id, **payload},
+                       source=SOURCE, bot_id=bot_id, correlation_id=correlation_id)
 
 
 async def _record_fills(db, order: Order, res: SweepResult, now: datetime, fee_rate: Decimal) -> Decimal:
@@ -120,7 +122,8 @@ async def execute_entry(
     await db.flush()
     await _emit(db, "ORDER_INTENT_CREATED", "order_intent", intent.id,
                 {"side": "BUY", "quantity": qty, "limit_price": limit,
-                 "instrument_id": candidate.instrument_id}, bot_id=bot_id, correlation_id=corr)
+                 "instrument_id": candidate.instrument_id}, bot_id=bot_id, correlation_id=corr,
+                instrument_id=candidate.instrument_id)
     await post_transaction(db, bot_id=bot_id, kind=LedgerKind.RESERVE,
                            postings=reserve_postings(reserve), occurred_at=now,
                            description=f"reserve {intent.id}")
@@ -132,7 +135,8 @@ async def execute_entry(
     await db.flush()
     await _emit(db, "ORDER_SUBMITTED", "order", order.id,
                 {"client_order_id": order.client_order_id, "quantity": qty, "limit_price": limit},
-                bot_id=bot_id, correlation_id=corr)
+                bot_id=bot_id, correlation_id=corr,
+                instrument_id=candidate.instrument_id)
 
     res = sweep(book.top_asks(book.depth), qty, limit=limit, side="buy")
     if res.filled_qty <= ZERO:
@@ -143,7 +147,8 @@ async def execute_entry(
                                postings=release_postings(reserve), occurred_at=now,
                                description=f"release {intent.id} (no fill)")
         await _emit(db, "ORDER_EXPIRED", "order", order.id, {"reason": "NO_LIQUIDITY_WITHIN_LIMIT"},
-                    bot_id=bot_id, correlation_id=corr)
+                    bot_id=bot_id, correlation_id=corr,
+                instrument_id=candidate.instrument_id)
         return EntryOutcome("EXPIRED", order=order, reason="NO_LIQUIDITY_WITHIN_LIMIT")
 
     fee = await _record_fills(db, order, res, now, fee_rate)
@@ -180,15 +185,18 @@ async def execute_entry(
     await _emit(db, "ORDER_PARTIAL_FILL" if partial else "ORDER_FILLED", "order", order.id,
                 {"filled_qty": res.filled_qty, "requested_qty": qty, "avg_price": avg, "fee": fee,
                  "position_id": position.id, "decision_to_fill_ms": latency_ms},
-                bot_id=bot_id, correlation_id=corr)
+                bot_id=bot_id, correlation_id=corr,
+                instrument_id=candidate.instrument_id)
     await _emit(db, "POSITION_OPENED", "position", position.id,
                 {"instrument_id": candidate.instrument_id, "quantity": res.filled_qty,
                  "avg_entry_price": avg, "stop_price": stop_price, "take_profit_price": tp,
                  "r0_usd": position.r0_usd, "environment": "PAPER"},
-                bot_id=bot_id, correlation_id=corr)
+                bot_id=bot_id, correlation_id=corr,
+                instrument_id=candidate.instrument_id)
     await _emit(db, "LEDGER_POSTED", "position", position.id,
                 {"kind": "BUY_FILL", "notional": res.notional, "fee": fee},
-                bot_id=bot_id, correlation_id=corr)
+                bot_id=bot_id, correlation_id=corr,
+                instrument_id=candidate.instrument_id)
     return EntryOutcome("PARTIALLY_FILLED" if partial else "FILLED", position, order,
                         latency_ms=latency_ms)
 
@@ -245,13 +253,15 @@ async def execute_exit(
     await db.flush()
     await _emit(db, "ORDER_SUBMITTED", "order", order.id,
                 {"side": "SELL", "quantity": qty, "limit_price": floor, "reason": exit_reason},
-                bot_id=bot_id, correlation_id=corr)
+                bot_id=bot_id, correlation_id=corr,
+                    instrument_id=position.instrument_id)
 
     res = sweep(book.top_bids(book.depth), qty, limit=floor, side="sell")
     if res.filled_qty <= ZERO:
         order.status, order.closed_at, intent.status = OrderStatus.EXPIRED, now, "EXPIRED"
         await _emit(db, "ORDER_EXPIRED", "order", order.id, {"reason": "NO_BID_ABOVE_FLOOR"},
-                    bot_id=bot_id, correlation_id=corr)
+                    bot_id=bot_id, correlation_id=corr,
+                    instrument_id=position.instrument_id)
         return ExitOutcome("DEFERRED", reason="NO_BID_ABOVE_FLOOR")
 
     fee = await _record_fills(db, order, res, now, fee_rate)
@@ -272,16 +282,19 @@ async def execute_exit(
     position.row_version += 1
     await _emit(db, "ORDER_FILLED" if sold == qty else "ORDER_PARTIAL_FILL", "order", order.id,
                 {"filled_qty": sold, "avg_price": res.avg_price, "fee": fee},
-                bot_id=bot_id, correlation_id=corr)
+                bot_id=bot_id, correlation_id=corr,
+                    instrument_id=position.instrument_id)
     await _emit(db, "LEDGER_POSTED", "position", position.id,
                 {"kind": "SELL_FILL", "proceeds": res.notional, "fee": fee,
-                 "cost_released": cost_released}, bot_id=bot_id, correlation_id=corr)
+                 "cost_released": cost_released}, bot_id=bot_id, correlation_id=corr,
+                    instrument_id=position.instrument_id)
 
     if position.quantity > ZERO:
         position.status = PositionStatus.REDUCING
         await _emit(db, "POSITION_REDUCED", "position", position.id,
                     {"sold_qty": sold, "remaining_qty": position.quantity, "reason": exit_reason},
-                    bot_id=bot_id, correlation_id=corr)
+                    bot_id=bot_id, correlation_id=corr,
+                    instrument_id=position.instrument_id)
         await db.flush()
         return ExitOutcome("REDUCED", exit_reason, sold)
 
@@ -295,7 +308,8 @@ async def execute_exit(
     await _emit(db, "POSITION_CLOSED", "position", position.id,
                 {"reason": exit_reason, "realized_pnl_net": position.realized_pnl_net,
                  "fees_paid": position.fees_paid, "r_multiple": r_mult},
-                bot_id=bot_id, correlation_id=corr)
+                bot_id=bot_id, correlation_id=corr,
+                    instrument_id=position.instrument_id)
     return ExitOutcome("CLOSED", exit_reason, sold, position.realized_pnl_net, r_mult)
 
 

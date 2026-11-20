@@ -87,7 +87,7 @@ describe("TerminalPage", () => {
     expect(new Headers(init.headers).get("Idempotency-Key")).toBeTruthy();
   });
 
-  it("defaults to the full-width layout and remembers the reference canvas choice (ADR-016)", async () => {
+  it("renders the single full-width terminal, without any layout switch (ADR-019)", async () => {
     const s = snapshot();
     vi.stubGlobal("fetch", route({
       "/api/v1/me": () => json({ roles: ["OBSERVER"], email: "o@x.io" }),
@@ -95,10 +95,9 @@ describe("TerminalPage", () => {
       "/api/v1/terminal/snapshot": () => json(s),
     }));
     renderPage();
-    expect((await screen.findByTestId("hl-canvas")).dataset.layout).toBe("wide");
-    await userEvent.click(screen.getByRole("button", { name: "Reference canvas 550×688" }));
-    expect(screen.getByTestId("hl-canvas").dataset.layout).toBeUndefined();
-    expect(localStorage.getItem("hl.terminal.layout")).toBe("reference");
+    expect(await screen.findByTestId("hl-canvas")).toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Terminal layout" })).toBeNull();
+    expect(screen.queryByText(/Reference canvas/)).toBeNull();
   });
 
   it("shows the PAPER provenance and the entry-blocked banners (review 2026-11-19)", async () => {

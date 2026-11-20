@@ -5,7 +5,7 @@
 
 ## Direction artistique
 
-Reproduction du style clair, dense, monospace et technique de la capture 3. L'écran canonique est un petit canvas 550×688 ; **depuis ADR-016**, il n'est plus la vue par défaut de UI-01 mais une option « Reference canvas » servant à la mesure de fidélité, la vue par défaut étant une disposition pleine largeur dans le même langage visuel. Le Back-Office élargit la grille à 1440×900 et réutilise les mêmes couleurs fonctionnelles, microtypographie et bordures.
+Reproduction du style clair, dense, monospace et technique de la capture 3. **Depuis ADR-019**, la capture 3 est une inspiration visuelle et non une référence pixel : UI-01 est une disposition pleine largeur dans ce langage visuel (ADR-016), sans réplique 550×688. Le Back-Office élargit la grille à 1440×900 et réutilise les mêmes couleurs fonctionnelles, microtypographie et bordures.
 
 ## Tokens CSS de référence à recalibrer par comparaison visuelle
 
@@ -39,6 +39,6 @@ Contraste de texte, états non dépendants de la couleur, focus visible, navigat
 
 ## Mesures de fidélité
 
-Créer captures Playwright à 550×688, faire overlay 50 % avec la capture 3, mesurer DOM bounding boxes et score de différence perceptuelle. Les divergences de police doivent être documentées ; appliquer un seuil par région, pas seulement un score global. Les PNG d'admin du présent dossier sont des **directions de design** à valider, pas une référence pixel-perfect comparable à la capture principale.
+*Abandonnées par ADR-019* (V2.0 : captures Playwright 550×688 superposées à la capture 3). La capture 3 et les PNG d'admin du présent dossier sont des **directions de design**, pas des références pixel-perfect.
 
 ![Capture canonique](../assets/captures/capture_03_canonique.png)

@@ -109,6 +109,10 @@ async def test_full_chain_entry_then_take_profit(session_factory):
                      "ORDER_SUBMITTED", "ORDER_FILLED", "POSITION_OPENED", "LEDGER_POSTED",
                      "POSITION_CLOSED"):
         assert expected in types, expected
+    # 2026-11-20: every order/position/ledger event carries the instrument (symbol always resolvable)
+    for e in chain:
+        if e.event_type.startswith(("ORDER_", "POSITION_", "LEDGER_")):
+            assert e.payload.get("instrument_id") == IID, e.event_type
     closed = next(e for e in chain if e.event_type == "POSITION_CLOSED")
     assert D(closed.payload["r_multiple"]) > D(1)
 
