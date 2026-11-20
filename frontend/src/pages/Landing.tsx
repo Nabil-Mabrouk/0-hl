@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import manifest from "../landing-manifest.json";
 import type { LandingManifest } from "../components/blocks/types";
-import Hero from "../components/blocks/Hero";
 import Features from "../components/blocks/Features";
 import Testimonial from "../components/blocks/Testimonial";
 import Faq from "../components/blocks/Faq";
@@ -9,6 +8,7 @@ import Pricing from "../components/blocks/Pricing";
 import EmailCapture from "../components/blocks/EmailCapture";
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
+import HlLanding from "../features/landing/HlLanding";
 import "../landing.css";
 
 const data = manifest as LandingManifest;
@@ -55,10 +55,13 @@ export default function Landing() {
   return (
     <div className="landing" data-skin={data.skin}>
       <Navbar />
+      {/* 0-hl sections (spec 03-ecrans/UI-00-accueil-public) replace the manifest hero;
+          the other manifest blocks (waitlist…) still follow. */}
+      <HlLanding greeting={data.blocks.find((b) => b.type === "hero")?.headline} />
       {data.blocks.map((block, i) => {
         switch (block.type) {
           case "hero":
-            return <Hero key={i} block={block} heroImage={data.hero_image} />;
+            return null;
           case "features":
             return <Features key={i} block={block} />;
           case "testimonial":
