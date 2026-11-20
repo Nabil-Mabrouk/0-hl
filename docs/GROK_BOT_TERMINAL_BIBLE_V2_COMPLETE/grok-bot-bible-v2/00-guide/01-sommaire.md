@@ -32,6 +32,7 @@
 - [UI-14-alerts-monitoring](../03-ecrans/UI-14-alerts-monitoring.md)
 - [UI-15-system-security](../03-ecrans/UI-15-system-security.md)
 - [M1-terminal-et-bots](../03-ecrans/M1-terminal-et-bots.md)
+- [M2-trades-et-statistiques](../03-ecrans/M2-trades-et-statistiques.md)
 - [01-entites-et-etats](../04-metier/01-entites-et-etats.md)
 - [02-evenements-et-commands](../04-metier/02-evenements-et-commands.md)
 - [01-theorie-signaux](../05-strategies/01-theorie-signaux.md)

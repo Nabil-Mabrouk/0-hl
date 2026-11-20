@@ -186,13 +186,58 @@ async def positions(p: Reader, db: DB, bot_id: str = Query(...),
     return ok({"items": [position_json(x) for x in rows]})
 
 
+class TradeFilters:
+    """Query filters shared by /trades, /trades.csv and /stats (M2.5, 03-ecrans/M2-trades-et-statistiques)."""
+
+    def __init__(self, bot_id: str | None = Query(None), since: datetime | None = Query(None),
+                 until: datetime | None = Query(None), instrument_id: str | None = Query(None),
+                 exit_reason: str | None = Query(None), strategy_version_id: str | None = Query(None)):
+        self.bot_id, self.since, self.until = bot_id, since, until
+        self.instrument_id, self.exit_reason, self.strategy_version_id = instrument_id, exit_reason, strategy_version_id
+
+    async def rows(self, db: AsyncSession):
+        from app.domain.trading.analytics import trade_rows
+        bot = await _bot(db, self.bot_id) if self.bot_id else None
+        svid = parse_uuid(self.strategy_version_id, "strategy version") if self.strategy_version_id else None
+        return await trade_rows(db, bot_id=bot.id if bot else None, since=self.since, until=self.until,
+                                instrument_id=self.instrument_id, exit_reason=self.exit_reason,
+                                strategy_version_id=svid)
+
+
+Filters = Annotated[TradeFilters, Depends()]
+
+
 @router.get("/trades")
-async def trades(p: Reader, db: DB, bot_id: str = Query(...), limit: int = Query(50, ge=1, le=500)):
+async def trades(p: Reader, db: DB, f: Filters, limit: int = Query(50, ge=1, le=500),
+                 offset: int = Query(0, ge=0)):
+    rows = await f.rows(db)
+    page = rows[offset:offset + limit]
+    return ok({"items": [position_json(r.position) | r.extras() for r in page], "total": len(rows),
+               "offset": offset, "limit": limit})
+
+
+@router.get("/trades.csv")
+async def trades_csv_route(p: Reader, db: DB, f: Filters):
+    from fastapi.responses import Response
+
+    from app.domain.trading.analytics import trades_csv
+    body = trades_csv(await f.rows(db))
+    return Response(content=body, media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="0-hl-trades.csv"'})
+
+
+@router.get("/stats")
+async def stats(p: Reader, db: DB, f: Filters):
+    from app.domain.trading.analytics import stats_report
+    return ok(stats_report(await f.rows(db)))
+
+
+@router.get("/stats/curve")
+async def stats_curve(p: Reader, db: DB, bot_id: str = Query(...), since: datetime | None = Query(None),
+                      until: datetime | None = Query(None)):
+    from app.domain.trading.analytics import performance_curve
     bot = await _bot(db, bot_id)
-    rows = (await db.scalars(select(Position).where(
-        Position.bot_id == bot.id, Position.status == PositionStatus.CLOSED)
-        .order_by(Position.closed_at.desc()).limit(limit))).all()
-    return ok({"items": [position_json(x) for x in rows]})
+    return ok(await performance_curve(db, bot.id, since=since, until=until))
 
 
 @router.get("/orders")
