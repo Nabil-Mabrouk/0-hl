@@ -6,7 +6,7 @@
   },
   "00-guide/01-sommaire.md": {
     "path": "chapitre-2.md",
-    "sha256": "fc183345e4b9d2d5eb88a7254df1048855e225d43e27bf92fff69c1fe810f73a",
+    "sha256": "0765e7d4eed056c42bca37da6ab3d8256ad621a452bb8ac023b17cd18121f2e3",
     "order": 2
   },
   "00-guide/02-decisions.md": {
@@ -117,151 +117,156 @@
   "04-metier/01-entites-et-etats.md": {
     "path": "02-projects/0-hl/spec/modele-metier-etats-et-invariants.md",
     "sha256": "46239df3d0edb3b8bdcf4e7893ba89cd8108b86b64ee1611aa6f2c2615eeeca3",
-    "order": 24
+    "order": 25
   },
   "04-metier/02-evenements-et-commands.md": {
     "path": "02-projects/0-hl/spec/bus-devenements-commandes-et-reconciliation.md",
     "sha256": "5720412448b3da379f5ea2885ccd81eef3a6ccdd3107321cc9e8d26f2a502b7b",
-    "order": 25
+    "order": 26
   },
   "05-strategies/01-theorie-signaux.md": {
     "path": "02-projects/0-hl/spec/theorie-de-marche-et-construction-des-signaux.md",
     "sha256": "23cc2d412059395c03d0132543eebdf381e4ef52053321383668da65554f8b64",
-    "order": 26
+    "order": 27
   },
   "05-strategies/02-catalogue-strategies.md": {
     "path": "02-projects/0-hl/spec/catalogue-des-strategies-configurables.md",
     "sha256": "078b63d9884a0b337bcd72d850ba5a304c161c6e02fc45a5e89fe88423926e07",
-    "order": 27
+    "order": 28
   },
   "05-strategies/03-risque-mathematique.md": {
     "path": "02-projects/0-hl/spec/formules-du-risque-pnl-et-metriques.md",
     "sha256": "4bd98371cbf0baf6de55d355fea8654024e346c488461fa1ecd1a6c4b7b90be3",
-    "order": 28
+    "order": 29
   },
   "06-agents/01-architecture-agents.md": {
     "path": "02-projects/0-hl/spec/six-agents-orchestration-et-responsabilites.md",
     "sha256": "743e9a333369fb49885a9413190f5e95a94cdf32037703f3b67388651d9b2825",
-    "order": 30
+    "order": 31
   },
   "06-agents/02-ia-et-explicabilite.md": {
     "path": "02-projects/0-hl/spec/agents-ia-outils-et-explicabilite.md",
     "sha256": "fa8b58e87adc6b8835687a27fb226888f6009663b17732ba51b1b0fd825c1df7",
-    "order": 31
+    "order": 32
   },
   "06-agents/03-agents-m1.md": {
     "path": "02-projects/0-hl/spec/agents-de-decision-conception-m1-3.md",
     "sha256": "496241d7e377cae1908677832ef2e4ea63d7553eaae70150cc5ba4fa2abc081c",
-    "order": 32
+    "order": 33
   },
   "07-data/01-connecteurs-et-normalisation.md": {
     "path": "02-projects/0-hl/spec/collecte-provenance-et-normalisation-de-donnees.md",
     "sha256": "2455ed2b64e64a6963c7d4ecfdc5ff124e75336937905ad48aff795cdd1e3321",
-    "order": 33
+    "order": 34
   },
   "07-data/02-onchain-graph-et-rug.md": {
     "path": "02-projects/0-hl/spec/analyse-on-chain-graphes-de-wallets-et-anti-rug.md",
     "sha256": "222dbb8bfdff1d9c32a5cb9bbd32d76d1e076aecce7f35d438a24e07c57cb755",
-    "order": 34
+    "order": 35
   },
   "07-data/03-connecteur-kraken-m1.md": {
     "path": "02-projects/0-hl/spec/connecteur-kraken-spot-conception-m1-2.md",
     "sha256": "1e104b9a217d5a80806f7c175ab27a53ff71f49bdaab431e453aee2dceac6a24",
-    "order": 35
+    "order": 36
   },
   "08-risque-execution/01-risk-engine.md": {
     "path": "02-projects/0-hl/spec/risk-engine-regles-deterministes-et-garde-fous.md",
     "sha256": "c5603cf3ba04c7cb4adea4f0945a5a05772fd18c910a9982305da8fd34a8b0c3",
-    "order": 36
+    "order": 37
   },
   "08-risque-execution/02-execution-engine.md": {
     "path": "02-projects/0-hl/spec/execution-engine-cex-dex-idempotence.md",
     "sha256": "560f421277e2fde770ec526f02adf1bd449604bc0dd31ec81e594642967d270a",
-    "order": 37
+    "order": 38
   },
   "08-risque-execution/03-ledger-et-reconciliation.md": {
     "path": "02-projects/0-hl/spec/ledger-positions-et-reconciliation.md",
     "sha256": "2430b0d6f4f162fce2f2180c804536b74ade5fa7d3afda48f088ca2486f00a8e",
-    "order": 38
+    "order": 39
   },
   "09-recherche/01-backtests-et-validation.md": {
     "path": "02-projects/0-hl/spec/backtesting-evenementiel-replay-et-validation-scientifique.md",
     "sha256": "b44989b98b89391bb2afed2c348a9071b7b06461999575e4920de74a66e2509f",
-    "order": 39
+    "order": 40
   },
   "09-recherche/02-laboratoire-quant.md": {
     "path": "02-projects/0-hl/spec/laboratoire-quantitatif-et-gouvernance-experimentale.md",
     "sha256": "1d78037b019f2e8744ec3c8c470c09f0cfc910290cf199dbd0c32034ba31966e",
-    "order": 40
+    "order": 41
   },
   "09-recherche/03-etude-strat01.md": {
     "path": "02-projects/0-hl/spec/etude-strat-01-hors-production-adr-020.md",
     "sha256": "f650e2237fc7889b44f494186381bd1822dc71eaf69245c78ca22ce9a362e427",
-    "order": 41
+    "order": 42
   },
   "09-recherche/04-backtest-m2.md": {
     "path": "02-projects/0-hl/spec/backtest-m2-2-rejeu-des-agents-reels-sur-l-historique-enregistre-adr-021.md",
     "sha256": "abc372273937f6b6e0e5232ac1eb2168d4cbe0364692d16c6e2d33b5795bd8eb",
-    "order": 42
+    "order": 43
   },
   "10-backend/01-architecture-deploiement.md": {
     "path": "02-projects/0-hl/spec/architecture-backend-et-modules-techniques.md",
     "sha256": "bc5bdde092001494105719c7745612cc8704dc982cfa40f60b991f8bb498cd47",
-    "order": 43
+    "order": 44
   },
   "10-backend/02-api-websocket-modeles.md": {
     "path": "02-projects/0-hl/spec/api-rest-websocket-schemas-et-erreurs.md",
     "sha256": "fb46e791af281ba39d64d1c572ae0891b1655445bc41f542e50547b3bd30e500",
-    "order": 44
+    "order": 45
   },
   "10-backend/03-modele-donnees-m1.md": {
     "path": "02-projects/0-hl/spec/modele-de-donnees-et-fondations-m1-1.md",
     "sha256": "2e7767887c86df60ba5e79458b76f8fc9313baba5f54f9f577c92f40701095c5",
-    "order": 45
+    "order": 46
   },
   "10-backend/04-api-m1.md": {
     "path": "02-projects/0-hl/spec/api-rest-et-flux-terminal-conception-m1-4.md",
     "sha256": "41fb67b4e47ef00ddcfe66b96a0739362ae5ec36c41dec94882d4ee67a62682d",
-    "order": 46
+    "order": 47
   },
   "11-securite-ops/01-securite-et-conformite.md": {
     "path": "02-projects/0-hl/spec/securite-applicative-droits-secrets-et-conformite.md",
     "sha256": "1b8f4d0e04263622c33329ddb4356ce6b6d47994b22294ca7ce3eb794614139d",
-    "order": 47
+    "order": 48
   },
   "11-securite-ops/02-runbooks-slo.md": {
     "path": "02-projects/0-hl/spec/exploitation-24-7-incidents-et-observabilite.md",
     "sha256": "2b8c6fd444e09ae360dbc6383b6f52d57e7d63652bd26176146f70bb64978817",
-    "order": 48
+    "order": 49
   },
   "12-tests/01-plan-de-recette.md": {
     "path": "02-projects/0-hl/spec/plan-de-tests-et-criteres-de-livraison.md",
     "sha256": "4fbc718bc2e61ac3db28fcebcf5630b6e5fae153caf44d7679c0223a7403325c",
-    "order": 49
+    "order": 50
   },
   "12-tests/02-recette-m1.md": {
     "path": "02-projects/0-hl/spec/recette-du-jalon-m1-outillage-et-procedure-m1-6.md",
     "sha256": "5f501181fb88b7aed89dffcd51bfe8cba42ebf3d289152eb3a6646e92d5f42a7",
-    "order": 50
+    "order": 51
   },
   "13-roadmap/01-plan-execution.md": {
     "path": "02-projects/0-hl/spec/roadmap-backlog-et-consignes-aux-agents-developpeurs.md",
-    "sha256": "f87974e4868e21082fefa922baf2036f336693f861630873daf6cb1d3f71750f",
-    "order": 51
+    "sha256": "a6df5bb7d8fbcec0bdf4a3d8f019619a37627d1a0e04e0214919db4cf68c72fc",
+    "order": 52
   },
   "14-references/01-sources-et-limites.md": {
     "path": "02-projects/0-hl/spec/sources-hypotheses-et-limitations.md",
     "sha256": "f7c477c87b571643a3a655b4f806d43b20b8f926861b1059ea7f3317d8278522",
-    "order": 52
+    "order": 53
   },
   "README.md": {
     "path": "02-projects/0-hl/spec/0-hl-bible-de-developpement-v2-1.md",
     "sha256": "63f8c8d3e9e5d823db006cd9840737d535931fb12a554966ed5cf5d6c0e495ce",
-    "order": 53
+    "order": 54
   },
   "05-strategies/04-versions-sans-code-m2.md": {
     "path": "02-projects/0-hl/spec/versions-de-strategie-et-de-policy-sans-code-conception-m2-3-adr-021.md",
     "sha256": "b66795a4eadaf500fbdc758c3a9bc0e6f52a2f686c09941df84259abf65b7629",
-    "order": 29
+    "order": 30
+  },
+  "03-ecrans/M2-trades-et-statistiques.md": {
+    "path": "02-projects/0-hl/spec/ecrans-m2-5-trades-ui-03-et-statistiques-ui-12-adr-021.md",
+    "sha256": "7368c6d9608312350bcdbf9331b760cf26db6a938a7475c6496661c5f9254409",
+    "order": 24
   }
 }

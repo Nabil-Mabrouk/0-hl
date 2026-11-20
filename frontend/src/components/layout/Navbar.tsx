@@ -42,6 +42,8 @@ export default function Navbar() {
       <div className="site-nav-links">
         {user && <a href="/terminal">Terminal</a>}
         {user && <a href="/bots">Bots</a>}
+        {user && <a href="/trades">Trades</a>}
+        {user && <a href="/stats">Stats</a>}
         {user && <a href="/strategies">Strategies</a>}
         {user && <a href="/risk">Risk</a>}
         {modules.tutorials && <a href="/learn">{t("nav.learn")}</a>}
