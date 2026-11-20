@@ -6,12 +6,12 @@
   },
   "00-guide/01-sommaire.md": {
     "path": "chapitre-2.md",
-    "sha256": "fbfcd5a436d4d3c3fc69be55a2a738b93075f37e71e22d122e5da554c6965d5f",
+    "sha256": "58e74e8ccdf3e8d827463616c7eb934ae4bc8ef0627a4167082d1bf76d86397e",
     "order": 2
   },
   "00-guide/02-decisions.md": {
     "path": "02-projects/0-hl/spec/registre-des-decisions-d-architecture-adr.md",
-    "sha256": "056a998e186021bd109598306383e5ac193eba23fd3538fc7b24a108304f6b25",
+    "sha256": "7ef26e7b56ea85a0fb8c7ca0385c186ac06b9a8ea9c1d556a6a34ad1d82c4717",
     "order": 3
   },
   "01-produit/01-vision-et-perimetre.md": {
@@ -131,7 +131,7 @@
   },
   "05-strategies/02-catalogue-strategies.md": {
     "path": "02-projects/0-hl/spec/catalogue-des-strategies-configurables.md",
-    "sha256": "078b63d9884a0b337bcd72d850ba5a304c161c6e02fc45a5e89fe88423926e07",
+    "sha256": "feba06a402222153eb855f2d32ea9ee1c40fe250d81d3a07a950c977254262f4",
     "order": 29
   },
   "05-strategies/03-risque-mathematique.md": {
@@ -151,7 +151,7 @@
   },
   "06-agents/03-agents-m1.md": {
     "path": "02-projects/0-hl/spec/agents-de-decision-conception-m1-3.md",
-    "sha256": "496241d7e377cae1908677832ef2e4ea63d7553eaae70150cc5ba4fa2abc081c",
+    "sha256": "4210a30d63ab098a1aaa2069174dd16612bbf3b122bb32a62945ad725a858850",
     "order": 34
   },
   "07-data/01-connecteurs-et-normalisation.md": {
@@ -207,57 +207,57 @@
   "10-backend/01-architecture-deploiement.md": {
     "path": "02-projects/0-hl/spec/architecture-backend-et-modules-techniques.md",
     "sha256": "bc5bdde092001494105719c7745612cc8704dc982cfa40f60b991f8bb498cd47",
-    "order": 46
+    "order": 47
   },
   "10-backend/02-api-websocket-modeles.md": {
     "path": "02-projects/0-hl/spec/api-rest-websocket-schemas-et-erreurs.md",
     "sha256": "fb46e791af281ba39d64d1c572ae0891b1655445bc41f542e50547b3bd30e500",
-    "order": 47
+    "order": 48
   },
   "10-backend/03-modele-donnees-m1.md": {
     "path": "02-projects/0-hl/spec/modele-de-donnees-et-fondations-m1-1.md",
     "sha256": "2e7767887c86df60ba5e79458b76f8fc9313baba5f54f9f577c92f40701095c5",
-    "order": 48
+    "order": 49
   },
   "10-backend/04-api-m1.md": {
     "path": "02-projects/0-hl/spec/api-rest-et-flux-terminal-conception-m1-4.md",
     "sha256": "41fb67b4e47ef00ddcfe66b96a0739362ae5ec36c41dec94882d4ee67a62682d",
-    "order": 49
+    "order": 50
   },
   "11-securite-ops/01-securite-et-conformite.md": {
     "path": "02-projects/0-hl/spec/securite-applicative-droits-secrets-et-conformite.md",
     "sha256": "1b8f4d0e04263622c33329ddb4356ce6b6d47994b22294ca7ce3eb794614139d",
-    "order": 50
+    "order": 51
   },
   "11-securite-ops/02-runbooks-slo.md": {
     "path": "02-projects/0-hl/spec/exploitation-24-7-incidents-et-observabilite.md",
     "sha256": "2b8c6fd444e09ae360dbc6383b6f52d57e7d63652bd26176146f70bb64978817",
-    "order": 51
+    "order": 52
   },
   "12-tests/01-plan-de-recette.md": {
     "path": "02-projects/0-hl/spec/plan-de-tests-et-criteres-de-livraison.md",
     "sha256": "4fbc718bc2e61ac3db28fcebcf5630b6e5fae153caf44d7679c0223a7403325c",
-    "order": 52
+    "order": 53
   },
   "12-tests/02-recette-m1.md": {
     "path": "02-projects/0-hl/spec/recette-du-jalon-m1-outillage-et-procedure-m1-6.md",
     "sha256": "5f501181fb88b7aed89dffcd51bfe8cba42ebf3d289152eb3a6646e92d5f42a7",
-    "order": 53
+    "order": 54
   },
   "13-roadmap/01-plan-execution.md": {
     "path": "02-projects/0-hl/spec/roadmap-backlog-et-consignes-aux-agents-developpeurs.md",
-    "sha256": "a42641a06af5012dc1d7a4b59d8040a593c96f38a0c300e704047740e64f9138",
-    "order": 55
+    "sha256": "e42c2f829dd4755bb333dd239356306fb9aac5d599658746e224aa0ce8d827c5",
+    "order": 56
   },
   "14-references/01-sources-et-limites.md": {
     "path": "02-projects/0-hl/spec/sources-hypotheses-et-limitations.md",
     "sha256": "f7c477c87b571643a3a655b4f806d43b20b8f926861b1059ea7f3317d8278522",
-    "order": 56
+    "order": 57
   },
   "README.md": {
     "path": "02-projects/0-hl/spec/0-hl-bible-de-developpement-v2-1.md",
     "sha256": "63f8c8d3e9e5d823db006cd9840737d535931fb12a554966ed5cf5d6c0e495ce",
-    "order": 57
+    "order": 58
   },
   "05-strategies/04-versions-sans-code-m2.md": {
     "path": "02-projects/0-hl/spec/versions-de-strategie-et-de-policy-sans-code-conception-m2-3-adr-021.md",
@@ -277,11 +277,16 @@
   "12-tests/03-recette-m2.md": {
     "path": "02-projects/0-hl/spec/recette-du-jalon-m2-tests-de-parcours-rapport-et-procedure-de-gate-m2-6-adr-021.md",
     "sha256": "d2c0a7ce41bca158491f97088adedeaf190aa4d0f21762ad7cf646eeeb0dc5a1",
-    "order": 54
+    "order": 55
   },
   "03-ecrans/UI-00-accueil-public.md": {
     "path": "02-projects/0-hl/spec/ui-00-page-d-accueil-publique-0-hl-com.md",
     "sha256": "21946d5922a696d52e5940f71c553a40fe46567cb18e7d817f4ee0803009a526",
     "order": 8
+  },
+  "09-recherche/05-etude-strat02.md": {
+    "path": "02-projects/0-hl/spec/etude-strat-02-breakout-1h-hors-production-adr-023.md",
+    "sha256": "8ddd5c85aa71ef81e1dedc9cc850c8a2e15efcbde6c24acd5189e356470af7a4",
+    "order": 46
   }
 }
