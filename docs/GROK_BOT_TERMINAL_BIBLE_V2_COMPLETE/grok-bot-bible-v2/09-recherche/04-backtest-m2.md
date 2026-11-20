@@ -15,6 +15,7 @@ Réalisation M2 de [09-recherche/01](01-backtests-et-validation.md) pour Kraken 
 ## Bac à sable
 
 - Base SQLite en mémoire, schéma `hl_*` créé depuis les modèles ; aucune écriture en production. On y crée les instruments, la version de stratégie, la version de policy et un bot `PAPER` du capital demandé (`auto_start`).
+- Tout est daté en **temps simulé** : le dépôt du capital est daté d'une minute avant le début de la période (un dépôt daté à l'heure réelle serait compté comme un apport postérieur au premier instantané d'equity et simulerait une perte journalière de 100 %, correctif du 2026-11-20).
 - Les commandes opérateur, l'audit et l'API n'interviennent pas.
 
 ## Horloge et données

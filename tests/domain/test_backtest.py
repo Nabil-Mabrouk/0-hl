@@ -108,6 +108,14 @@ async def test_same_trade_as_the_live_engine(session_factory):
     assert p.realized_pnl_net == trade.realized_pnl_net and p.fees_paid == trade.fees_paid
 
 
+async def test_entry_after_the_first_ticks_is_not_refused_by_the_daily_loss(session_factory):
+    """Server run 2026-11-20: the deposit was dated with the wall clock ⇒ MAX_DAILY_LOSS."""
+    await _prod(session_factory)
+    report = await _run(session_factory, start=START - M * 3)   # 3 ticks without books first
+    assert report.rejections == {}
+    assert report.overall.trades == 1 and report.trades[0].exit_reason == "TAKE_PROFIT"
+
+
 # T-M2.2-03 ---------------------------------------------------------------------------------
 async def test_two_runs_give_the_same_report(session_factory):
     await _prod(session_factory)

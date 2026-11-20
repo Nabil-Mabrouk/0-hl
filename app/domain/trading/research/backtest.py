@@ -24,7 +24,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import event, func, select
+from sqlalchemy import event, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
@@ -50,10 +50,12 @@ from app.domain.trading.market.book import OrderBook
 from app.domain.trading.market.state import LIVE, STALE, FeedInfo, InstrumentRules, MarketState
 from app.domain.trading.models import (
     BookSnapshot,
+    CashMovement,
     DomainEvent,
     EquitySnapshot,
     Fill,
     Instrument,
+    LedgerTransaction,
     Order,
     OrderIntent,
     Position,
@@ -274,6 +276,11 @@ async def prepare_sandbox(sessions: async_sessionmaker[AsyncSession], ds: Datase
         await transition_bot(db, bot, BotStatus.READY, actor=BT_ACTOR, reason="backtest")
         await record_cash_movement(db, bot_id=bot.id, kind=CashMovementKind.DEPOSIT, amount=capital,
                                    actor=BT_ACTOR, reason="capital du backtest")
+        # simulated time, not the wall clock: a deposit dated « now » would count as a capital
+        # flow after the first equity snapshot and fake a 100 % daily loss (MAX_DAILY_LOSS)
+        funded_at = ds.start - MINUTE
+        await db.execute(update(CashMovement).values(occurred_at=funded_at))
+        await db.execute(update(LedgerTransaction).values(occurred_at=funded_at))
         await db.commit()
 
 
@@ -624,7 +631,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args(argv)
     if not args.verbose:
-        logging.getLogger("hl").setLevel(logging.WARNING)
+        logging.getLogger("hl").setLevel(logging.ERROR)  # refusals are counted in the report
 
     from app.core.database import SessionLocal, engine
 
