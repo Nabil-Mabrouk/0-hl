@@ -6,7 +6,7 @@
   },
   "00-guide/01-sommaire.md": {
     "path": "chapitre-2.md",
-    "sha256": "b15c6bba7065bcbdb0d2f2b811523a8bcac86e057447c0b670d48e764ba9ecc2",
+    "sha256": "abba1f3d111065c540a9f75e9cfdf3aede8c9bec034bcf817e1ee70a312f4fac",
     "order": 2
   },
   "00-guide/02-decisions.md": {
@@ -246,18 +246,18 @@
   },
   "13-roadmap/01-plan-execution.md": {
     "path": "02-projects/0-hl/spec/roadmap-backlog-et-consignes-aux-agents-developpeurs.md",
-    "sha256": "8141e640b19f6b4f292439ab2956da08b6bad3d59ee15053d52fa9e52b776086",
-    "order": 53
+    "sha256": "a42641a06af5012dc1d7a4b59d8040a593c96f38a0c300e704047740e64f9138",
+    "order": 54
   },
   "14-references/01-sources-et-limites.md": {
     "path": "02-projects/0-hl/spec/sources-hypotheses-et-limitations.md",
     "sha256": "f7c477c87b571643a3a655b4f806d43b20b8f926861b1059ea7f3317d8278522",
-    "order": 54
+    "order": 55
   },
   "README.md": {
     "path": "02-projects/0-hl/spec/0-hl-bible-de-developpement-v2-1.md",
     "sha256": "63f8c8d3e9e5d823db006cd9840737d535931fb12a554966ed5cf5d6c0e495ce",
-    "order": 55
+    "order": 56
   },
   "05-strategies/04-versions-sans-code-m2.md": {
     "path": "02-projects/0-hl/spec/versions-de-strategie-et-de-policy-sans-code-conception-m2-3-adr-021.md",
@@ -273,5 +273,10 @@
     "path": "02-projects/0-hl/spec/plusieurs-bots-paper-conception-m2-4-adr-021.md",
     "sha256": "36fb74d50de0659c17a0548652fc2965a76e4be5c468a569f4fb79d620221f7e",
     "order": 34
+  },
+  "12-tests/03-recette-m2.md": {
+    "path": "02-projects/0-hl/spec/recette-du-jalon-m2-tests-de-parcours-rapport-et-procedure-de-gate-m2-6-adr-021.md",
+    "sha256": "d2c0a7ce41bca158491f97088adedeaf190aa4d0f21762ad7cf646eeeb0dc5a1",
+    "order": 53
   }
 }
