@@ -23,7 +23,12 @@ from app.domain.trading.config_schemas import validate_strategy_config
 from app.domain.trading.enums import BotStatus, PositionStatus
 from app.domain.trading.errors import ProviderUnavailable
 from app.domain.trading.events import append_event
-from app.domain.trading.market.aggregates import MinuteAggregator, MinuteRow, backfill_rows
+from app.domain.trading.market.aggregates import (
+    MinuteAggregator,
+    MinuteRow,
+    backfill_rows,
+    floor_minute,
+)
 from app.domain.trading.market.book import OrderBook
 from app.domain.trading.market.kraken_rest import KrakenRestClient
 from app.domain.trading.market.kraken_ws import KrakenWsClient, WsTransport
@@ -35,6 +40,7 @@ from app.domain.trading.market.universe import (
     select_universe,
 )
 from app.domain.trading.models import (
+    BookSnapshot,
     Bot,
     FeedStatus,
     Instrument,
@@ -61,7 +67,9 @@ class MarketDataConfig:
     housekeeping_seconds: float = 5.0
     universe_retry_seconds: float = 60.0
     default_universe_refresh_seconds: int = 3600
-    retention_days: int = 7
+    retention_days: int = 180          # hl_trade_minute (M2.1, ADR-021; 7 at M1)
+    snapshot_retention_days: int = 90  # hl_book_snapshot (M2.1)
+    book_snapshots: bool = True
     backfill: bool = True
     shutdown_grace_seconds: float = 20.0
     summary_seconds: float = 300.0
@@ -99,6 +107,7 @@ class MarketDataService:
         self._pending_status: dict[str, str] = {}
         self._provider_degraded = False
         self._last_purge: datetime | None = None
+        self._last_snapshot_minute: datetime | None = None
         self._backfilled: set[str] = set()
         self._max_lag_ms = 0
         self._persist_lock = asyncio.Lock()  # persist() is never run twice concurrently
@@ -543,14 +552,41 @@ class MarketDataService:
                     inst.status = status
                     inst.updated_at = now
             await self._persist_feed_status(db, now)
+            await self._snapshot_books(db, now)
             if self._last_purge is None or now - self._last_purge > timedelta(days=1):
                 await db.execute(delete(TradeMinute).where(
                     TradeMinute.minute_start < now - timedelta(days=self.config.retention_days)))
+                await db.execute(delete(BookSnapshot).where(
+                    BookSnapshot.minute_start
+                    < now - timedelta(days=self.config.snapshot_retention_days)))
                 self._last_purge = now
             # events last: the journal lock is held only until the commit right after (M1.3)
             for ev in events:
                 await append_event(db, **ev)
             await db.commit()
+
+    async def _snapshot_books(self, db: AsyncSession, now: datetime) -> None:
+        """First pass of each minute: one row per LIVE pair with a two-sided book (M2.1).
+        No row otherwise — a missing snapshot is unknown, never an empty book."""
+        minute = floor_minute(now)
+        if not self.config.book_snapshots or self._last_snapshot_minute == minute:
+            return
+        self._last_snapshot_minute = minute
+        depth = self.config.book_depth
+        done = set((await db.scalars(select(BookSnapshot.instrument_id).where(
+            BookSnapshot.minute_start == minute))).all())   # restart within the same minute
+        for symbol in sorted(self.wanted):
+            book = self.state.book(symbol)
+            if book is None or not self.state.is_fresh(symbol) or instrument_id(symbol) in done:
+                continue
+            bid, ask, spread = book.best_bid, book.best_ask, book.spread_bps()
+            if bid is None or ask is None or spread is None:
+                continue
+            db.add(BookSnapshot(
+                instrument_id=instrument_id(symbol), minute_start=minute, captured_at=now,
+                best_bid=bid[0], best_ask=ask[0], spread_bps=spread,
+                bids=[[format(p, "f"), format(q, "f")] for p, q in book.top_bids(depth)],
+                asks=[[format(p, "f"), format(q, "f")] for p, q in book.top_asks(depth)]))
 
     async def _persist_feed_status(self, db: AsyncSession, now: datetime) -> None:
         rows: dict[str, dict[str, Any]] = {

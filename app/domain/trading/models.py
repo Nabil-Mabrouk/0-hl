@@ -568,6 +568,26 @@ class FeedStatus(Base):
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
 
 
+class BookSnapshot(Base):
+    """One order-book capture per LIVE pair and minute (M2.1, 07-data/03 « Instantanés »)."""
+
+    __tablename__ = "hl_book_snapshot"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=new_id)
+    instrument_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    minute_start: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False)
+    captured_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False)
+    best_bid: Mapped[Decimal] = mapped_column(Dec, nullable=False)
+    best_ask: Mapped[Decimal] = mapped_column(Dec, nullable=False)
+    spread_bps: Mapped[Decimal] = mapped_column(Dec, nullable=False)
+    bids: Mapped[list[Any]] = mapped_column(JsonType, nullable=False)  # [[price, qty]] best first
+    asks: Mapped[list[Any]] = mapped_column(JsonType, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("instrument_id", "minute_start", name="uq_hl_book_snapshot"),
+    )
+
+
 # --------------------------------------------------------------------------- #
 # Ledger
 # --------------------------------------------------------------------------- #

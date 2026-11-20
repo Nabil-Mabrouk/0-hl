@@ -28,6 +28,7 @@ Ce registre tranche les points `[OPEN]` de la V2.0 et prime sur toute formulatio
 | ADR-018 | Carnet d'ordres incrémental (checksum sans reformatage) | Actée | 2026-11-19 |
 | ADR-019 | Suppression de la réplique 550×688 et de la mesure de fidélité à la capture 3 | Actée | 2026-11-19 |
 | ADR-020 | Pause des entrées de STRAT-01 v0.2.0 et étude hors production avant v0.3.0 | Actée | 2026-11-20 |
+| ADR-021 | Jalon M2 — laboratoire de stratégie (données longues, backtest, paramètres sans code) | Actée | 2026-11-20 |
 
 ---
 
@@ -200,3 +201,13 @@ Besoin exprimé au template :
 **Constat.** Deux recettes (2026-11-19, 2026-11-20) : 103 trades, 14 gagnants ; second jour négatif même avant frais ; 101 sorties sur 103 au temps limite. La stratégie n'a pas d'avantage mesurable ; continuer ne produit plus d'information, seulement des pertes fictives.
 
 **Décision.** Les entrées du bot `paper-kraken-01` sont mises en pause par l'opérateur (`PAUSE_ENTRIES`, auditée ; positions ouvertes protégées). Aucune STRAT-01 v0.3.0 n'est publiée avant l'**étude hors production** décrite en [09-recherche/03](../09-recherche/03-etude-strat01.md) et sa validation par l'opérateur.
+
+**Résultat (2026-11-20).** L'étude ([09-recherche/03 « Résultats »](../09-recherche/03-etude-strat01.md#résultats-du-2026-11-20-obs)) ne trouve aucune variante rentable après frais et aucun avantage du filtre d'entrée sur une entrée sans filtre. STRAT-01 v0.2.0 reste publiée mais ses entrées restent en pause ; aucune v0.3.0 n'est publiée. STRAT-01 est requalifiée en **stratégie de démonstration** de la chaîne M1.
+
+## ADR-021 — Jalon M2 : laboratoire de stratégie
+
+**Constat.** M1 a livré une chaîne paper complète et traçable, mais pas d'outil pour savoir si une stratégie a un avantage avant de la faire tourner : 2,4 jours de données (rétention de 7 jours), paramètres modifiables uniquement par du code et un amorçage, pas de backtest, une seule stratégie et un seul bot.
+
+**Proposition.** Le jalon M2 décrit en [13-roadmap/01 « Jalon M2 »](../13-roadmap/01-plan-execution.md#jalon-m2--laboratoire-de-stratégie-adr-021--en-cours) : rétention longue des données de marché, backtest rejouant le code des agents, publication de versions de stratégie et de policy sans code, plusieurs bots paper. Le LIVE reste exclu (ADR-009).
+
+**Statut.** Actée par l'opérateur le 2026-11-20. M2.1 (données longues) est réalisé en premier : sans lui, les données de plus de 7 jours continuent d'être purgées. Chaque lot suivant est détaillé dans la spec avant d'être codé.

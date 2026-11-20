@@ -74,7 +74,7 @@ Ce chapitre fixe le **modèle physique** du lot M1.1 ([13-roadmap](../13-roadmap
 
 ### Données de marché (M1.2)
 
-`hl_trade_minute` (agrégats de trades par minute, `live`/`backfill`) et `hl_feed_status` (état du flux par instrument) : spécifiées dans [07-data/03](../07-data/03-connecteur-kraken-m1.md#agrégats-de-trades).
+`hl_trade_minute` (agrégats de trades par minute, `live`/`backfill`) et `hl_feed_status` (état du flux par instrument) : spécifiées dans [07-data/03](../07-data/03-connecteur-kraken-m1.md#agrégats-de-trades). `hl_book_snapshot` (carnet par minute, M2.1) : spécifiée dans [07-data/03 « Instantanés de carnet »](../07-data/03-connecteur-kraken-m1.md#instantanés-de-carnet-m21-adr-021).
 
 ### Ledger (08-risque-execution/03)
 

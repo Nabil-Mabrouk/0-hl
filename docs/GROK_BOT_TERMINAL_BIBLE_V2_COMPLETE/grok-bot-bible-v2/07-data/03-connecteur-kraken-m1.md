@@ -80,7 +80,23 @@ Règles :
 - **Clôture.** Une minute est écrite après sa fin (horloge UTC + 2 s de marge pour les trades tardifs) ; la minute en cours n'est jamais écrite. À l'arrêt du worker, la minute partielle est abandonnée.
 - **Déduplication.** `trade_id` par paire strictement croissant ; un `trade_id` déjà vu est ignoré.
 - **Backfill** (INV-03) : à l'entrée d'une paire dans l'univers et au démarrage, `OHLC` 1 min ; la dernière bougie (non validée) est ignorée ; écriture `source = backfill` uniquement pour les minutes **antérieures** à la première minute `live` couverte. Le backfill n'écrase jamais une minute `live`. Les features M1.3 lisent `live` en priorité, puis `backfill` pour l'historique de la ligne de base uniquement, et marquent `uses_backfill = true`.
-- **Rétention** : 7 jours (purge par le worker, quotidienne).
+- **Rétention** : 180 jours (M2.1, ADR-021 ; 7 jours au M1), purge quotidienne par le worker.
+
+## Instantanés de carnet (M2.1, ADR-021)
+
+Historique du carnet pour le backtest (09-recherche/01, M2.2) : le M1 ne gardait que le carnet courant en mémoire.
+
+- **Table** `hl_book_snapshot` : `instrument_id`, `minute_start` (minute UTC), `captured_at` (instant exact de la capture), `best_bid`, `best_ask`, `spread_bps` (Decimal), `bids` et `asks` (JSON : 10 niveaux au plus, `[prix, quantité]` en chaînes décimales, meilleurs prix en premier). Unicité `(instrument_id, minute_start)`.
+- **Capture** : au premier passage d'entretien du worker (toutes les 5 s) dans chaque minute, pour chaque paire abonnée dont le flux est `LIVE` et dont le carnet a ses deux côtés. Sinon **aucune ligne** : une minute sans instantané est inconnue, jamais un carnet vide (INV-03). La capture est faite à l'heure du worker, sans attente d'un nouveau message ; `captured_at − minute_start` vaut au plus ~5 s.
+- **Rétention** : 90 jours, purge quotidienne.
+- **Volume estimé** : ~36 paires × 1 440 minutes × ~0,8 Ko ≈ 40 Mo par jour, soit ≈ 3,5 Go à 90 jours ; plus ≈ 2 Go pour 180 jours de `hl_trade_minute`. L'opérateur vérifie la place disque du serveur (`df -h`) au déploiement.
+- **Lecture** : seuls les scripts et le moteur de recherche hors production lisent cette table ; le worker de décision ne la lit jamais.
+
+| ID | Test |
+|---|---|
+| T-M2.1-01 | une seule ligne par paire `LIVE` et par minute, quel que soit le nombre de passages d'entretien ; niveaux et prix en Decimal exacts |
+| T-M2.1-02 | aucune ligne pour une paire `STALE` ou un carnet incomplet |
+| T-M2.1-03 | purge : minutes au-delà de 180 jours, instantanés au-delà de 90 jours ; rien de plus récent n'est supprimé |
 
 ## État du flux persisté
 

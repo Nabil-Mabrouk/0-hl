@@ -15,7 +15,7 @@
 | P5 | Exploitation/monitoring | SLO/alerts/runbooks éprouvés |
 | P6 | Live pilot conditionnel | Double validation, garde-fous, conformité |
 
-## Jalon M1 — Tranche verticale paper Kraken (ADR-008) — en cours
+## Jalon M1 — Tranche verticale paper Kraken (ADR-008) — gate technique franchi (2026-11-19 et 2026-11-20)
 
 Ce jalon remplace l'enchaînement P0→P4 pour le premier livrable ; il prend une tranche fine de P0, P1, P2, P3 et P4.
 
@@ -33,6 +33,27 @@ Ce jalon remplace l'enchaînement P0→P4 pour le premier livrable ; il prend un
 **Prérequis de production (ADR-011).** Accès Internet du worker et chaîne de migration `domain` livrés par le template gitsky ; sans eux, M1 est validé en local uniquement.
 
 **Hors M1.** UI-03..15 complets, backtests/replay, analytics, alertes avancées, assistant IA, LIVE.
+
+**Bilan M1 (2026-11-20).** Critères bloquants R-01..R-08 OK à deux reprises ; pertes de flux réduites de 54 à 2 en ~8 h (ADR-017/018), comportement aux heures de pointe US à confirmer. STRAT-01 sans avantage mesurable : entrées en pause, stratégie de démonstration (ADR-020).
+
+## Jalon M2 — Laboratoire de stratégie (ADR-021) — en cours
+
+Objectif : pouvoir juger une stratégie **avant** de la faire tourner, sur des semaines de données, avec le même code que le bot, et la faire évoluer sans écrire de code.
+
+| Lot | Contenu | Références |
+|---|---|---|
+| M2.1 Données longues — **livré (2026-11-20)** | rétention `hl_trade_minute` portée de 7 à 180 jours ; instantané du carnet (10 niveaux par côté) chaque minute par paire `LIVE` dans `hl_book_snapshot`, rétention 90 jours | **07-data/03 « Instantanés de carnet »**, 10-backend/03 |
+| M2.2 Backtest — **en cours** | rejeu du `DecisionEngine` réel dans un bac à sable SQLite, pas d'une minute, carnets des instantanés M2.1 ; stratégie et policy publiées ou brouillons JSON ; coûts du bot et stress des frais ; découpage temporel, référence, en-tête de reproductibilité ; commande hors production (UI-11 et registre d'expériences dans un lot ultérieur) | **09-recherche/04**, 09-recherche/01–03 |
+| M2.3 Versions sans code | création d'une version de stratégie ou de policy (brouillon → publiée, immuable, INV-06) et rattachement d'un bot à une version, par API et commande d'administration, avec audit et validation solo (ADR-006) ; écrans UI-04 (liste et versions), UI-05 (éditeur de paramètres validé par schéma), UI-06 (policy de risque) | 05-strategies, 08-*/01, UI-04/05/06 |
+| M2.4 Plusieurs bots | création de bots `PAPER` (un bot = une version de stratégie + une policy + un capital paper), exécution simultanée par le moteur de décision, isolation du capital et des limites par bot ; UI-02 complète | 04-metier, UI-02 |
+| M2.5 Suivi | UI-03 (positions et trades par bot, filtres, trace) et UI-12 (résultat net, frais, drawdown, profit factor par stratégie et par version, comparaison à la référence) | UI-03, UI-12 |
+| M2.6 Tests | backtest déterministe (même entrée ⇒ même rapport), équivalence décision bot / décision backtest sur fixtures enregistrées, immutabilité des versions, isolation entre bots | 12-tests |
+
+**Gate de fin M2.** Une nouvelle stratégie est décrite, publiée en version, backtestée sur au moins 4 semaines avec un résultat net reproductible jugé sur une période non utilisée pour la choisir, puis lancée sur un bot paper dédié à côté d'un autre bot, sans écrire de code ; les résultats des deux bots se comparent dans UI-12.
+
+**Ordre proposé.** M2.1 d'abord (chaque jour d'attente est un jour d'historique perdu), puis M2.2, M2.3, M2.5, M2.4.
+
+**Hors M2.** LIVE (ADR-009), autres venues que Kraken, assistant IA, alertes avancées.
 
 ## Organisation du dépôt visé
 
