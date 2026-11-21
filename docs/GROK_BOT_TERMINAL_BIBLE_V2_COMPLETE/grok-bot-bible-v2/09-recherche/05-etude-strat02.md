@@ -40,7 +40,27 @@ Pour la v0.1.0 (v = 2, tendance oui, c = 1 %, x = 2,5 %, k = 2, H = 6 h), la ré
 
 ## Résultats
 
-*À compléter après la première exécution en production.*
+### Exécution du 2026-11-21 `[OBS]`
+
+Période 2026-11-17 22:44 → 2026-11-21 00:17 UTC (≈ 3,1 jours, coupure 2026-11-19 18:51), 40 paires, 48 747 minutes évaluables, 324 variantes.
+
+| Ligne | Partie | Trades | Gagnants | Brut moyen | Net moyen | PF |
+|---|---|---|---|---|---|---|
+| v0.1.0 | 1 | 13 | 23,1 % | −1,154 % | −1,942 % | 0,09 |
+| v0.1.0 | 2 | 10 | 0,0 % | −1,755 % | −2,538 % | 0,00 |
+| Référence (sorties v0.1.0) | 1 | 60 | 13,3 % | −0,849 % | −1,639 % | 0,15 |
+| Référence (sorties v0.1.0) | 2 | 73 | 15,1 % | −1,128 % | −1,916 % | 0,12 |
+| Variante #1 (v ≥ 3, tendance, c ≤ 0,5 %, H = 6 h, stop 1,5 %, 1,5R) | 1 | 13 | 46,2 % | +0,186 % | −0,613 % | 0,45 |
+| idem | 2 | 8 | 0,0 % | −1,513 % | −2,298 % | 0,00 |
+
+**Verdict : PAS DE LANCEMENT** (0 critère sur 5).
+
+**Lecture.**
+1. **Période fortement baissière** : la référence (une entrée au hasard par paire et par heure) perd 0,85 à 1,13 % **brut** par trade de 6 h. Une stratégie à l'achat seulement ne peut presque rien y gagner.
+2. Dans ce régime, la cassure fait **pire que le hasard** sur la partie 2 (−1,76 % contre −1,13 % brut) : les cassures sont surtout de fausses cassures, arrêtées au stop.
+3. Les dix meilleures variantes de la partie 1 sont toutes négatives sur la partie 2 ; le plafond de poursuite (0,5 % ou 1 %) ne change rien (variantes identiques deux à deux).
+4. Échantillon minuscule (8 à 21 trades) : aucune conclusion sur l'hypothèse elle-même, seulement sur ce régime. Relance hebdomadaire.
+
 
 ## Limites
 

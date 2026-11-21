@@ -28,7 +28,12 @@ Les autres critères sont inchangés (net moyen > 0, profit factor ≥ 1,2, brut
 
 ## Résultats
 
-*À compléter ; première exécution jugeable vers le 15 décembre 2026.*
+### Exécution du 2026-11-21 `[OBS]`
+
+Période 2026-11-18 18:34 → 2026-11-21 00:24 UTC (3,2 jours de données dont 24 h de chauffe), 40 paires, 79 662 positions de classement évaluées, 48 variantes. **NON JUGEABLE** (3,2 jours sur 28 requis), comme attendu.
+
+Aucun trade pour v0.1.0 ni pour sa référence : une détention de 4 jours doit se terminer avant la fin des données, impossible avec 2,2 jours exploitables ; les variantes à 2 jours n'ont que quelques heures d'entrées possibles (moins de 10 trades sur la partie 1). L'étude ne produira des chiffres qu'à partir d'environ une semaine de données, et ne sera jugeable qu'à 28 jours (vers le 15/12).
+
 
 ## Limites
 
