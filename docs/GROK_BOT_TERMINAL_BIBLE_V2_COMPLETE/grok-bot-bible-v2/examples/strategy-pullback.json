@@ -1,0 +1,98 @@
+{
+  "strategy_id": "pullback",
+  "version": "0.1.0",
+  "status": "DRAFT",
+  "universe": {
+    "venues": [
+      "kraken_spot"
+    ],
+    "quote_currencies": [
+      "USD"
+    ],
+    "top_n_by_volume": 40,
+    "refresh_seconds": 3600,
+    "exclude_stablecoins": true,
+    "min_volume_24h_usd": "1000000"
+  },
+  "entry": {
+    "operator": "AND",
+    "conditions": [
+      {
+        "feature": "btc_trend_24h",
+        "op": "gte",
+        "threshold": "0",
+        "unit": "log_return",
+        "window_seconds": 86400,
+        "ttl_ms": 5000
+      },
+      {
+        "feature": "breadth_24h",
+        "op": "gte",
+        "threshold": "0.5",
+        "unit": "fraction",
+        "window_seconds": 86400,
+        "ttl_ms": 5000
+      },
+      {
+        "feature": "trend_24h",
+        "op": "gte",
+        "threshold": "0.03",
+        "unit": "log_return",
+        "window_seconds": 86400,
+        "ttl_ms": 5000
+      },
+      {
+        "feature": "drop_from_high_3h",
+        "op": "lte",
+        "threshold": "-0.03",
+        "unit": "log_return",
+        "window_seconds": 10800,
+        "ttl_ms": 5000
+      },
+      {
+        "feature": "price_change_5m",
+        "op": "gt",
+        "threshold": "0",
+        "unit": "log_return",
+        "window_seconds": 300,
+        "ttl_ms": 5000
+      },
+      {
+        "feature": "window_notional_usd",
+        "op": "gte",
+        "threshold": "25000",
+        "unit": "USD",
+        "window_seconds": 300,
+        "ttl_ms": 5000
+      },
+      {
+        "feature": "spread_bps",
+        "op": "lte",
+        "threshold": "30",
+        "unit": "bps",
+        "window_seconds": 1,
+        "ttl_ms": 3000
+      }
+    ]
+  },
+  "exit": {
+    "initial_stop_pct": "3",
+    "max_hold_seconds": 43200,
+    "exit_on_status_change": true,
+    "conditions": {
+      "operator": "OR",
+      "conditions": [
+        {
+          "feature": "drop_from_high_3h",
+          "op": "gte",
+          "threshold": "-0.005",
+          "unit": "log_return",
+          "window_seconds": 10800,
+          "ttl_ms": 5000
+        }
+      ]
+    }
+  },
+  "cooldown_seconds": 21600,
+  "risk_policy_id": "paper-default"
+}

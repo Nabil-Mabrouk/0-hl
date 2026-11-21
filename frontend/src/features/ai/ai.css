@@ -1,0 +1,27 @@
+/* UI-16 AI services: tokens shared with terminal.css and versions.css. */
+.hl-ai-budget { background: #fff; border: 1px solid #e8e6eb; border-radius: 6px; padding: 10px; font-size: 13px; }
+.hl-ai-budget.orange { border-color: #e0b36b; background: #fbf1e3; }
+.hl-ai-budget.red { border-color: #b23c63; background: #fbeaf0; }
+.hl-ai-gauge { height: 8px; background: #f2f1f4; border-radius: 4px; margin: 6px 0; overflow: hidden; }
+.hl-ai-gauge span { display: block; height: 100%; background: #0d4f97; }
+.hl-ai-budget.orange .hl-ai-gauge span { background: #8a5a17; }
+.hl-ai-budget.red .hl-ai-gauge span { background: #8c2f4d; }
+.hl-ai-services { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.hl-ai-service h3 { font-size: 15px; margin: 0 0 4px; }
+.hl-ai-service textarea { width: 100%; box-sizing: border-box; }
+.hl-ai-steps { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
+.hl-ai-step { background: #fff; border: 1px solid #e8e6eb; border-radius: 4px; padding: 4px 8px; font-size: 12px; }
+.hl-ai-step.error { border-color: #b23c63; }
+.hl-ai-step summary { cursor: pointer; }
+.hl-ai-pre { white-space: pre-wrap; word-break: break-word; font-size: 11px; max-height: 50vh; overflow: auto;
+  background: #f7f6f9; padding: 6px; border-radius: 4px; }
+.hl-md p { margin: 2px 0; font-size: 13px; line-height: 1.45; }
+.hl-md .hl-md-h { font-weight: 700; margin-top: 8px; }
+.hl-md .hl-md-h1, .hl-md .hl-md-h2 { font-size: 15px; }
+.hl-md .hl-md-li { padding-left: 12px; }
+.hl-status.succeeded { background: #e8f6ee; color: #1d6b3d; border-color: #a9d8bc; }
+.hl-status.failed, .hl-status.budget_blocked, .hl-status.abandoned { background: #fbeaf0; color: #8c2f4d; }
+.hl-status.limit_reached { background: #fbf1e3; color: #8a5a17; }
+.hl-status.running { background: #eef5fd; color: #0d4f97; }
+@media (max-width: 640px) { .hl-ai-services { grid-template-columns: 1fr; } }
+.hl-ai-global-banner { background: #fbeaf0; color: #8c2f4d; border-bottom: 1px solid #b23c63; padding: 6px 16px; font-size: 13px; }

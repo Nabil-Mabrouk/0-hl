@@ -36,7 +36,8 @@ BTC_IID = "kraken_spot:BTC/USD"
 # features that need the narrow 24 h read, and features computed once per window for the
 # whole universe (06-agents/03, ADR-024)
 DAY_FEATURES = frozenset({"trend_24h", "rs_24h", "rs_rank_24h", "btc_trend_24h"})
-MARKET_FEATURES = frozenset({"btc_change_3h", "btc_trend_24h", "rs_24h", "rs_rank_24h"})
+MARKET_FEATURES = frozenset({"btc_change_3h", "btc_trend_24h", "rs_24h", "rs_rank_24h",
+                             "breadth_24h"})
 
 OK = "OK"
 UNKNOWN = "UNKNOWN"
@@ -60,6 +61,7 @@ FEATURE_CATALOGUE: dict[str, tuple[str, str]] = {
     "btc_trend_24h": ("log_return", "variation du BTC/USD sur 24 h (feature de marché)"),
     "rs_24h": ("log_return", "trend_24h de la paire − trend_24h du BTC/USD"),
     "rs_rank_24h": ("rank", "rang de trend_24h parmi les paires de l'univers (1 = la plus forte)"),
+    "breadth_24h": ("fraction", "part des paires classables de l'univers dont trend_24h > 0 (feature de marché)"),
 }
 
 
@@ -303,6 +305,8 @@ def market_view(trends: dict[str, Feature], btc_change_3h: Feature) -> MarketVie
               else _unknown("btc_change_3h", "log_return", btc_change_3h.reason or "BTC_UNKNOWN"))
     known = {iid: f.value for iid, f in trends.items() if f.status == OK and f.value is not None}
     enough = len(known) >= MIN_RANKABLE_PAIRS
+    breadth = (Feature("breadth_24h", Decimal(sum(1 for v in known.values() if v > ZERO)) / len(known),
+                       "fraction") if enough else _unknown("breadth_24h", "fraction", "TOO_FEW_PAIRS"))
     per_pair: dict[str, dict[str, Feature]] = {}
     for iid, f in trends.items():
         v = known.get(iid)
@@ -315,7 +319,8 @@ def market_view(trends: dict[str, Feature], btc_change_3h: Feature) -> MarketVie
             rs = (Feature("rs_24h", v - btc_trend.value, "log_return")  # type: ignore[operator]
                   if btc_trend.status == OK else _unknown("rs_24h", "log_return", btc_trend.reason or "BTC_UNKNOWN"))
         per_pair[iid] = {"rs_24h": rs, "rs_rank_24h": rank}
-    return MarketView({"btc_change_3h": btc_ch, "btc_trend_24h": btc_trend}, per_pair)
+    return MarketView({"btc_change_3h": btc_ch, "btc_trend_24h": btc_trend, "breadth_24h": breadth},
+                      per_pair)
 
 
 def spread_feature(book: OrderBook | None, fresh: bool) -> Feature:

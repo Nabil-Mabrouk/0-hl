@@ -212,7 +212,9 @@ export default function TradesPage() {
                 ))}
               </ol>
             )}
-            <div className="hl-actions"><button type="button" className="hl-btn" onClick={() => setTrace(null)}>close</button></div>
+            <div className="hl-actions">
+              <a className="hl-btn" href={`/ai?service=explain-trade&position_id=${encodeURIComponent(trace.trade.id)}`}>Explain (AI)</a>
+              <button type="button" className="hl-btn" onClick={() => setTrace(null)}>close</button></div>
           </div>
         </div>
       )}

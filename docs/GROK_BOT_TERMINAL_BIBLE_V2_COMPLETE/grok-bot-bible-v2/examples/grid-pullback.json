@@ -1,0 +1,29 @@
+{
+  "entry.conditions[1].threshold": [
+    "0.5",
+    "0.6"
+  ],
+  "entry.conditions[2].threshold": [
+    "0.02",
+    "0.03",
+    "0.05"
+  ],
+  "entry.conditions[3].threshold": [
+    "-0.02",
+    "-0.03",
+    "-0.05"
+  ],
+  "exit.initial_stop_pct": [
+    "2",
+    "3",
+    "4"
+  ],
+  "exit.conditions.conditions[0].threshold": [
+    "-0.005",
+    "-0.01"
+  ],
+  "exit.max_hold_seconds": [
+    21600,
+    43200
+  ]
+}

@@ -245,3 +245,37 @@ Quatrième stratégie implémentée : **très peu de trades**, détentions de pl
 
 **État de validation.** `RESEARCH_ONLY` pour le LIVE. L'étude n'est **jugeable qu'à partir de 4 semaines de données** (détentions de plusieurs jours) ; d'ici là elle tourne à titre indicatif.
 
+## STRAT-12 — Pullback in Uptrend
+
+**Hypothèse testable :** dans un marché et sur un actif en hausse, un repli passager est plus souvent suivi d'une reprise que d'une poursuite de la baisse
+
+**Données et filtre :** tendance de l'actif et du marché, largeur du marché (part des actifs en hausse), écart au plus haut récent, liquidité, spread.
+
+**Signal d'entrée :** régime haussier (marché et actif), repli depuis un plus haut récent, premier signe de reprise. Chaque métrique possède une unité, une fenêtre temporelle, un seuil déclaré et un comportement `UNKNOWN → SKIP`.
+
+**Sortie :** retour vers le plus haut récent, stop d'invalidation, limite de temps.
+
+**Tests obligatoires :** holdout temporel, coûts agressifs, comparaison à une entrée au hasard, part du temps passé en régime favorable.
+
+**État de validation par défaut :** `RESEARCH_ONLY` ; aucune activation LIVE automatique.
+
+## STRAT-12 — Variante Kraken Spot « Repli dans une tendance haussière » (ADR-025)
+
+Cinquième stratégie, **construite à partir des premières études** (09-recherche/05 à 07, 2026-11-21) : dans une période baissière, toute stratégie à l'achat perd (la référence perd ~1 % brut par trade de 6 h) et les cassures échouent ; le seul signal observé est l'achat d'une baisse propre à une paire. STRAT-12 n'achète une baisse **que lorsque le marché et la paire sont en hausse**, et ne trade presque pas sinon. Paramètres [`examples/strategy-pullback.json`](../examples/strategy-pullback.json) ; étude par l'**étude générique** ([09-recherche/08](../09-recherche/08-etude-generique.md)) avec la grille [`examples/grid-pullback.json`](../examples/grid-pullback.json).
+
+**Hypothèse testable.** Quand le BTC et plus de la moitié de l'univers sont en hausse sur 24 h, une paire elle-même en hausse de 3 % ou plus sur 24 h qui recule de 3 % ou plus depuis son plus haut des 3 h, puis recommence à monter, revient vers ce plus haut plus souvent qu'elle ne touche un stop de 3 %, d'un écart supérieur aux frais.
+
+**Feature nouvelle (feature de marché, 06-agents/03).** `breadth_24h` (fraction) = part des paires classables de l'univers dont `trend_24h` > 0 ; `UNKNOWN` sous 20 paires classables. Toutes les autres features existent (`btc_trend_24h`, `trend_24h`, `drop_from_high_3h`, `price_change_5m`, `window_notional_usd`, `spread_bps`).
+
+**Entrée v0.1.0 (toutes vraies).** `btc_trend_24h ≥ 0` ; `breadth_24h ≥ 0.5` ; `trend_24h ≥ 0.03` ; `drop_from_high_3h ≤ −0.03` ; `price_change_5m > 0` ; `window_notional_usd ≥ 25 000` ; `spread_bps ≤ 30` ; contrôle qualité `PASS` ; une position par paire ; cooldown par paire **6 h**.
+
+**Sortie v0.1.0.** **Sortie sur condition** `drop_from_high_3h ≥ −0.005` (le prix est revenu à moins de 0,5 % du plus haut des 3 h) ; stop 3 % ; pas d'objectif fixe ; sortie temporelle **12 h** ; sortie si la paire passe hors `online`. Policy `paper-default`.
+
+**Ce qu'il faut attendre.** En marché baissier, les deux filtres de régime sont rarement vrais : peu ou pas de trades, c'est voulu. Le rapport de l'étude donne la part des minutes en régime favorable ; tant qu'elle est faible, l'étude manque de trades et la relance hebdomadaire s'impose.
+
+**Critères.** Ceux de 09-recherche/05 (20 trades, 5 critères), sans adaptation, fixés avant tout résultat.
+
+**État de validation.** `RESEARCH_ONLY` pour le LIVE. Lancement `PAPER` sur un bot dédié seulement si l'étude remplit ses critères (ADR-025).
+
+**Exécution de l'étude.** `python -m app.domain.trading.research.study --file docs/GROK_BOT_TERMINAL_BIBLE_V2_COMPLETE/grok-bot-bible-v2/examples/strategy-pullback.json --grid docs/GROK_BOT_TERMINAL_BIBLE_V2_COMPLETE/grok-bot-bible-v2/examples/grid-pullback.json --days 30` (options par défaut : 20 trades, sans `--min-days`).
+

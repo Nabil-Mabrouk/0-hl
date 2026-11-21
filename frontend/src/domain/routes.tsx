@@ -2,6 +2,7 @@
 // Relative to the chassis AppShell. Mounted by App.tsx once the gitsky template provides
 // this extension point — App.tsx (chassis) is never patched locally.
 import { Route } from "react-router-dom";
+import AiPage from "../features/ai/AiPage";
 import BotsPage from "../features/bots/BotsPage";
 import StatsPage from "../features/analytics/StatsPage";
 import TradesPage from "../features/analytics/TradesPage";
@@ -21,5 +22,7 @@ export const domainRoutes = (
     <Route path="strategies" element={<StrategiesPage />} />
     <Route path="strategies/:vid" element={<StrategyEditor />} />
     <Route path="risk" element={<RiskPage />} />
+    {/* UI-16 AI services (spec 03-ecrans/UI-16-services-ia) */}
+    <Route path="ai" element={<AiPage />} />
   </>
 );

@@ -248,3 +248,39 @@ Besoin exprimé au template :
 
 **Statut.** Actée par l'opérateur le 2026-11-21 (« validé ok pour tout »). S6.0, S6.1 et S11.1 livrés le même jour ; les lancements dépendent des études.
 
+## ADR-025 — Étude générique des versions de stratégie et STRAT-12 « Repli dans une tendance haussière » (acceptée)
+
+**Constat (premières études, 2026-11-21).** (1) La période observée est baissière : une entrée au hasard perd ~1 % brut par trade de 6 h, et une stratégie qui ne fait qu'acheter ne peut presque rien y gagner. (2) Les cassures (STRAT-02) font pire que le hasard. (3) Seul signal : acheter une baisse propre à une paire (STRAT-06, filtre BTC ; 7 trades). (4) Chaque nouvelle stratégie a demandé une étude écrite à la main, alors que ses conditions sont des données.
+
+**Proposition.**
+1. **Étude générique** ([09-recherche/08](../09-recherche/08-etude-generique.md)) : un seul outil étudie n'importe quelle version (base ou fichier) et une grille de variations de ses champs, avec la méthode, les coûts et les critères déjà fixés, plus le taux de passage de chaque condition. Le spread est lu dans les instantanés de carnet. Outil par défaut pour toute nouvelle stratégie.
+2. **STRAT-12 « Repli dans une tendance haussière »** ([05-strategies/02](../05-strategies/02-catalogue-strategies.md)) : n'acheter un repli que si le BTC, la largeur du marché et la paire sont en hausse ; sortie au retour vers le plus haut des 3 h. Seul code : la feature de marché `breadth_24h`.
+3. Lancement paper sur un bot dédié seulement si l'étude générique passe les critères de 09-recherche/05 ; relance hebdomadaire sinon. Le LIVE reste exclu (ADR-009).
+
+**Statut.** Proposée et validée par l'opérateur le 2026-11-21.
+
+## ADR-026 — Vocabulaire, services IA et budget (actée pour le vocabulaire et les principes ; spec UI-16 validée le 2026-11-21)
+
+**Constat (2026-11-21).** L'opérateur veut des services d'IA générative qu'il sollicite à la demande (expliquer un trade, rédiger une stratégie, lire une étude…). Le mot « agent » désignait jusqu'ici les composants **déterministes** de la chaîne de décision (SCANNER, RUG CHECK, SIZER, EXECUTOR, EQUITY), sans LLM : il faut lever l'ambiguïté avant de construire des agents IA.
+
+**Décision — vocabulaire (opérateur, 2026-11-21).**
+- **Bot** : l'entité qui trade (une version de stratégie + une policy + un capital paper, M2.4) et qui exécute la chaîne de décision.
+- **Étapes du pipeline** : SCANNER, RUG CHECK, SIZER, EXECUTOR, EQUITY — composants **déterministes** du bot, sans IA. Ils ne s'appellent plus « agents » dans la spec ; les textes existants sont mis à jour au fil des modifications (la page publique et le Terminal suivront au lot UI correspondant).
+- **Outil** : fonction **déterministe** à entrée et sortie typées, sans intelligence (même appel ⇒ même résultat) ; **lecture seule** par défaut ; un outil qui crée ou modifie quelque chose (par exemple un brouillon de stratégie) est marqué comme tel et exige une confirmation de l'utilisateur.
+- **Agent** : un **LLM** avec un rôle, des instructions et la liste des outils qu'il a le droit d'appeler ; il raisonne, **décide** quel outil appeler, lit le résultat et recommence ou répond. Borné (étapes, jetons, budget) ; chaque étape est tracée. « Agent » est réservé à ce qui fait appel à l'IA.
+- **Service IA** : la fonctionnalité proposée à l'utilisateur dans la vue IA (nom, formulaire d'entrée, format de sortie), réalisée par un agent configuré (modèle, outils, limites).
+
+Hiérarchie : **service** (ce que l'utilisateur demande) → **agent** (qui raisonne et choisit) → **outils** (qui vont chercher les faits).
+
+**Décision — principes (opérateur, 2026-11-21).**
+1. **Clés** : uniquement dans le **proxy LLM du châssis** (LiteLLM). L'opérateur ouvre et crédite un compte chez chaque fournisseur ; la clé est installée dans le proxy par le responsable du châssis. Aucune clé dans l'application, sa base ou son dépôt.
+2. **Fournisseur par défaut : Groq**, avec un modèle qui sait appeler des outils, choisi dans la liste des modèles exposés par le proxy ; modèle modifiable par service.
+3. **Budget** : plafond de **10 USD par jour** (UTC), **modifiable** par l'opérateur (ADMIN), contrôlé par l'application avant chaque appel (coût estimé selon les jetons et un barème de prix par modèle modifiable) et après (coût réel quand le proxy le renvoie). Plafond atteint ⇒ plus aucun appel jusqu'au lendemain, et **alerte** (dans l'application et par e-mail) ; alerte préalable à 80 %.
+4. **Journal détaillé de chaque exécution de service IA** : service, agent, modèle, empreinte et version des instructions, entrées, **chaque étape** (message du modèle, appel d'outil avec ses arguments, résultat de l'outil, jetons, coût, durée, erreur), réponse finale, coût total, statut. Consultable dans la vue IA, conservé, jamais modifié.
+5. Les agents sont **hors de la chaîne de décision** : aucun ordre, aucune publication, aucun rattachement de bot ; ils produisent du texte ou des brouillons. Aucune clé ni donnée personnelle dans les messages envoyés au modèle.
+6. Les agents et leur boucle d'appel d'outils sont du code du **projet** (`app/domain/`), qui réutilise seulement la connexion au proxy du châssis (le moteur `agentic` du châssis enchaîne des étapes fixes, sans boucle de décision).
+
+**Réponse du châssis (2026-11-21).** Proxy opérationnel pour l'API seulement (pas le worker) ; modèles `groq-gpt-oss-120b` et `groq-gpt-oss-20b` (liste de `/v1/models`) ; appel d'outils validé ; coût réel par l'en-tête `x-litellm-response-cost` ; budget du proxy 12 USD / jour (`/key/info`), `400 budget_exceeded` à l'épuisement ; le proxy ne conserve pas le contenu des messages ; SMTP configuré, adresse d'alerte dans `ALERT_EMAIL_TO`.
+
+**Suite.** Spec de la vue IA, des outils, des agents, du journal et du budget : [03-ecrans/UI-16](../03-ecrans/UI-16-services-ia.md) (validée par l'opérateur le 2026-11-21).
+

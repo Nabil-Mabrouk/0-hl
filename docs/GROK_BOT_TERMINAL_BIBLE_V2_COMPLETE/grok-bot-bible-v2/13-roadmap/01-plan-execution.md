@@ -68,6 +68,24 @@ Objectif : pouvoir juger une stratégie **avant** de la faire tourner, sur des s
 | S11.1 Étude STRAT-11 — **livré (local, 2026-11-21)** ; jugeable vers le 15/12 | `strat11_study` (portefeuille, verdict « NON JUGEABLE » sous 28 jours) ; exécution en production | **09-recherche/07** |
 | S6.2 / S11.2 Lancement *(si l'étude passe)* | publication de la version (et de la policy `rotation`), backtest M2.2, bot paper dédié | 05-strategies/04, 09-recherche/04, 06-agents/04 |
 
+**Étude générique et STRAT-12 (ADR-025, acceptée le 2026-11-21).**
+
+| Lot | Contenu | Références |
+|---|---|---|
+| R.1 Étude générique — **livré (local, 2026-11-21)** | `research.study` : version en base ou fichier, grille (≤ 500 variantes), features calculées une fois, spread des instantanés, `max_open_positions` et `--order-by`, taux de passage par condition, verdict ; tests T-R41..47 | **09-recherche/08** |
+| S12.0 Feature — **livré (local, 2026-11-21)** | `breadth_24h` dans la vue de marché et le catalogue | 06-agents/03 |
+| S12.1 Étude STRAT-12 | exécution de l'étude générique sur `strategy-pullback.json` et `grid-pullback.json` en production, résultats consignés | 05-strategies/02, 09-recherche/08 |
+| S12.2 Lancement *(si l'étude passe)* | publication, backtest M2.2, bot paper dédié | 05-strategies/04, 06-agents/04 |
+
+**Services IA (ADR-026, UI-16 validée le 2026-11-21).**
+
+| Lot | Contenu | Références |
+|---|---|---|
+| IA.1 Socle — **livré (local, 2026-11-21)** | client du proxy (`httpx`, erreurs `tool_use_failed` / `budget_exceeded` / `403`), tables `hl_ai_run` et `hl_ai_step`, budget journalier et barème, alertes 80 % / 100 % (bandeau et e-mail `ALERT_EMAIL_TO`), réglages ADMIN ; T-AI-03, 05, 06, 09, 10, 11 | **03-ecrans/UI-16** |
+| IA.2 Outils et boucle — **livré (local, 2026-11-21)** | douze outils en lecture seule, boucle d'agent bornée et journalisée ; T-AI-01, 02, 04, 07 | UI-16, 06-agents/02 |
+| IA.3 Services — **livré (local, 2026-11-21)** | SVC-01 Expliquer un trade, SVC-02 Bilan d'un bot, SVC-03 Brouillon de stratégie ; T-AI-08 | UI-16 |
+| IA.4 Écran — **livré (local, 2026-11-21)** | vue « IA » (budget, services, journal, réglages), boutons *Expliquer* (Trades) et *Bilan IA* (Bots) ; T-AI-12 | UI-16 |
+
 **Ordre proposé.** M2.1 d'abord (chaque jour d'attente est un jour d'historique perdu), puis M2.2, M2.3, M2.5, M2.4.
 
 **Hors M2.** LIVE (ADR-009), autres venues que Kraken, assistant IA, alertes avancées.

@@ -246,6 +246,7 @@ class StudyReport:
     min_trades: int = CRIT_MIN_TRADES
     not_judgeable: str | None = None
     adr: str = "ADR-023"
+    spread_note: str = "not replayed (assumed pass)"
 
     @property
     def verdict(self) -> dict[str, Any]:
@@ -259,7 +260,7 @@ class StudyReport:
                 "pairs": self.pairs, "evaluable_minutes": self.evaluable_minutes,
                 "variants_tested": self.variants_tested,
                 "assumptions": {"fee_pct_each_side": "0.40", "slippage_pct": "0.10",
-                                "cooldown_hours": self.cooldown_hours, "spread": "not replayed (assumed pass)"},
+                                "cooldown_hours": self.cooldown_hours, "spread": self.spread_note},
                 "v0_1_0": self.current.as_json(), "baseline_v0_1_0_exits": self.current_baseline.as_json(),
                 "top": [{**r.as_json(), "baseline": self.baselines[r.exit].as_json()} for r in self.top],
                 "verdict": self.verdict}
@@ -287,7 +288,7 @@ class StudyReport:
                  f"{self.pairs} paires, {self.evaluable_minutes} minutes évaluables, "
                  f"{self.variants_tested} variantes testées",
                  f"hypothèses : frais 0,40 % par côté, glissement 0,10 % (entrée et stop), cooldown {self.cooldown_hours} h, "
-                 "spread non rejoué, résultats en % par trade",
+                 f"spread {'non rejoué' if self.spread_note.startswith('not') else self.spread_note}, résultats en % par trade",
                  "", f"{self.current_name} :", *block(self.current, self.current_baseline),
                  "", f"Référence ({self.baseline_name}) :",
                  *block(self.current_baseline),

@@ -38,9 +38,9 @@ export function fieldErrors(e: unknown): Record<string, string> {
   return Object.fromEntries(raw.filter((x) => x && typeof x === "object").map((x) => [x.path ?? "", x.message ?? ""]));
 }
 
-/** JSON write (POST/PUT/DELETE) with optional extra headers (If-Match, Idempotency-Key). */
+/** JSON write (POST/PUT/PATCH/DELETE) with optional extra headers (If-Match, Idempotency-Key). */
 export async function sendJson<T>(
-  method: "POST" | "PUT" | "DELETE",
+  method: "POST" | "PUT" | "PATCH" | "DELETE",
   path: string,
   body?: unknown,
   headers: Record<string, string> = {},

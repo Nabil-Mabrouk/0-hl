@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { apiFetch } from "../../api";
+import AiBudgetBanner from "../../features/ai/AiBudgetBanner";
 
 // Navbar partagée par la landing ET le reste de l'app (Chap 24, round
 // theming) — remplace l'ancien nav embryonnaire inline de Landing.tsx
@@ -35,6 +36,7 @@ export default function Navbar() {
     i18n.changeLanguage(i18n.language.startsWith("fr") ? "en" : "fr");
 
   return (
+    <>
     <nav className="site-nav">
       <a className="brand" href="/">
         {project}
@@ -46,6 +48,7 @@ export default function Navbar() {
         {user && <a href="/stats">Stats</a>}
         {user && <a href="/strategies">Strategies</a>}
         {user && <a href="/risk">Risk</a>}
+        {user && <a href="/ai">AI</a>}
         {modules.tutorials && <a href="/learn">{t("nav.learn")}</a>}
         {user?.role === "admin" && <a href="/admin">{t("admin.nav")}</a>}
         {modules.i18n && (
@@ -64,5 +67,7 @@ export default function Navbar() {
         )}
       </div>
     </nav>
+    {user && <AiBudgetBanner />}
+    </>
   );
 }

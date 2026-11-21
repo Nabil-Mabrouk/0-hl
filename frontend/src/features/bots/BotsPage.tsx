@@ -119,6 +119,7 @@ export default function BotsPage() {
                         {cmd === "EMERGENCY_STOP" ? "E-STOP" : cmd.replace("_ENTRIES", "").replace("_", " ")}
                       </button>
                     ))}
+                    <a className="hl-btn" href={`/ai?service=bot-review&bot_id=${encodeURIComponent(b.id)}`}>AI review</a>
                     {canBind && b.environment === "PAPER" && (
                       <button type="button" className="hl-btn" disabled={!REBINDABLE.includes(b.status)}
                         title={REBINDABLE.includes(b.status) ? "attach published versions" : "stop the bot first (STOP, then wait for STOPPED)"}

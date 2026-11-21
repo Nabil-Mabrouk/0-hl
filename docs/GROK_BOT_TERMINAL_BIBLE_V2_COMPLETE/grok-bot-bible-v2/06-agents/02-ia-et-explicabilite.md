@@ -7,6 +7,8 @@
 
 Séparer `Decision Core` déterministe (sources validées, calculs, risque, exécution) de `Research Assistant` optionnel (résumés, classification d'anomalies, rédaction d'explications, comparaison d'hypothèses). Les modèles IA peuvent être sélectionnés (OpenAI, Groq, xAI, local) par adaptateur, coût, latence et version ; leurs suggestions ne doivent pas devenir ordre directement.
 
+Mise en œuvre M2 : vocabulaire, principes et budget dans ADR-026, outils, agents, services et journal dans [03-ecrans/UI-16](../03-ecrans/UI-16-services-ia.md).
+
 ## Tool interface
 
 Outils lecture seule par défaut : `get_candidate`, `get_market_features`, `get_risk_assessment`, `get_portfolio_snapshot`, `get_trade_trace`, `get_backtest_report`, `get_provider_status`. Les outils mutateurs passent exclusivement par des API RBAC distinctes et une approbation utilisateur explicite.
