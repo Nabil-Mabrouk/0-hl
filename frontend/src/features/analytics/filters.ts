@@ -60,4 +60,4 @@ export function apiQuery(f: Filters, extra: Record<string, string> = {}, now?: D
   return q.toString();
 }
 
-export const EXIT_REASONS = ["TAKE_PROFIT", "STOP", "TIME", "STATUS", "EMERGENCY"];
+export const EXIT_REASONS = ["TAKE_PROFIT", "STOP", "TIME", "EXIT_CONDITION", "STATUS", "EMERGENCY"];

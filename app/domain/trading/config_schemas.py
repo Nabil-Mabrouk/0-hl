@@ -62,6 +62,7 @@ class Exit(_Strict):
     take_profit_r: str | None = None
     max_hold_seconds: int | None = Field(default=None, ge=1)
     exit_on_status_change: bool | None = None
+    conditions: Entry | None = None  # sorties sur condition (05-strategies/04, ADR-024)
 
     @field_validator("initial_stop_pct", "take_profit_r")
     @classmethod

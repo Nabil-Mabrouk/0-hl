@@ -30,15 +30,24 @@ from app.domain.trading.agents.equity import (
     reconcile,
     write_snapshot,
 )
-from app.domain.trading.agents.executor import execute_entry, execute_exit
+from app.domain.trading.agents.executor import execute_entry, execute_exit, position_correlation
 from app.domain.trading.agents.features import (
+    BTC_IID,
+    DAY_FEATURES,
+    DAY_MINUTES,
+    HISTORY_MINUTES,
+    MARKET_FEATURES,
     MINUTE,
+    TREND_TOLERANCE_MINUTES,
+    UNKNOWN,
     Feature,
+    MarketView,
+    change_feature,
     evaluate_conditions,
     load_minutes,
-    spread_feature,
-    HISTORY_MINUTES,
+    market_view,
     scanner_features,
+    spread_feature,
 )
 from app.domain.trading.agents.gate import evaluate_market_gate
 from app.domain.trading.agents.sim import PAPER_LATENCY_SECONDS, PAPER_TAKER_FEE
@@ -109,6 +118,7 @@ class _BotRuntime:
     cycles: dict[datetime, _Counters] = field(default_factory=dict)
     emitted_cycles: set[datetime] = field(default_factory=set)
     estimated: Decimal = ZERO          # ADR-022: positions value counted at the exit floor
+    exit_windows: dict[uuid.UUID, datetime] = field(default_factory=dict)  # ADR-024
 
     def count(self, window_end: datetime, name: str, n: int = 1) -> None:
         for c in (self.counters, self.cycles.setdefault(window_end, _Counters())):
@@ -139,6 +149,7 @@ class DecisionEngine:
         self._runtime: dict[uuid.UUID, _BotRuntime] = {}
         self._last_summary: datetime | None = None
         self._configs: dict[uuid.UUID, Any] = {}
+        self._market_cache: tuple[datetime, MarketView] | None = None
 
     # ------------------------------------------------------------------ #
     async def run(self, stop: asyncio.Event) -> None:
@@ -181,6 +192,59 @@ class DecisionEngine:
         await append_event(db, event_type=event_type, aggregate_type=aggregate_type,
                            aggregate_id=aggregate_id, payload=payload, source=SOURCE,
                            bot_id=bot_id, correlation_id=corr)
+
+    # ------------------------------------------------------------------ #
+    # features (06-agents/03): per pair, plus the market view of the window (ADR-024)
+    # ------------------------------------------------------------------ #
+    @staticmethod
+    def needed_features(strat: Any) -> set[str]:
+        conds = list(strat.entry.conditions)
+        if strat.exit.conditions is not None:
+            conds += list(strat.exit.conditions.conditions)
+        return {c.feature for c in conds}
+
+    async def _day_minutes(self, db: AsyncSession, iid: str, window_end: datetime) -> dict[datetime, Any]:
+        """Narrow read around t − 24 h (never 24 h of minutes)."""
+        return await self._load_minutes(
+            db, iid, start=window_end - MINUTE * (DAY_MINUTES + TREND_TOLERANCE_MINUTES),
+            end=window_end - MINUTE * (DAY_MINUTES - 1))
+
+    def _settled(self, window_end: datetime) -> bool:
+        return (self._now() - window_end).total_seconds() >= self.config.window_settle_seconds
+
+    async def _features(self, db: AsyncSession, iid: str, window_end: datetime,
+                        needed: set[str]) -> dict[str, Feature]:
+        minutes = await self._load_minutes(db, iid, start=window_end - MINUTE * HISTORY_MINUTES,
+                                           end=window_end)
+        if needed & DAY_FEATURES:
+            minutes.update(await self._day_minutes(db, iid, window_end))
+        feats = scanner_features(minutes, window_end)
+        if needed & MARKET_FEATURES:
+            feats.update((await self._market_view(db, window_end)).for_pair(iid))
+        return feats
+
+    async def _market_view(self, db: AsyncSession, window_end: datetime) -> MarketView:
+        """Computed once per window for the whole universe; cached only once the window has
+        settled (before that the last minute may not be flushed yet)."""
+        if self._market_cache is not None and self._market_cache[0] == window_end:
+            return self._market_cache[1]
+        iids = sorted((await db.scalars(select(Instrument.id).where(Instrument.in_universe))).all())
+        trends: dict[str, Feature] = {}
+        btc_change = Feature("btc_change_3h", None, "log_return", status=UNKNOWN,
+                             reason="BTC_NOT_IN_UNIVERSE")
+        for iid in iids:
+            mins = await self._load_minutes(db, iid, start=window_end - MINUTE, end=window_end)
+            mins.update(await self._day_minutes(db, iid, window_end))
+            if iid == BTC_IID:
+                mins.update(await self._load_minutes(
+                    db, iid, start=window_end - MINUTE * (180 + TREND_TOLERANCE_MINUTES),
+                    end=window_end - MINUTE * 179))
+                btc_change = change_feature("btc_change_3h", mins, window_end, 180)
+            trends[iid] = change_feature("trend_24h", mins, window_end, DAY_MINUTES)
+        view = market_view(trends, btc_change)
+        if self._settled(window_end):
+            self._market_cache = (window_end, view)
+        return view
 
     # ------------------------------------------------------------------ #
     # 1. commands
@@ -228,6 +292,10 @@ class DecisionEngine:
                 now = self._now()
                 reason = self._exit_reason(p, bot, emergency, strat.exit.max_hold_seconds,
                                            bool(strat.exit.exit_on_status_change), now)
+                if reason in (None, "TIME") and strat.exit.conditions is not None \
+                        and p.status is PositionStatus.OPEN:
+                    if await self._exit_condition_met(db, p, bot, strat, now):
+                        reason = "EXIT_CONDITION"
                 if reason is None:
                     continue
                 symbol = p.instrument_id.split(":", 1)[1]
@@ -253,6 +321,24 @@ class DecisionEngine:
                          out.status, reason, _g(out.sold_qty), _q(out.realized_pnl_net),
                          _g(out.r_multiple, 3))
                 await db.commit()
+
+    async def _exit_condition_met(self, db: AsyncSession, p: Position, bot: Bot, strat: Any,
+                                  now: datetime) -> bool:
+        """Sorties sur condition (05-strategies/04, ADR-024): once per settled window; PASS only
+        (UNKNOWN never sells). The verdict and its details are recorded as an event."""
+        window_end = now.replace(second=0, microsecond=0)
+        rt = self._rt(bot.id)
+        if rt.exit_windows.get(p.id) == window_end or not self._settled(window_end):
+            return False
+        rt.exit_windows[p.id] = window_end
+        feats = await self._features(db, p.instrument_id, window_end, self.needed_features(strat))
+        verdict, details = evaluate_conditions(strat.exit.conditions.model_dump(), feats)
+        if verdict != "PASS":
+            return False
+        await self._emit(db, "EXIT_CONDITION_MET", "position", p.id,
+                         {"window_end": window_end, "conditions": details},
+                         bot_id=bot.id, corr=await position_correlation(db, p))
+        return True
 
     # ------------------------------------------------------------------ #
     # 3. entries
@@ -327,9 +413,7 @@ class DecisionEngine:
                 return
             strat = await self._strategy(db, bot.strategy_version_id)
             policy = await self._policy(db, bot.risk_policy_version_id)
-            minutes = await self._load_minutes(db, iid, start=window_end - MINUTE * HISTORY_MINUTES,
-                                               end=window_end)
-            feats = scanner_features(minutes, window_end)
+            feats = await self._features(db, iid, window_end, self.needed_features(strat))
             feats["spread_bps"] = spread_feature(book, fresh)
             incomplete = feats["volume_spike"].reason == "CURRENT_WINDOW_INCOMPLETE"
             settled = (now - window_end).total_seconds() >= self.config.window_settle_seconds

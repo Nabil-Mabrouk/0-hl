@@ -147,12 +147,20 @@ export interface StrategyCondition {
   ttl_ms?: number;
 }
 
+export interface StrategyConditions {
+  operator: "AND" | "OR";
+  conditions: StrategyCondition[];
+}
+
 export interface StrategyConfig {
   strategy_id: string;
   version: string;
   universe: Record<string, unknown>;
-  entry: { operator: "AND" | "OR"; conditions: StrategyCondition[] };
-  exit: { initial_stop_pct: string; take_profit_r?: string; max_hold_seconds?: number; exit_on_status_change?: boolean };
+  entry: StrategyConditions;
+  exit: {
+    initial_stop_pct: string; take_profit_r?: string; max_hold_seconds?: number; exit_on_status_change?: boolean;
+    conditions?: StrategyConditions;   // sorties sur condition (05-strategies/04, ADR-024)
+  };
   cooldown_seconds?: number;
   risk_policy_id: string;
   [k: string]: unknown;

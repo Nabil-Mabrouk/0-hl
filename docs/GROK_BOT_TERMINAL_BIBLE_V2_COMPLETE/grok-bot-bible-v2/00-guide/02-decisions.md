@@ -235,3 +235,16 @@ Besoin exprimé au template :
 
 **Statut.** Actée par l'opérateur le 2026-11-21 (« validé ok pour tout »). S2.1 et S2.2 livrés le même jour ; S2.3 dépend du verdict de l'étude.
 
+## ADR-024 — STRAT-06 « Rebond après excès » et STRAT-11 « Rotation des plus fortes » ; sorties sur condition
+
+**Constat.** STRAT-02 (ADR-023) teste une seule hypothèse, la poursuite de tendance. Deux hypothèses de nature différente permettent de les départager : le **retour à la moyenne** après un excès propre à une paire, et le **momentum transversal** (les plus fortes de l'univers le restent), qui fait très peu de trades et supporte le mieux les frais taker. Aucune des deux ne s'exprime avec le moteur actuel : il faut sortir sur une condition (retour à la moyenne, sortie du classement), comparer une paire au marché, et lire 24 h d'historique.
+
+**Proposition.**
+1. **Socle commun** (code) : sorties sur condition `exit.conditions` (05-strategies/04), features de marché calculées une fois par fenêtre (`btc_change_3h`, `btc_trend_24h`, `rs_24h`, `rs_rank_24h`), features `drop_from_high_3h`, `gap_to_mean_4h`, `trend_24h` (lecture étroite à 24 h), éditeur UI-05 et contrat mis à jour.
+2. **STRAT-06 « Rebond après excès »** et **STRAT-11 « Rotation des plus fortes »** ([05-strategies/02](../05-strategies/02-catalogue-strategies.md)), publiées sans code ; STRAT-11 avec une policy dédiée `rotation` (3 positions d'environ 30 %).
+3. Une étude hors production chacune ([09-recherche/06](../09-recherche/06-etude-strat06.md), [09-recherche/07](../09-recherche/07-etude-strat11.md)), critères de lancement fixés avant le résultat ; STRAT-11 n'est jugeable qu'à partir de 28 jours de données.
+4. Lancement paper sur un bot dédié par stratégie qui passe ses critères (plafond de 5 bots, M2.4).
+5. Les numéros suivent le catalogue : le rebond est la variante Kraken de STRAT-06 « Mean Reversion » ; la rotation devient STRAT-11.
+
+**Statut.** Actée par l'opérateur le 2026-11-21 (« validé ok pour tout »). S6.0, S6.1 et S11.1 livrés le même jour ; les lancements dépendent des études.
+

@@ -59,6 +59,15 @@ Objectif : pouvoir juger une stratégie **avant** de la faire tourner, sur des s
 | S2.2 Étude — **livré (local, 2026-11-21)** ; exécution en production à faire | `strat02_study` (grille, référence, partie de contrôle, verdict des 5 critères) ; exécution en production, résultats consignés | **09-recherche/05** |
 | S2.3 Lancement *(si l'étude passe)* | publication de STRAT-02 v0.1.0 (ou de la variante retenue) par l'éditeur, backtest M2.2, bot `paper-kraken-02` | 05-strategies/04, 09-recherche/04, 06-agents/04 |
 
+**STRAT-06 et STRAT-11 (ADR-024, actée le 2026-11-21).**
+
+| Lot | Contenu | Références |
+|---|---|---|
+| S6.0 Socle — **livré (local, 2026-11-21)** | sorties sur condition (schéma, cohérence, moteur, motif `EXIT_CONDITION`, éditeur UI-05) ; features de marché par fenêtre ; `drop_from_high_3h`, `gap_to_mean_4h`, `trend_24h` (lecture étroite à 24 h) ; tests T-M2.3-07 | 05-strategies/04, 06-agents/03 |
+| S6.1 Étude STRAT-06 — **livré (local, 2026-11-21)** ; exécution en production à faire | `strat06_study` ; exécution en production | **09-recherche/06** |
+| S11.1 Étude STRAT-11 — **livré (local, 2026-11-21)** ; jugeable vers le 15/12 | `strat11_study` (portefeuille, verdict « NON JUGEABLE » sous 28 jours) ; exécution en production | **09-recherche/07** |
+| S6.2 / S11.2 Lancement *(si l'étude passe)* | publication de la version (et de la policy `rotation`), backtest M2.2, bot paper dédié | 05-strategies/04, 09-recherche/04, 06-agents/04 |
+
 **Ordre proposé.** M2.1 d'abord (chaque jour d'attente est un jour d'historique perdu), puis M2.2, M2.3, M2.5, M2.4.
 
 **Hors M2.** LIVE (ADR-009), autres venues que Kraken, assistant IA, alertes avancées.

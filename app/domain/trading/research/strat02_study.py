@@ -191,16 +191,19 @@ def rank(rows: list[Row], top: int = TOP, min_trades: int = MIN_RANK_TRADES) -> 
     return [r for r, _ in eligible[:top]]
 
 
-def verdict(chosen: Row | None, baseline: Row | None) -> dict[str, Any]:
-    """The five launch criteria, judged on the second part (09-recherche/05)."""
+def verdict(chosen: Row | None, baseline: Row | None, *, min_trades: int = CRIT_MIN_TRADES,
+            not_judgeable: str | None = None) -> dict[str, Any]:
+    """The five launch criteria, judged on the second part (09-recherche/05). `not_judgeable`:
+    reason the study cannot conclude yet (STRAT-11: under 28 days) — never a launch."""
     if chosen is None or baseline is None:
-        return {"launch": False, "reason": "aucune variante n'a assez de trades sur la partie 1",
+        return {"launch": False, "judgeable": not_judgeable is None,
+                "reason": not_judgeable or "aucune variante n'a assez de trades sur la partie 1",
                 "criteria": []}
     s1, s2, b2 = chosen.s1, chosen.s2, baseline.s2
     pf = s2.profit_factor
     edge = None if s2.mean_gross is None or b2.mean_gross is None else s2.mean_gross - b2.mean_gross
     crit = [
-        ("≥ 20 trades sur la partie 2", s2.trades >= CRIT_MIN_TRADES, str(s2.trades)),
+        (f"≥ {min_trades} trades sur la partie 2", s2.trades >= min_trades, str(s2.trades)),
         ("net moyen > 0 sur la partie 2", s2.mean_net is not None and s2.mean_net > ZERO,
          None if s2.mean_net is None else f"{s2.mean_net * HUNDRED:.3f} %"),
         ("profit factor net ≥ 1,2 sur la partie 2",
@@ -212,8 +215,12 @@ def verdict(chosen: Row | None, baseline: Row | None) -> dict[str, Any]:
         ("net moyen > 0 sur la partie 1", s1.mean_net is not None and s1.mean_net > ZERO,
          None if s1.mean_net is None else f"{s1.mean_net * HUNDRED:.3f} %"),
     ]
-    return {"launch": all(ok for _, ok, _ in crit), "variant": chosen.label,
-            "criteria": [{"criterion": c, "ok": ok, "value": v} for c, ok, v in crit]}
+    out = {"launch": not_judgeable is None and all(ok for _, ok, _ in crit), "variant": chosen.label,
+           "judgeable": not_judgeable is None,
+           "criteria": [{"criterion": c, "ok": ok, "value": v} for c, ok, v in crit]}
+    if not_judgeable:
+        out["reason"] = not_judgeable
+    return out
 
 
 V010_ENTRY = EntryRule(D(2), True, D("0.01"))
@@ -231,12 +238,20 @@ class StudyReport:
     current: Row
     current_baseline: Row
     top: list[Row]
-    baselines: dict[ExitRule, Row]
+    baselines: dict[Any, Row]
+    title: str = "étude STRAT-02 « Breakout 1h » hors production (09-recherche/05, lecture seule)"
+    current_name: str = "STRAT-02 v0.1.0"
+    baseline_name: str = "une entrée par paire et par heure, sorties v0.1.0"
+    cooldown_hours: int = 4
+    min_trades: int = CRIT_MIN_TRADES
+    not_judgeable: str | None = None
+    adr: str = "ADR-023"
 
     @property
     def verdict(self) -> dict[str, Any]:
         chosen = self.top[0] if self.top else None
-        return verdict(chosen, None if chosen is None else self.baselines[chosen.exit])
+        return verdict(chosen, None if chosen is None else self.baselines[chosen.exit],
+                       min_trades=self.min_trades, not_judgeable=self.not_judgeable)
 
     def as_json(self) -> dict[str, Any]:
         return {"period": {"start": self.start.isoformat(), "split": self.cut.isoformat(),
@@ -244,7 +259,7 @@ class StudyReport:
                 "pairs": self.pairs, "evaluable_minutes": self.evaluable_minutes,
                 "variants_tested": self.variants_tested,
                 "assumptions": {"fee_pct_each_side": "0.40", "slippage_pct": "0.10",
-                                "cooldown_hours": 4, "spread": "not replayed (assumed pass)"},
+                                "cooldown_hours": self.cooldown_hours, "spread": "not replayed (assumed pass)"},
                 "v0_1_0": self.current.as_json(), "baseline_v0_1_0_exits": self.current_baseline.as_json(),
                 "top": [{**r.as_json(), "baseline": self.baselines[r.exit].as_json()} for r in self.top],
                 "verdict": self.verdict}
@@ -266,15 +281,15 @@ class StudyReport:
                 out.append(line("réf. p2", ref.second))
             return out
 
-        lines = ["0-hl — étude STRAT-02 « Breakout 1h » hors production (09-recherche/05, lecture seule)",
+        lines = [f"0-hl — {self.title}",
                  f"période {self.start:%Y-%m-%d %H:%M} → {self.end:%Y-%m-%d %H:%M} UTC, "
                  f"coupure {self.cut:%Y-%m-%d %H:%M} (60 % / 40 %)",
                  f"{self.pairs} paires, {self.evaluable_minutes} minutes évaluables, "
                  f"{self.variants_tested} variantes testées",
-                 "hypothèses : frais 0,40 % par côté, glissement 0,10 % (entrée et stop), cooldown 4 h, "
+                 f"hypothèses : frais 0,40 % par côté, glissement 0,10 % (entrée et stop), cooldown {self.cooldown_hours} h, "
                  "spread non rejoué, résultats en % par trade",
-                 "", "STRAT-02 v0.1.0 :", *block(self.current, self.current_baseline),
-                 "", "Référence (une entrée par paire et par heure, sorties v0.1.0) :",
+                 "", f"{self.current_name} :", *block(self.current, self.current_baseline),
+                 "", f"Référence ({self.baseline_name}) :",
                  *block(self.current_baseline),
                  "", f"Top {len(self.top)} (classées sur la partie 1, ≥ {MIN_RANK_TRADES} trades ; "
                  "juger sur la partie 2) :"]
@@ -289,9 +304,15 @@ class StudyReport:
             lines.append(f"  [{'OK' if c['ok'] else 'NON'}] {c['criterion']} : {c['value'] or '—'}")
         if not v["criteria"]:
             lines.append(f"  {v['reason']}")
-        lines.append(f"  ⇒ {'LANCEMENT PAPER POSSIBLE (validation opérateur requise)' if v['launch'] else 'PAS DE LANCEMENT — relancer l’étude dans une semaine'}")
+        if not v.get("judgeable", True):
+            outcome = f"NON JUGEABLE — {v['reason']}"
+        elif v["launch"]:
+            outcome = "LANCEMENT PAPER POSSIBLE (validation opérateur requise)"
+        else:
+            outcome = "PAS DE LANCEMENT — relancer l’étude dans une semaine"
+        lines.append(f"  ⇒ {outcome}")
         lines += ["", "Limites : quelques jours, un seul régime de marché, pas de carnet historique, "
-                  f"{self.variants_tested} variantes (risque de faux positif). Paper uniquement (ADR-009, ADR-023)."]
+                  f"{self.variants_tested} variantes (risque de faux positif). Paper uniquement (ADR-009, {self.adr})."]
         return "\n".join(lines)
 
 

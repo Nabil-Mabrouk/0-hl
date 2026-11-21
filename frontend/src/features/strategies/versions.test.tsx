@@ -138,6 +138,28 @@ describe("StrategyEditor (UI-05)", () => {
     expect(new Headers(put.headers).get("If-Match")).toBe('"bsha0123456789"');
   });
 
+  it("adds an exit condition, removes it, and the exit has no empty block (ADR-024)", async () => {
+    const m = renderEditor(["ANALYST"], sv("b", "0.3.0", "DRAFT"), (u) =>
+      u.endsWith("/strategies/versions/validate") ? json({ valid: true, errors: [] }) : undefined);
+    expect(await screen.findByRole("button", { name: "+ exit condition" })).toBeInTheDocument();
+    expect(screen.queryByTestId("exit-conditions")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "+ exit condition" }));
+    await userEvent.selectOptions(screen.getByLabelText("exit feature 1"), "spread_bps");
+    expect(screen.getByTestId("exit-unit-0")).toHaveTextContent("bps");
+    await waitFor(() => expect(calls(m, "POST").length).toBeGreaterThan(0));
+    const sent = JSON.parse(String((calls(m, "POST").at(-1)![1] as RequestInit).body));
+    expect(sent.config.exit.conditions).toEqual({ operator: "OR",
+      conditions: [{ feature: "spread_bps", op: "gte", threshold: "0", unit: "bps", window_seconds: 300 }] });
+    expect(sent.config.entry.conditions).toHaveLength(2);
+    await userEvent.click(screen.getByRole("button", { name: "remove exit condition 1" }));
+    await userEvent.click(screen.getByRole("button", { name: "+ condition" }));
+    await waitFor(() => {
+      const last = JSON.parse(String((calls(m, "POST").at(-1)![1] as RequestInit).body));
+      expect(last.config.exit.conditions).toBeUndefined();
+      expect(last.config.entry.conditions).toHaveLength(3);
+    });
+  });
+
   it("opens a published version read only", async () => {
     renderEditor(["ANALYST"], sv("a", "0.2.0", "PUBLISHED"));
     expect(await screen.findByTestId("readonly")).toHaveTextContent("never changes");

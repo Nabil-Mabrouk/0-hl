@@ -21,7 +21,7 @@ Le domaine existe déjà (`versioning.py` : création en `DRAFT`, modification d
 
 1. **Nouvelle version** : depuis un JSON complet, ou par **duplication** d'une version existante (copie de la config en `DRAFT`, numéro de version obligatoire et unique par stratégie/policy ; l'interface propose l'incrément suivant).
 2. **Validation à chaque enregistrement** : schéma (`config_schemas`) **et** cohérence :
-   - chaque condition d'entrée porte sur une feature du **catalogue du SCANNER** (`volume_spike` ratio, `buy_notional_share` fraction, `price_change_5m` log_return, `spread_bps` bps, `window_notional_usd` USD, `window_trade_count` count) avec **son unité** ; une feature inconnue ou une unité différente est refusée (une condition sur une feature inexistante resterait `UNKNOWN` pour toujours) ;
+   - chaque condition d'entrée porte sur une feature du **catalogue du SCANNER** (liste et unités servies par `GET /api/v1/features` ; catalogue complet en 06-agents/03) avec **son unité** — de même pour chaque condition de sortie (`exit.conditions`) ; une feature inconnue ou une unité différente est refusée (une condition sur une feature inexistante resterait `UNKNOWN` pour toujours) ;
    - `initial_stop_pct` > 0 et < 100 ; `take_profit_r` > 0 si présent ; `max_hold_seconds` ≥ 60 ;
    - `risk_policy_id` désigne une policy existante.
 3. **Modification d'un brouillon** : concurrence optimiste par `If-Match: "<config_sha256>"` ; un brouillon modifié entre-temps ⇒ `412 PRECONDITION_FAILED`.
@@ -36,6 +36,17 @@ Le domaine existe déjà (`versioning.py` : création en `DRAFT`, modification d
    - rattacher aux versions actuelles est permis : c'est ainsi qu'on **réarme** un bot arrêté sans changer de stratégie.
    - L'amorçage (ADR-014) ne ré-attache ni un bot qui a déjà eu une session, ni un bot rattaché par l'opérateur (audit `BOT_REBOUND`), même jamais démarré : un rattachement par l'opérateur n'est jamais écrasé au redémarrage.
 8. **Comparaison** de deux versions (même stratégie ou même policy) : différence champ par champ (`chemin`, `avant`, `après`), et pour une policy, chaque champ marqué `plus strict` / `plus souple` / `neutre`.
+
+## Sorties sur condition (ADR-024)
+
+Champ facultatif `exit.conditions` d'une version de stratégie : `{ "operator": "OR" | "AND", "conditions": [ … ] }`, conditions au **même format que l'entrée** (feature du catalogue, unité, opérateur, seuil, fenêtre).
+
+- Évaluées par le moteur de décision à **chaque nouvelle fenêtre close** (une fois par minute), pour chaque position `OPEN` du bot, sur les features de la paire calculées comme à l'entrée.
+- Verdict `PASS` ⇒ sortie au marché par le même chemin que la sortie temporelle, motif **`EXIT_CONDITION`** ; le détail des conditions est publié dans l'événement **`EXIT_CONDITION_MET`** (agrégat `position`, même corrélation que la position), visible dans la trace (UI-03) ; le filtre « motif de sortie » de UI-03 propose `EXIT_CONDITION`. `UNKNOWN` ne déclenche **jamais** de sortie (une donnée manquante ne vend pas) ; le stop, l'objectif et la limite de temps restent actifs.
+- Ordre : stop et objectif (surveillés à chaque tick) ; puis condition de sortie (à chaque fenêtre) ; puis limite de temps.
+- Une version sans `exit.conditions` se comporte exactement comme avant : les versions publiées existantes (STRAT-01, STRAT-02) ne changent pas.
+- Éditeur (UI-05) : bloc *Conditions de sortie*, même tableau que les conditions d'entrée, vide par défaut.
+- Le backtest (M2.2) rejoue le moteur : il applique les sorties sur condition sans code supplémentaire.
 
 ## Droits (01-produit/02, ADR-006)
 
@@ -96,3 +107,4 @@ Approbation à deux personnes et passage `APPROVED` (multi-utilisateurs, LIVE) ;
 | T-M2.3-07 | chaque action réservée renvoie `403` sans le rôle ; chaque mutation produit un audit avec acteur, motif et différence |
 | T-M2.3-08 | la commande d'administration et l'API produisent les mêmes versions, audits et erreurs |
 | T-M2.3-09 (UI) | éditeur : erreurs sur le bon champ, unité verrouillée par feature, version publiée en lecture seule ; Risque : champs assouplis signalés, compte à rebours ; Bots : action désactivée tant que le bot tourne |
+| T-M2.3-07 | `exit.conditions` : feature hors catalogue refusée avec le chemin du champ ; `PASS` ⇒ sortie `EXIT_CONDITION` à la fenêtre suivante ; `UNKNOWN` ⇒ pas de sortie ; version sans le champ inchangée |

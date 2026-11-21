@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { ApiError, fieldErrors, getJson, sendJson } from "../shared/client";
 import { useTradingAccess } from "../shared/hooks";
-import type { FeatureInfo, PolicyVersionView, StrategyCondition, StrategyConfig, StrategyVersionView } from "../shared/types";
+import type { FeatureInfo, PolicyVersionView, StrategyCondition, StrategyConditions, StrategyConfig, StrategyVersionView } from "../shared/types";
 import "../terminal/terminal.css";
 import "./versions.css";
 
@@ -69,16 +69,16 @@ export default function StrategyEditor({ validateDelayMs = 400 }: { validateDela
     return <div className="hl-page">{banner ? <div className="hl-banner error" role="alert">{banner.text}</div> : <div className="hl-state-box">loading strategy…</div>}</div>;
   }
 
-  const unitOf = (name: string) => features.find((f) => f.name === name)?.unit ?? "";
   const set = (patch: Partial<StrategyConfig>) => change({ ...cfg, ...patch });
   const setExit = (patch: Partial<StrategyConfig["exit"]>) => {
     const exit = { ...cfg.exit, ...patch };
     for (const k of Object.keys(exit) as (keyof typeof exit)[]) if (exit[k] === undefined || exit[k] === "") delete exit[k];
     set({ exit });
   };
-  const setCond = (i: number, patch: Partial<StrategyCondition>) => {
-    const conditions = cfg.entry.conditions.map((c, j) => (j === i ? { ...c, ...patch } : c));
-    set({ entry: { ...cfg.entry, conditions } });
+  const setExitConditions = (block: StrategyConditions | undefined) => {
+    const exit = { ...cfg.exit, conditions: block };
+    if (!block || block.conditions.length === 0) delete exit.conditions;
+    set({ exit });
   };
   const err = (path: string) => errors[path];
   const cls = (path: string) => `hl-field${err(path) ? " invalid" : ""}`;
@@ -149,51 +149,8 @@ export default function StrategyEditor({ validateDelayMs = 400 }: { validateDela
             </div>
 
             <h2>Entry</h2>
-            <label className="hl-field">all conditions or any
-              <select value={cfg.entry.operator} onChange={(e) => set({ entry: { ...cfg.entry, operator: e.target.value as "AND" | "OR" } })}>
-                <option value="AND">AND — all must pass</option>
-                <option value="OR">OR — one is enough</option>
-              </select>
-            </label>
-            <table className="hl-grid" data-testid="conditions">
-              <thead><tr><th>feature</th><th>operator</th><th>threshold</th><th>unit</th><th>window (s)</th><th></th></tr></thead>
-              <tbody>
-                {cfg.entry.conditions.map((c, i) => {
-                  const p = `entry.conditions[${i}]`;
-                  const rowErr = err(`${p}.feature`) || err(`${p}.unit`) || err(`${p}.threshold`);
-                  return (
-                    <tr key={i} data-testid={`condition-${i}`}>
-                      <td>
-                        <select aria-label={`feature ${i + 1}`} className={err(`${p}.feature`) ? "invalid" : ""} value={c.feature}
-                          onChange={(e) => setCond(i, { feature: e.target.value, unit: unitOf(e.target.value) })}>
-                          {!features.some((f) => f.name === c.feature) && <option value={c.feature}>{c.feature} (unknown)</option>}
-                          {features.map((f) => <option key={f.name} value={f.name} title={f.description}>{f.name}</option>)}
-                        </select>
-                      </td>
-                      <td>
-                        <select aria-label={`operator ${i + 1}`} value={c.op} onChange={(e) => setCond(i, { op: e.target.value as StrategyCondition["op"] })}>
-                          {OPS.map((o) => <option key={o} value={o}>{{ gte: "≥", gt: ">", lte: "≤", lt: "<" }[o]}</option>)}
-                        </select>
-                      </td>
-                      <td><input aria-label={`threshold ${i + 1}`} value={c.threshold} onChange={(e) => setCond(i, { threshold: e.target.value })} /></td>
-                      <td><span data-testid={`unit-${i}`} className={err(`${p}.unit`) ? "hl-field-error" : ""}>{c.unit}</span></td>
-                      <td><input aria-label={`window ${i + 1}`} type="number" min={1} value={c.window_seconds}
-                        onChange={(e) => setCond(i, { window_seconds: Number(e.target.value) })} /></td>
-                      <td>
-                        <button type="button" className="hl-btn" aria-label={`remove condition ${i + 1}`}
-                          onClick={() => set({ entry: { ...cfg.entry, conditions: cfg.entry.conditions.filter((_, j) => j !== i) } })}>×</button>
-                        {rowErr && <div className="hl-field-error" role="alert">{rowErr}</div>}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            <button type="button" className="hl-btn" onClick={() => {
-              const f = features[0];
-              set({ entry: { ...cfg.entry, conditions: [...cfg.entry.conditions,
-                { feature: f?.name ?? "", op: "gte", threshold: "0", unit: f?.unit ?? "", window_seconds: 300 }] } });
-            }}>+ condition</button>
+            <ConditionsTable block={cfg.entry} prefix="entry.conditions" testId="conditions" label=""
+              features={features} err={err} onChange={(entry) => set({ entry })} />
 
             <h2>Exit</h2>
             <div className="hl-form">
@@ -208,6 +165,11 @@ export default function StrategyEditor({ validateDelayMs = 400 }: { validateDela
                   onChange={(e) => setExit({ exit_on_status_change: e.target.checked })} />
               </label>
             </div>
+            <h3>Exit conditions</h3>
+            <p className="hl-readonly-note">Optional. Sell as soon as these conditions pass (checked once a minute); missing data never sells. Stop, target and maximum hold stay active.</p>
+            <ConditionsTable block={cfg.exit.conditions ?? { operator: "OR", conditions: [] }}
+              prefix="exit.conditions.conditions" testId="exit-conditions" label="exit "
+              features={features} err={err} onChange={setExitConditions} />
 
             <h2>Other</h2>
             <div className="hl-form">
@@ -254,5 +216,67 @@ function Field({ label, path, value, onChange, err }: {
       <input value={value} onChange={(e) => onChange(e.target.value)} />
       {err(path) && <span className="hl-field-error">{err(path)}</span>}
     </label>
+  );
+}
+
+/** Entry or exit conditions table (feature from the SCANNER catalogue, unit read-only). */
+function ConditionsTable({ block, prefix, testId, label, features, err, onChange }: {
+  block: StrategyConditions; prefix: string; testId: string; label: string; features: FeatureInfo[];
+  err: (p: string) => string | undefined; onChange: (b: StrategyConditions) => void;
+}) {
+  const unitOf = (name: string) => features.find((f) => f.name === name)?.unit ?? "";
+  const setCond = (i: number, patch: Partial<StrategyCondition>) =>
+    onChange({ ...block, conditions: block.conditions.map((c, j) => (j === i ? { ...c, ...patch } : c)) });
+  return (
+    <>
+      <label className="hl-field">{label}all conditions or any
+        <select aria-label={label ? `${label}operator` : undefined} value={block.operator}
+          onChange={(e) => onChange({ ...block, operator: e.target.value as "AND" | "OR" })}>
+          <option value="AND">AND — all must pass</option>
+          <option value="OR">OR — one is enough</option>
+        </select>
+      </label>
+      {block.conditions.length > 0 && (
+        <table className="hl-grid" data-testid={testId}>
+          <thead><tr><th>feature</th><th>operator</th><th>threshold</th><th>unit</th><th>window (s)</th><th></th></tr></thead>
+          <tbody>
+            {block.conditions.map((c, i) => {
+              const p = `${prefix}[${i}]`;
+              const rowErr = err(`${p}.feature`) || err(`${p}.unit`) || err(`${p}.threshold`);
+              return (
+                <tr key={i} data-testid={`${label ? "exit-" : ""}condition-${i}`}>
+                  <td>
+                    <select aria-label={`${label}feature ${i + 1}`} className={err(`${p}.feature`) ? "invalid" : ""} value={c.feature}
+                      onChange={(e) => setCond(i, { feature: e.target.value, unit: unitOf(e.target.value) })}>
+                      {!features.some((f) => f.name === c.feature) && <option value={c.feature}>{c.feature} (unknown)</option>}
+                      {features.map((f) => <option key={f.name} value={f.name} title={f.description}>{f.name}</option>)}
+                    </select>
+                  </td>
+                  <td>
+                    <select aria-label={`${label}operator ${i + 1}`} value={c.op} onChange={(e) => setCond(i, { op: e.target.value as StrategyCondition["op"] })}>
+                      {OPS.map((o) => <option key={o} value={o}>{{ gte: "≥", gt: ">", lte: "≤", lt: "<" }[o]}</option>)}
+                    </select>
+                  </td>
+                  <td><input aria-label={`${label}threshold ${i + 1}`} value={c.threshold} onChange={(e) => setCond(i, { threshold: e.target.value })} /></td>
+                  <td><span data-testid={`${label ? "exit-" : ""}unit-${i}`} className={err(`${p}.unit`) ? "hl-field-error" : ""}>{c.unit}</span></td>
+                  <td><input aria-label={`${label}window ${i + 1}`} type="number" min={1} value={c.window_seconds}
+                    onChange={(e) => setCond(i, { window_seconds: Number(e.target.value) })} /></td>
+                  <td>
+                    <button type="button" className="hl-btn" aria-label={`remove ${label}condition ${i + 1}`}
+                      onClick={() => onChange({ ...block, conditions: block.conditions.filter((_, j) => j !== i) })}>×</button>
+                    {rowErr && <div className="hl-field-error" role="alert">{rowErr}</div>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+      <button type="button" className="hl-btn" onClick={() => {
+        const f = features[0];
+        onChange({ ...block, conditions: [...block.conditions,
+          { feature: f?.name ?? "", op: "gte", threshold: "0", unit: f?.unit ?? "", window_seconds: 300 }] });
+      }}>+ {label}condition</button>
+    </>
   );
 }

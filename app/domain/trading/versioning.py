@@ -29,12 +29,11 @@ from app.domain.trading.types import sha256_hex, utcnow
 _PUBLISHABLE_STRATEGY = {StrategyVersionStatus.DRAFT, StrategyVersionStatus.APPROVED}
 
 
-async def strategy_coherence_errors(db: AsyncSession, config: Any) -> list[dict[str, str]]:
-    """Rules beyond the JSON schema (05-strategies/04 « Règles » 2): known feature and unit,
-    sane exits, existing risk policy. Returns [] when coherent."""
+def _condition_errors(prefix: str, conditions: Any) -> list[dict[str, str]]:
+    """Known feature of the SCANNER catalogue, with its unit (entry and exit conditions)."""
     errors: list[dict[str, str]] = []
-    for i, cond in enumerate(config.entry.conditions):
-        path = f"entry.conditions[{i}]"
+    for i, cond in enumerate(conditions):
+        path = f"{prefix}[{i}]"
         known = FEATURE_CATALOGUE.get(cond.feature)
         if known is None:
             errors.append({"path": f"{path}.feature", "message":
@@ -42,6 +41,19 @@ async def strategy_coherence_errors(db: AsyncSession, config: Any) -> list[dict[
         elif cond.unit != known[0]:
             errors.append({"path": f"{path}.unit",
                            "message": f"unité « {cond.unit} » au lieu de « {known[0]} » pour {cond.feature}"})
+
+    return errors
+
+
+async def strategy_coherence_errors(db: AsyncSession, config: Any) -> list[dict[str, str]]:
+    """Rules beyond the JSON schema (05-strategies/04 « Règles » 2): known feature and unit,
+    sane exits, existing risk policy. Returns [] when coherent."""
+    errors: list[dict[str, str]] = []
+    blocks = [("entry.conditions", config.entry.conditions)]
+    if config.exit.conditions is not None:
+        blocks.append(("exit.conditions.conditions", config.exit.conditions.conditions))
+    for prefix, conds in blocks:
+        errors += _condition_errors(prefix, conds)
 
     def dec(value: str | None) -> Decimal | None:
         try:

@@ -135,6 +135,26 @@ Deuxième stratégie implémentée, **candidate du gate M2** (13-roadmap « Jalo
 
 **État de validation par défaut :** `RESEARCH_ONLY` ; aucune activation LIVE automatique.
 
+## STRAT-06 — Variante Kraken Spot « Rebond après excès » (ADR-024)
+
+Troisième stratégie implémentée, **opposée à STRAT-02** : STRAT-02 parie qu'un mouvement se prolonge, STRAT-06 qu'un excès se résorbe. Seuils de départ expérimentaux, à confirmer par l'étude [09-recherche/06](../09-recherche/06-etude-strat06.md) ; paramètres [`examples/strategy-rebound.json`](../examples/strategy-rebound.json).
+
+**Hypothèse testable.** Après une chute rapide et inhabituelle d'une paire liquide, **propre à cette paire** (le BTC ne chute pas en même temps) et hors marché en effondrement, le prix revient en quelques heures vers sa moyenne récente d'un écart supérieur au coût d'un aller-retour.
+
+**Univers.** Celui de STRAT-01 (top 40 USD Kraken Spot, hors stablecoins).
+
+**Features nouvelles (SCANNER, 06-agents/03).**
+- `drop_from_high_3h` (log_return) = ln(dernier close / plus haut des 180 minutes précédant la dernière minute) ; ≤ 0.
+- `gap_to_mean_4h` (log_return) = ln(dernier close / moyenne des closes des 240 minutes précédant la dernière minute).
+- `trend_24h` (log_return) = ln(dernier close / close d'il y a 24 h).
+- `btc_change_3h` (log_return) = variation du BTC/USD sur 3 h, identique pour toutes les paires (feature **de marché**, 06-agents/03).
+
+**Entrée v0.1.0 (toutes vraies).** `window_notional_usd ≥ 25 000` ; `drop_from_high_3h ≤ −0.04` (chute d'au moins ~4 % depuis le plus haut des 3 h) ; `volume_spike ≥ 2.0` (chute sur volume, pas par manque d'acheteurs) ; `price_change_5m > 0` (le prix commence à se retourner : on n'attrape pas le couteau qui tombe) ; `btc_change_3h ≥ −0.015` (chute propre à la paire, pas du marché) ; `trend_24h ≥ −0.10` (pas une paire en effondrement) ; `spread_bps ≤ 30` ; contrôle qualité `PASS` ; une position par paire ; cooldown par paire **6 h**.
+
+**Sortie v0.1.0.** Stop 4 % sous le prix d'entrée ; **sortie sur condition** (05-strategies/04 « Sorties sur condition ») `gap_to_mean_4h ≥ 0` : le prix est revenu à sa moyenne des 4 h ; pas de take-profit fixe ; sortie temporelle **12 h** ; sortie si la paire passe hors `online`.
+
+**État de validation.** `RESEARCH_ONLY` pour le LIVE. Lancement `PAPER` sur un bot dédié seulement si l'étude remplit ses critères (ADR-024).
+
 ## STRAT-07 — Volatility Breakout
 
 **Hypothèse testable :** une compression de volatilité peut précéder une expansion
@@ -190,3 +210,38 @@ Deuxième stratégie implémentée, **candidate du gate M2** (13-roadmap « Jalo
 **Tests obligatoires :** holdout temporel, split par token/lancement, coûts agressifs, stress de liquidité, perturbation de paramètres, robustesse contre manipulation et latence, comparaison à un baseline simple ; reporter les trades non exécutables.
 
 **État de validation par défaut :** `RESEARCH_ONLY` ; aucune activation LIVE automatique.
+
+## STRAT-11 — Relative Strength Rotation
+
+**Hypothèse testable :** les actifs les plus forts sur un horizon de un à quelques jours le restent en moyenne sur l'horizon suivant (momentum transversal)
+
+**Données et filtre :** rendements comparés de l'univers sur le même horizon, liquidité, spread, régime du marché. Vérifier la profondeur et les frais avant entrée.
+
+**Signal d'entrée :** rang de la paire parmi l'univers sous un seuil, surperformance du marché de référence, filtre de régime. Chaque métrique possède une unité, une fenêtre temporelle, un seuil déclaré et un comportement `UNKNOWN → SKIP`.
+
+**Sortie :** sortie quand la paire quitte le haut du classement (hystérésis), stop d'invalidation large, limite de temps.
+
+**Tests obligatoires :** holdout temporel, coûts agressifs, comparaison à la détention égale de tout l'univers, sensibilité à l'horizon de classement.
+
+**État de validation par défaut :** `RESEARCH_ONLY` ; aucune activation LIVE automatique.
+
+## STRAT-11 — Variante Kraken Spot « Rotation des plus fortes » (ADR-024)
+
+Quatrième stratégie implémentée : **très peu de trades**, détentions de plusieurs jours, la mieux adaptée aux frais taker. Paramètres [`examples/strategy-rotation.json`](../examples/strategy-rotation.json) avec la policy dédiée [`examples/risk-policy-rotation.json`](../examples/risk-policy-rotation.json) ; étude [09-recherche/07](../09-recherche/07-etude-strat11.md).
+
+**Hypothèse testable.** Les 3 paires qui ont le mieux progressé sur 24 h parmi le top 40 Kraken USD, si elles battent le BTC, continuent de faire mieux que la moyenne de l'univers sur les jours suivants, d'un écart supérieur aux frais.
+
+**Features nouvelles (SCANNER, features de marché, 06-agents/03).**
+- `trend_24h` (commune avec STRAT-06).
+- `rs_24h` (log_return) = `trend_24h` de la paire − `trend_24h` du BTC/USD.
+- `rs_rank_24h` (rank) = rang de la paire selon `trend_24h` parmi les paires de l'univers dont `trend_24h` est connue (1 = la plus forte) ; `UNKNOWN` si moins de 20 paires sont classables.
+- `btc_trend_24h` (log_return) = `trend_24h` du BTC/USD (régime du marché).
+
+**Entrée v0.1.0.** `rs_rank_24h ≤ 3` ; `rs_24h > 0` ; `btc_trend_24h ≥ −0.03` (pas en plein repli du marché) ; `window_notional_usd ≥ 25 000` ; `spread_bps ≤ 30` ; contrôle qualité `PASS` ; une position par paire ; cooldown par paire **24 h**. Au plus 3 positions simultanées (policy).
+
+**Sortie v0.1.0.** **Sortie sur condition** `rs_rank_24h > 8` (la paire est sortie du haut du classement ; l'écart entre 3 et 8 évite les allers-retours) ; stop **10 %** ; sortie temporelle **4 jours** ; sortie si la paire passe hors `online`.
+
+**Policy dédiée `rotation`.** Le stop large rend la taille calculée par le SIZER à 0,5 % de risque minuscule (5 % du capital) : la policy `rotation` porte `max_trade_risk_pct` à **3** (≈ 30 % du capital par position avec un stop de 10 %), `max_token_exposure_pct` à **33**, `max_open_positions` à **3**, `max_daily_loss_pct` à **6** (portefeuille presque entièrement investi), le reste comme `paper-default`.
+
+**État de validation.** `RESEARCH_ONLY` pour le LIVE. L'étude n'est **jugeable qu'à partir de 4 semaines de données** (détentions de plusieurs jours) ; d'ici là elle tourne à titre indicatif.
+
