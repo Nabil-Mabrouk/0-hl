@@ -286,17 +286,17 @@
   },
   "09-recherche/05-etude-strat02.md": {
     "path": "02-projects/0-hl/spec/etude-strat-02-breakout-1h-hors-production-adr-023.md",
-    "sha256": "8ddd5c85aa71ef81e1dedc9cc850c8a2e15efcbde6c24acd5189e356470af7a4",
+    "sha256": "8301538c7f8da3b26ffbc743b2dbc97ec33e8dafd08b608946d6374ca5281854",
     "order": 46
   },
   "09-recherche/06-etude-strat06.md": {
     "path": "02-projects/0-hl/spec/etude-strat-06-rebond-apres-exces-hors-production-adr-024.md",
-    "sha256": "a3ce4a558b782673e5a3193657e1ed2b7a3383aa5ab890a88387735c969f631f",
+    "sha256": "2458c0271e618970014462bf8efbf4c1b2455ed831a725cad5c39975f71a65ec",
     "order": 47
   },
   "09-recherche/07-etude-strat11.md": {
     "path": "02-projects/0-hl/spec/etude-strat-11-rotation-des-plus-fortes-hors-production-adr-024.md",
-    "sha256": "1ffa943f93fa6a31efff30abd4868199e916c2be2c4d6ba62aa7c8a644df010d",
+    "sha256": "bb0504c6c943a9fa2b39a2f611380384b5218b3669b3e198b1ef6f377c72095d",
     "order": 48
   }
 }
