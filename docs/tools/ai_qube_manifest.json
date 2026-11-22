@@ -11,7 +11,7 @@
   },
   "00-guide/02-decisions.md": {
     "path": "02-projects/0-hl/spec/registre-des-decisions-d-architecture-adr.md",
-    "sha256": "bf0429aa43685fbc5582f69dab4d1713f188f7c95884e0df1f415277c7b70a35",
+    "sha256": "dddcebaf4e6f8ff71f8f6893affae05d9d32cae2eaf0886a3cf489a51c57cab4",
     "order": 3
   },
   "01-produit/01-vision-et-perimetre.md": {
@@ -246,7 +246,7 @@
   },
   "13-roadmap/01-plan-execution.md": {
     "path": "02-projects/0-hl/spec/roadmap-backlog-et-consignes-aux-agents-developpeurs.md",
-    "sha256": "6041672e683fab19837ba02f7954500de174fd085590495b886ef3e9a54a6093",
+    "sha256": "429a032de4923209b4f583fa89d404b26edda49009cc7e847bf08cd4cb809831",
     "order": 62
   },
   "14-references/01-sources-et-limites.md": {
@@ -316,7 +316,7 @@
   },
   "03-ecrans/UI-17-learn.md": {
     "path": "02-projects/0-hl/spec/ui-17-learn-rubrique-publique-et-fiches-de-strategie-vivantes.md",
-    "sha256": "7d9e7767fa97dfde9ecd5fba9206d5a4391c7c9f3859878f44b33111f488bee4",
+    "sha256": "37f77b0ee7747edadd2c271eadb0267b0185ec8b6799c31a5d79661a4ad99c76",
     "order": 26
   },
   "examples/learn/en/strategies/breakout-1h.md": {
