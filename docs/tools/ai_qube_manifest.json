@@ -216,12 +216,12 @@
   },
   "10-backend/03-modele-donnees-m1.md": {
     "path": "02-projects/0-hl/spec/modele-de-donnees-et-fondations-m1-1.md",
-    "sha256": "f89ea9f8a16e7d10b322d16bbd555d0fd77a605211ad15e1051bc8050ac4303f",
+    "sha256": "c5a63577920bba7130569091ff0fbeeb830567d896505761614293c718c2ec33",
     "order": 54
   },
   "10-backend/04-api-m1.md": {
     "path": "02-projects/0-hl/spec/api-rest-et-flux-terminal-conception-m1-4.md",
-    "sha256": "4516f57b648b0e0cd78aa0ac0b83d67565eb03e4b37ec9426bb66c2e91b250d9",
+    "sha256": "73855da5adef9c0133ed02f6a068087278a352c6db8aacf9c2ec7fba13912fed",
     "order": 55
   },
   "11-securite-ops/01-securite-et-conformite.md": {
@@ -246,7 +246,7 @@
   },
   "13-roadmap/01-plan-execution.md": {
     "path": "02-projects/0-hl/spec/roadmap-backlog-et-consignes-aux-agents-developpeurs.md",
-    "sha256": "5ba31bb950b217240740b3caaefb3ce902f1d0685cbacc52dcfc13813362a023",
+    "sha256": "129617d4f94146f88116f3392d690f92faf05af988c11329d9982abad60591e0",
     "order": 61
   },
   "14-references/01-sources-et-limites.md": {
@@ -311,7 +311,7 @@
   },
   "02-design/05-market-radar.md": {
     "path": "02-projects/0-hl/spec/market-radar-figure-centrale-de-l-accueil-et-du-terminal.md",
-    "sha256": "ff9dd6925fd8c95b4690cf05148b063145c8bf7fc7133cbb3c024b2e68b47459",
+    "sha256": "395fcedf480b72cde95602a3092e373c44d89d8597de26bf67fc4c7de058eae6",
     "order": 8
   }
 }
