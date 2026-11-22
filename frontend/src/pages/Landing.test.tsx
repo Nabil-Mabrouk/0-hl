@@ -79,7 +79,7 @@ describe("Landing", () => {
     // copyright du Footer plus bas.
     await waitFor(() => expect(screen.getByText("mon-projet")).toBeInTheDocument());
     // UI-00 (03-ecrans/UI-00-accueil-public): the 0-hl sections replace the manifest hero.
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Trading agents you can measure.");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("One market.Different decisions.");   // ADR-028
     expect(screen.getByText("Bienvenue")).toHaveClass("hl-greet");    // manifest hero headline = greeting
     expect(screen.getByText("Rapide")).toBeInTheDocument();
     expect(screen.getByText("Génial")).toBeInTheDocument();

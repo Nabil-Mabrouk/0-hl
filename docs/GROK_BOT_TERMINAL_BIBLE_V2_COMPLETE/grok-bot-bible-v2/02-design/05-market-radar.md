@@ -42,9 +42,12 @@ Source : `hl_trade_minute` (bougies d'une minute, `source = live` en priorité, 
 |---|---|---|
 | `NO_SIGNAL` | conditions d'entrée non remplies | Scan (le fil s'éteint à l'entrée) |
 | `UNKNOWN` | feature indisponible (`UNKNOWN`) | Scan, mention « data unknown » |
-| `COOLDOWN` | délai depuis la dernière sortie non écoulé | Scan |
+| `COOLDOWN` | délai depuis la dernière sortie non écoulé (seul critère refusé par RUG CHECK) | Scan |
+| `HELD` | conditions remplies mais position déjà ouverte sur la paire | Scan |
+| `SIGNAL` | signal détecté, contrôle en cours (état transitoire, remplacé par le résultat final du cycle) | Scan, Check |
 | `FILTERED` | signal refusé par RUG CHECK (spread, profondeur…), avec le motif | Scan, Check en `stop` |
 | `REFUSED` | signal refusé par SIZER (capital, positions max…), avec le motif | Scan, Check, Size en `stop` |
+| `NOT_FILLED` | taille approuvée mais ordre non exécuté (données périmées, autorisation expirée…), avec le motif | Scan, Check, Size, Execute en `stop` |
 | `ENTERED` | ordre paper exécuté | Scan, Check, Size, Execute |
 
 Forme : `"outcomes": {"SOL/USD": {"r": "ENTERED"}, "ETH/USD": {"r": "FILTERED", "why": "spread_bps"}, …}` ; les paires sans entrée dans `outcomes` n'ont pas été évaluées. Volume : un événement par bot et par minute, ≈ 40 entrées courtes. L'étape **Equity** s'allume à la clôture d'une position (`POSITION_CLOSED`), indépendamment du cycle.
@@ -58,10 +61,10 @@ Même calcul pour les deux routes, résultat mis en cache par processus et par f
 
 ```json
 {
-  "generated_at": "…", "window_minutes": 60, "window_end": "2026-11-22T14:32:00Z",
+  "generated_at": "…", "window_minutes": 60, "window_end": "2026-11-22T14:32:00Z", "stale": false,
   "reference": {"symbol": "BTC/USD", "return_pct": "1.00", "volatility_pct": "0.08"},
   "pairs": [{"symbol": "SOL/USD", "return_pct": "2.40", "excess_pp": "1.40", "vol_ratio": "2.00",
-             "y": 1.0, "minutes_traded": 58, "judgeable": true}],
+             "y": "1.0000", "minutes_traded": 58, "judgeable": true}],
   "pairs_without_data": 1,
   "bots": [{"name": "paper-kraken-02", "status": "RUNNING",
             "strategy": {"id": "breakout-1h", "version": "0.1.0", "name": "Breakout 1h"},
@@ -72,7 +75,7 @@ Même calcul pour les deux routes, résultat mis en cache par processus et par f
 }
 ```
 
-`bots` : bots `RUNNING` ou `PAUSED` (ordre : nom) ; `net_pct` = résultat net depuis le premier dépôt, en % du capital déposé (ADR-028 : résultats publics) ; `last_cycle` = dernier `SCAN_CYCLE_COMPLETED` du bot depuis moins de 5 min, sinon `null`. Aucun montant absolu, identifiant interne ni donnée d'utilisateur. Paires triées par symbole ; BTC exclu de `pairs` (il est `reference`).
+`y` est une chaîne (le JSON du domaine refuse les flottants), `"0"` pour une paire non jugeable ; `stale` = BTC non jugeable. `window_end` est la fin exclusive de la fenêtre (début de la minute qui suit la dernière minute réglée, 30 s après sa clôture). `bots` : bots `RUNNING` ou `PAUSED` (ordre : nom) ; `net_pct` = résultat net depuis le premier dépôt, en % du capital déposé (ADR-028 : résultats publics) ; `last_cycle` = dernier `SCAN_CYCLE_COMPLETED` du bot depuis moins de 5 min, sinon `null`. Aucun montant absolu, identifiant interne ni donnée d'utilisateur. Paires triées par symbole ; BTC exclu de `pairs` (il est `reference`).
 
 ## Animation (02-design/04)
 

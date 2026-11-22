@@ -1,8 +1,10 @@
-// UI-00 public landing sections (spec 03-ecrans/UI-00-accueil-public « Contenu »). Live figures come from
+// UI-00 public landing sections (spec 03-ecrans/UI-00-accueil-public « Contenu », ADR-028: hero + Market radar). Live figures come from
 // GET /api/v1/public/stats (no auth, aggregates only); unknown values render as "—", never 0.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { apiFetch } from "../../api";
 import { useAuth } from "../../context/AuthContext";
+import MarketRadar, { useRadar } from "../radar/MarketRadar";
+import "../shared/ui/ui.css";
 import "./landing-hl.css";
 
 export interface PublicStats {
@@ -97,6 +99,7 @@ export function useStats(intervalMs = 30_000): { stats: PublicStats | null; fail
 export default function HlLanding({ greeting }: { greeting?: string }) {
   const { user } = useAuth();
   const { stats, failed } = useStats();
+  const radar = useRadar("/api/v1/public/radar", 20_000, apiFetch);
   const s = failed ? null : stats;
   const live = s?.worker_alive === true;
   const terminalHref = user ? "/terminal" : "/login";
@@ -117,24 +120,20 @@ export default function HlLanding({ greeting }: { greeting?: string }) {
         <div className="hl-hero-copy">
           {greeting && <p className="hl-greet">{greeting}</p>}
           <span className="hl-pill">PAPER — real Kraken prices · simulated execution</span>
-          <h1>Trading agents{" "}<br /><span className="hl-grad">you can measure.</span></h1>
+          <h1>One market.<br /><span className="hl-grad">Different decisions.</span></h1>
           <p className="hl-sub">
-            0-hl runs autonomous trading agents on live Kraken market data. Every decision is traced,
-            every fee is counted, and every strategy is tested against the real engine before it trades.
+            See how paper trading agents read the same market and follow a signal from scan to equity.
+            Every decision is traced and every fee is counted.
           </p>
           <div className="hl-ctas">
             <a className="hl-cta primary" href={terminalHref}>Open the terminal</a>
             <a className="hl-cta ghost" href="#how">How it works</a>
           </div>
         </div>
-        <ol className={`hl-pipeline${prefersReducedMotion() ? "" : " hl-animate"}`} aria-label="agent pipeline">
-          {AGENTS.map((a, i) => (
-            <li key={a.name} style={{ ["--i" as string]: i }}>
-              <span className="hl-node" />
-              <span className="hl-agent">{a.name}</span>
-            </li>
-          ))}
-        </ol>
+      </section>
+
+      <section className="hl-radar-section" aria-label="market radar">
+        <MarketRadar data={radar.data} failed={radar.failed} />
       </section>
 
       <section className="hl-stats" aria-label="live statistics">
@@ -144,9 +143,9 @@ export default function HlLanding({ greeting }: { greeting?: string }) {
             <i />{s === null ? (failed ? "UNAVAILABLE" : "CONNECTING") : live ? "LIVE" : "OFFLINE"}
           </span>
         </div>
-        <div className="hl-cards">
+        <div className="hl-stat-cards">
           {cards.map((c) => (
-            <div className="hl-card" key={c.id} data-testid={`stat-${c.id}`}>
+            <div className="hl-stat-card" key={c.id} data-testid={`stat-${c.id}`}>
               <div className="hl-value">{c.value}</div>
               <div className="hl-label">{c.label}</div>
               {c.hint && <div className="hl-hint">{c.hint}</div>}

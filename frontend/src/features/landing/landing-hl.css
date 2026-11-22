@@ -16,7 +16,7 @@
 
 /* hero */
 .hl-landing .hl-hero {
-  position: relative; overflow: hidden; display: grid; grid-template-columns: 1.25fr 1fr; gap: 3rem;
+  position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr); gap: 3rem;
   align-items: center; padding: clamp(3rem, 8vw, 7rem) clamp(1rem, 5vw, 4rem) clamp(3rem, 6vw, 5rem);
   background: radial-gradient(60rem 30rem at 15% -10%, color-mix(in srgb, var(--hl-accent) 14%, transparent), transparent 60%),
               radial-gradient(40rem 24rem at 90% 20%, color-mix(in srgb, var(--hl-accent) 8%, transparent), transparent 60%);
@@ -26,14 +26,14 @@
   background-image: linear-gradient(var(--hl-line) 1px, transparent 1px), linear-gradient(90deg, var(--hl-line) 1px, transparent 1px);
   background-size: 48px 48px; mask-image: radial-gradient(ellipse at 40% 30%, black 30%, transparent 75%);
 }
-.hl-landing .hl-hero-copy { position: relative; max-width: 640px; min-width: 0; }
+.hl-landing .hl-hero-copy { position: relative; max-width: 980px; min-width: 0; }
 .hl-landing .hl-greet { margin: 0 0 0.75rem; font-size: 0.95rem; font-weight: 600; color: var(--hl-muted); letter-spacing: 0.02em; }
 .hl-landing .hl-pill {
   display: inline-block; font-family: var(--hl-mono); font-size: 0.75rem; letter-spacing: 0.04em;
   color: var(--hl-cyan); border: 1px solid color-mix(in srgb, var(--hl-accent) 35%, transparent); background: color-mix(in srgb, var(--hl-accent) 8%, transparent);
   padding: 0.35rem 0.75rem; border-radius: 999px; margin-bottom: 1.5rem; max-width: 100%; white-space: normal;
 }
-.hl-landing h1 { font-size: clamp(2.4rem, 6vw, 4.6rem); line-height: 1.02; letter-spacing: -0.035em; font-weight: 800; margin: 0 0 1.25rem; color: var(--hl-text); }
+.hl-landing h1 { font-size: clamp(2.75rem, 6.2vw, 6.5rem); line-height: .95; letter-spacing: -.075em; font-weight: 800; margin: 0 0 1.5rem; color: var(--hl-text); }
 .hl-landing .hl-grad { color: var(--hl-accent); }
 .hl-landing .hl-sub { color: var(--hl-muted); font-size: clamp(1rem, 1.4vw, 1.15rem); line-height: 1.6; max-width: 58ch; }
 .hl-landing .hl-ctas { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 2rem; }
@@ -57,6 +57,12 @@
   24%, 100% { background: var(--hl-control-line); box-shadow: 0 0 0 4px color-mix(in srgb, var(--hl-accent) 8%, transparent); }
 }
 
+/* market radar (ADR-028, 02-design/05) */
+.hl-landing .hl-radar-section { padding: 0 clamp(1rem, 5vw, 4rem) clamp(2.5rem, 6vw, 4rem); }
+/* the chassis `.landing section` padding must not reach the radar board (a <section>) */
+.landing .hl-landing section.hl-board { padding: 0; }
+.hl-landing .hl-board-bar h2 { font-size: 1rem; letter-spacing: 0; margin: 0; }
+
 /* live stats */
 .hl-landing .hl-stats { padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1rem, 5vw, 4rem); border-top: 1px solid var(--hl-line); }
 .hl-landing .hl-stats-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
@@ -66,9 +72,9 @@
 .hl-landing .hl-live.on { color: var(--hl-green); border-color: color-mix(in srgb, var(--hl-gain) 35%, transparent); }
 .hl-landing .hl-live.on i { background: var(--hl-green); box-shadow: 0 0 10px var(--hl-green); animation: hl-blink 1.6s ease-in-out infinite; }
 @keyframes hl-blink { 50% { opacity: 0.35; } }
-.hl-landing .hl-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
-.hl-landing .hl-card { position: relative; padding: 1.4rem 1.4rem 1.2rem; border-radius: 16px; background: var(--hl-surface); border: 1px solid var(--hl-line); overflow: hidden; }
-.hl-landing .hl-card::after { content: ""; position: absolute; inset: 0 0 auto; height: 2px; background: var(--hl-accent); opacity: 0.6; }
+.hl-landing .hl-stat-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.hl-landing .hl-stat-card { position: relative; padding: 1.4rem 1.4rem 1.2rem; border-radius: 16px; background: var(--hl-surface); border: 1px solid var(--hl-line); overflow: hidden; }
+.hl-landing .hl-stat-card::after { content: ""; position: absolute; inset: 0 0 auto; height: 2px; background: var(--hl-accent); opacity: 0.6; }
 .hl-landing .hl-value { font-family: var(--hl-mono); font-variant-numeric: tabular-nums; font-size: clamp(1.9rem, 3.4vw, 2.6rem); font-weight: 600; letter-spacing: -0.02em; }
 .hl-landing .hl-of { color: var(--hl-muted); font-size: 0.6em; }
 .hl-landing .hl-label { margin-top: 0.35rem; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--hl-text); opacity: 0.85; }
@@ -101,10 +107,10 @@
 @media (max-width: 960px) {
   .hl-landing .hl-hero, .hl-landing .hl-lab { grid-template-columns: minmax(0, 1fr); }
   .hl-landing .hl-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .hl-landing .hl-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hl-landing .hl-stat-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 600px) {
-  .hl-landing .hl-cards, .hl-landing .hl-steps, .hl-landing .hl-facts, .hl-landing .hl-trust-grid { grid-template-columns: minmax(0, 1fr); }
+  .hl-landing .hl-stat-cards, .hl-landing .hl-steps, .hl-landing .hl-facts, .hl-landing .hl-trust-grid { grid-template-columns: minmax(0, 1fr); }
   .hl-landing .hl-hero { padding-left: 16px; padding-right: 16px; }
   .hl-landing .hl-stats, .hl-landing .hl-how, .hl-landing .hl-lab, .hl-landing .hl-trust { padding-left: 16px; padding-right: 16px; }
   .hl-landing .hl-pipeline { padding: 1rem; }

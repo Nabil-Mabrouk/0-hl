@@ -64,6 +64,13 @@ async def me(p: Reader, db: DB):
                "roles": sorted(r.value for r in p.roles)})
 
 
+@router.get("/market/radar")
+async def market_radar(p: Reader, db: DB, window: str = Query("1h", pattern="^(1h|4h|24h)$")):
+    """Market radar of the Terminal (02-design/05): 1h, 4h or 24h window."""
+    from app.domain.trading.market.radar import WINDOWS, cached_radar
+    return ok(await cached_radar(db, utcnow(), WINDOWS[window]))
+
+
 @router.get("/health")
 async def health(p: Reader, db: DB):
     now = utcnow()

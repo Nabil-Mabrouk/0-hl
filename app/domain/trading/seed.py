@@ -41,6 +41,7 @@ from app.domain.trading.models import (
     BotSession,
     CashMovement,
     RiskPolicyVersion,
+    Strategy,
     StrategyVersion,
 )
 from app.domain.trading.types import utcnow
@@ -61,10 +62,16 @@ OBSERVATION_POLICIES = (("risk-policy-rotation.json", "Rotation"),)
 # (strategy file, display name, bot name)
 OBSERVATION_BOTS = (
     ("strategy-breakout-1h.json", "Breakout 1h (STRAT-02)", "paper-kraken-02"),
-    ("strategy-rebound.json", "Rebond après excès (STRAT-06)", "paper-kraken-03"),
-    ("strategy-rotation.json", "Rotation des plus fortes (STRAT-11)", "paper-kraken-04"),
-    ("strategy-pullback.json", "Repli dans une tendance haussière (STRAT-12)", "paper-kraken-05"),
+    ("strategy-rebound.json", "Rebound after excess (STRAT-06)", "paper-kraken-03"),
+    ("strategy-rotation.json", "Rotation of the strongest (STRAT-11)", "paper-kraken-04"),
+    ("strategy-pullback.json", "Pullback in an uptrend (STRAT-12)", "paper-kraken-05"),
 )
+# ADR-028 (site in English): display names given by the first ADR-027 seed, renamed once
+RENAMED = {
+    "Rebond après excès (STRAT-06)": "Rebound after excess (STRAT-06)",
+    "Rotation des plus fortes (STRAT-11)": "Rotation of the strongest (STRAT-11)",
+    "Repli dans une tendance haussière (STRAT-12)": "Pullback in an uptrend (STRAT-12)",
+}
 OBSERVATION_REASON = "ADR-027 observation paper"
 
 log = logging.getLogger("hl.seed")
@@ -183,6 +190,17 @@ async def _ensure_observation(db: AsyncSession) -> None:
                 log.info("seed: policy %s@%s published", config["policy_id"], config["version"])
 
         await _observation_step(db, f"policy {file}", policy)
+
+    async def rename() -> None:
+        for s in (await db.scalars(select(Strategy).where(Strategy.name.in_(list(RENAMED))))).all():
+            before, s.name = s.name, RENAMED[s.name]
+            await db.flush()
+            await record_audit(db, actor=SEED_ACTOR, action="STRATEGY_RENAMED", entity_type="strategy",
+                               entity_id=s.id, reason="ADR-028 site in English",
+                               diff={"name": {"before": before, "after": s.name}})
+            log.info("seed: strategy %s renamed to %s", s.id, s.name)
+
+    await _observation_step(db, "rename", rename)
 
     for file, name, bot_name in OBSERVATION_BOTS:
         config = _load(SEED_DIR / file)

@@ -91,7 +91,7 @@ Objectif : pouvoir juger une stratégie **avant** de la faire tourner, sur des s
 | Lot | Contenu | Références |
 |---|---|---|
 | D.1 Fondations — **livré (local, 2026-11-22)** | tokens et polices (`branding.local.css`, `landing.css`), composants partagés `features/shared/ui/`, Navbar regroupée (liens du routeur, page en cours, menu mobile) et Footer ; Login et Apprendre suivent par les variables | **02-design/03** |
-| D.2 Market radar et accueil | `outcomes` dans `SCAN_CYCLE_COMPLETED`, calcul du radar et routes `/public/radar` et `/market/radar`, composant radar, nouvelle page d'accueil ; T-RAD-01..05, T-UI00-04 | **02-design/05**, UI-00 |
+| D.2 Market radar et accueil — **livré (local, 2026-11-22)** | `outcomes` dans `SCAN_CYCLE_COMPLETED`, calcul du radar et routes `/public/radar` et `/market/radar`, composant radar, nouvelle page d'accueil ; T-RAD-01..05, T-UI00-04 | **02-design/05**, UI-00 |
 | D.3 Terminal | disposition ADR-028 (radar, cartes de bots, tiroirs par étape, TRADE/RESULT/journal/LOG) ; tests existants du Terminal adaptés | M1-terminal-et-bots |
 | D.4 Autres écrans — **livré (local, 2026-11-22)** | Bots, Trades, Stats, Strategies et éditeur, Risk, AI (et Terminal, accueil en attendant D.2/D.3) passés aux tokens, sans changement fonctionnel : une seule feuille partagée `features/shared/ui/ui.css` (classes des pages et composants), plus aucune couleur en dur (test T-D4) | 02-design/03 |
 

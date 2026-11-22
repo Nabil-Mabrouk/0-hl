@@ -177,3 +177,23 @@ async def test_observation_seed_skips_on_bot_limit_without_failing(session_facto
         assert await db.scalar(select(func.count()).select_from(StrategyVersion)) == 5  # versions still created
         assert "BotLimitReached" in caplog.text
 
+
+async def test_observation_seed_renames_the_french_display_names_once(session_factory):
+    from app.domain.trading.models import Strategy
+    async with session_factory() as db:
+        await run_seed(db, observation=True)
+        rebound = await db.get(Strategy, "rebound")
+        assert rebound.name == "Rebound after excess (STRAT-06)"
+        rebound.name = "Rebond après excès (STRAT-06)"          # as created by the first ADR-027 seed
+        (await db.get(Strategy, "pullback")).name = "My own name"  # an operator choice is kept
+        await db.commit()
+    async with session_factory() as db:
+        await run_seed(db, observation=True)
+        assert (await db.get(Strategy, "rebound")).name == "Rebound after excess (STRAT-06)"
+        assert (await db.get(Strategy, "pullback")).name == "My own name"
+        audits = (await db.scalars(select(AuditEvent).where(AuditEvent.action == "STRATEGY_RENAMED"))).all()
+        assert [a.entity_id for a in audits] == ["rebound"]
+        first = await _counts(db)
+        await run_seed(db, observation=True)
+        assert await _counts(db) == first
+

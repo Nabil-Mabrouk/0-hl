@@ -106,6 +106,8 @@ class _Counters:
     exits: int = 0
     fails: Counter = field(default_factory=Counter)
     unknown_reasons: Counter = field(default_factory=Counter)
+    # ADR-028 (02-design/05): what the bot concluded for each pair of the window
+    outcomes: dict[str, dict[str, str]] = field(default_factory=dict)
 
 
 @dataclass
@@ -127,6 +129,12 @@ class _BotRuntime:
     def count_map(self, window_end: datetime, name: str, keys: list[str]) -> None:
         for c in (self.counters, self.cycles.setdefault(window_end, _Counters())):
             getattr(c, name).update(keys)
+
+    def outcome(self, window_end: datetime, symbol: str, result: str, why: str | None = None) -> None:
+        """Market radar (02-design/05): NO_SIGNAL, UNKNOWN, HELD, COOLDOWN, FILTERED, REFUSED,
+        NOT_FILLED or ENTERED for this pair in this window; the last call wins."""
+        self.cycles.setdefault(window_end, _Counters()).outcomes[symbol] = (
+            {"r": result} if why is None else {"r": result, "why": why})
 
 
 class DecisionEngine:
@@ -391,7 +399,8 @@ class DecisionEngine:
             await self._emit(db, "SCAN_CYCLE_COMPLETED", "bot", bot_id, {
                 "window_end": window_end, "evaluated": c.evaluated, "unknown": c.unknown,
                 "candidates": c.candidates, "rejected": c.rejected,
-                "fails": dict(c.fails), "unknown_reasons": dict(c.unknown_reasons)},
+                "fails": dict(c.fails), "unknown_reasons": dict(c.unknown_reasons),
+                "outcomes": dict(sorted(c.outcomes.items()))},
                 bot_id=bot_id, corr=None)
             await db.commit()
 
@@ -424,17 +433,21 @@ class DecisionEngine:
             if not fresh:
                 rt.count(window_end, "unknown")
                 rt.count_map(window_end, "unknown_reasons", ["FEED_NOT_LIVE"])
+                rt.outcome(window_end, symbol, "UNKNOWN", "FEED_NOT_LIVE")
                 return
             verdict, details = evaluate_conditions(strat.entry.model_dump(), feats)
             if verdict == "FAIL":
                 rt.count_map(window_end, "fails",
                              [d["feature"] for d in details if d["result"] == "FAIL"])
+                rt.outcome(window_end, symbol, "NO_SIGNAL")
                 return
             if verdict == "UNKNOWN":
                 rt.count(window_end, "unknown")
                 rt.count_map(window_end, "unknown_reasons", [
                     f"{d['feature']}:{feats[d['feature']].reason if d['feature'] in feats else 'MISSING'}"
                     for d in details if d["result"] == "UNKNOWN"])
+                rt.outcome(window_end, symbol, "UNKNOWN",
+                           next((d["feature"] for d in details if d["result"] == "UNKNOWN"), None))
                 return
             # exclusions: position/intent in progress on this pair
             busy = await db.scalar(select(Position.id).where(
@@ -442,18 +455,20 @@ class DecisionEngine:
                 Position.status.in_((PositionStatus.OPEN, PositionStatus.REDUCING,
                                      PositionStatus.PENDING))).limit(1))
             if busy is not None:
+                rt.outcome(window_end, symbol, "HELD")
                 return
             candidate = await self._create_candidate(db, bot, session.id, iid, strat, window_end,
                                                      feats, details)
             if candidate is None:
                 return
+            rt.outcome(window_end, symbol, "SIGNAL")
             rt.count(window_end, "candidates")
             sizing = await self._assess_and_size(db, bot, candidate, iid, symbol, feats, vol_24h,
                                                  strat, policy, fresh, book, now)
             await db.commit()
         if sizing is None or not sizing.approved:
             rt.count(window_end, "rejected")
-            return
+            return  # outcome set by _assess_and_size (COOLDOWN, FILTERED or REFUSED)
         await self._sleep(self.config.latency_seconds)
         async with self._sessions() as db:
             candidate = await db.get(Candidate, candidate.id)
@@ -467,6 +482,7 @@ class DecisionEngine:
                 now=self._now(), fee_rate=self.config.taker_fee)
             await db.commit()
         if out.position is not None:
+            rt.outcome(window_end, symbol, "ENTERED")
             rt.counters.entries += 1
             rt.last_snapshot = None
             rt.last_reconcile = None
@@ -475,6 +491,7 @@ class DecisionEngine:
                      _g(out.position.initial_stop_price), _g(out.position.take_profit_price),
                      out.latency_ms)
         else:
+            rt.outcome(window_end, symbol, "NOT_FILLED", str(out.reason) if out.reason else None)
             log.info("entry %s %s not executed: %s", bot.name, symbol, out.reason)
 
     async def _create_candidate(self, db, bot, session_id, iid, strat, window_end, feats, details):
@@ -518,6 +535,11 @@ class DecisionEngine:
                               risk_policy_version_id=bot.risk_policy_version_id))
         failed = [c.name for c in criteria if c.result != "PASS"]
         if verdict != "PASS":
+            window = now.replace(second=0, microsecond=0)
+            if failed == ["cooldown"]:
+                self._rt(bot.id).outcome(window, symbol, "COOLDOWN")
+            else:
+                self._rt(bot.id).outcome(window, symbol, "FILTERED", failed[0] if failed else None)
             cand.status = CandidateStatus.REJECTED
             await self._emit(db, "RISK_REJECTED", "candidate", cand.id,
                              {"stage": "RUG_CHECK", "failed": failed, "instrument_id": iid}, bot_id=bot.id, corr=cand.id)
@@ -556,6 +578,8 @@ class DecisionEngine:
             log.info("sizing %s %s: qty=%s notional=%s (binding %s)", bot.name, symbol, _g(res.quantity),
                      _q(res.notional_approved), res.limits_applied.get("binding"))
         else:
+            self._rt(bot.id).outcome(now.replace(second=0, microsecond=0), symbol, "REFUSED",
+                                     res.rejection_reasons[0] if res.rejection_reasons else None)
             cand.status = CandidateStatus.REJECTED
             await self._emit(db, "RISK_REJECTED", "candidate", cand.id,
                              {"stage": "SIZER", "reasons": res.rejection_reasons, "instrument_id": iid},

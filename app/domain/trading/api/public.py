@@ -1,7 +1,8 @@
 """Public landing statistics — UI-00 (spec 03-ecrans/UI-00-accueil-public.md « API publique »).
 
-No authentication: aggregates only (no bot name or id, no amount, strategy or pair held),
-cached 30 s per process so the public page cannot load the database.
+No authentication. `/stats`: aggregates only, cached 30 s per process. `/radar` (ADR-028,
+02-design/05): per active bot its name, strategy, last-cycle outcomes, pairs held and net result
+in % — never an absolute amount, internal id or user data; cached 15 s.
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.domain.trading.api.common import DomainRoute, ok
 from app.domain.trading.api.snapshot import worker_alive
+from app.domain.trading.market.radar import cached_radar
 from app.domain.trading.enums import BotStatus, PositionStatus
 from app.domain.trading.market.service import CONNECTION_FEED_ID
 from app.domain.trading.models import Bot, DomainEvent, FeedStatus, Position, TradeMinute
@@ -62,3 +64,9 @@ async def stats(db: DB):
         _cache["data"] = await public_stats(db, utcnow())
         _cache["at"] = time.monotonic()
     return ok(_cache["data"], headers={"Cache-Control": f"public, max-age={int(CACHE_SECONDS)}"})
+
+
+@router.get("/radar")
+async def radar(db: DB):
+    """Market radar of the landing page (02-design/05): 1h window only, no authentication."""
+    return ok(await cached_radar(db, utcnow(), 60), headers={"Cache-Control": "public, max-age=15"})
