@@ -32,6 +32,7 @@ Ce chapitre détaille le lot **M1.5** ([13-roadmap](../13-roadmap/01-plan-execut
 - Le **flux central** (candidats, stations RUG CHECK et EXECUTOR, mini-cartes NO SIGNAL / SIZER / LOGGER / EQUITY) et la **colonne des six agents** sont remplacés par les étapes de la carte du bot : un clic sur une étape (Scan, Check, Size, Execute, Equity) ouvre le **tiroir** de l'agent correspondant (SCANNER, RUG CHECK, SIZER, EXECUTOR, EQUITY), avec ses lignes de détail et ses derniers événements ; LOGGER et YOU sont accessibles par le journal.
 - **Sous le radar** : TRADE · ENTRY vs EXIT et RESULT · start vs now côte à côte, `$ tail -f night.log` à droite (≈ 380 px), puis le tableau LOG pleine largeur ; bandeau inférieur supprimé (doublon du journal).
 - Responsive : sous 1200 px le journal passe sous TRADE/RESULT ; sous 740 px une colonne, radar en version mobile.
+- **Mise en œuvre (D.3, 2026-11-22).** Le compteur « checked N » et les échecs par condition sont dans le tiroir SCANNER ; un clic sur l'étape d'un autre bot sélectionne ce bot puis ouvre le tiroir ; Échap ferme le tiroir. Données du radar : `/api/v1/market/radar` interrogé toutes les 15 s **et** aussitôt qu'un `SCAN_CYCLE_COMPLETED`, `ORDER_FILLED` ou `POSITION_CLOSED` du bot sélectionné arrive par le flux temps réel (le flux n'est ouvert que pour ce bot) ; les autres bots sont rafraîchis par l'interrogation.
 
 **Disposition V2.1 (avant ADR-028), pour mémoire :**
 

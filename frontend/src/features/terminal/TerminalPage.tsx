@@ -1,12 +1,15 @@
-// UI-01 page: access/states, bot selection, banners, pause command, trace panel
-// (spec 03-ecrans/M1-terminal-et-bots).
-import { useEffect, useState } from "react";
+// UI-01 page: access/states, bot selection, banners, pause command, trace panel, Market radar
+// (spec 03-ecrans/M1-terminal-et-bots, « Refonte ADR-028 »; 02-design/05).
+import { useEffect, useMemo, useState } from "react";
+import { apiFetch } from "../../api";
+import MarketRadar, { useRadar } from "../radar/MarketRadar";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { ApiError, getJson, sendCommand, waitForCommand } from "../shared/client";
 import { fmtTime } from "../shared/format";
 import { prefersReducedMotion, useTerminal, useTradingAccess } from "../shared/hooks";
 import type { Bot, DomainEvent } from "../shared/types";
-import TerminalWide from "./TerminalWide";
+import TerminalWide, { STAGE_AGENT } from "./TerminalWide";
+import type { AgentKey } from "./viewModel";
 import { blockText } from "./viewModel";
 import { fmtUsd } from "../shared/format";
 import "../shared/ui/ui.css";
@@ -32,6 +35,20 @@ export default function TerminalPage() {
   const [trace, setTrace] = useState<DomainEvent[] | null>(null);
   const [confirmResume, setConfirmResume] = useState(false);
   const data = useTerminal(access.kind === "ready" ? botId : null);
+  const [radarWindow, setRadarWindow] = useState("1h");
+  const [drawer, setDrawer] = useState<AgentKey | null>(null);
+  // reload the radar at once when the stream reports a cycle, a fill or a close of the selected bot
+  const radarNonce = useMemo(() => [...data.events].reverse().find((e) =>
+    ["SCAN_CYCLE_COMPLETED", "ORDER_FILLED", "POSITION_CLOSED"].includes(e.event_type))?.position ?? 0, [data.events]);
+  const radar = useRadar(access.kind === "ready" ? `/api/v1/market/radar?window=${radarWindow}` : null, 15_000,
+    apiFetch, radarNonce);
+
+  useEffect(() => {
+    if (!drawer) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setDrawer(null);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [drawer]);
 
   useEffect(() => {
     if (access.kind !== "ready") return;
@@ -48,6 +65,8 @@ export default function TerminalPage() {
     setBotId(id);
     setParams({ bot: id });                 // M2.4: the choice is kept in the URL
   }
+
+  const idOf = (name: string) => bots.find((b) => b.name === name)?.id;
 
   if (access.kind === "unauthenticated") return <Navigate to="/login" replace />;
   if (access.kind === "loading") return <div className="hl-state-box">loading…</div>;
@@ -108,6 +127,18 @@ export default function TerminalPage() {
     onTogglePause: togglePause,
     onOpenTrace: openTrace,
     reducedMotion: prefersReducedMotion(),
+    drawer,
+    onDrawer: setDrawer,
+    radar: (
+      <MarketRadar data={radar.data} failed={radar.failed} selectedBot={s.bot.name}
+        windowChoice={{ value: radarWindow, options: ["1h", "4h", "24h"], onChange: setRadarWindow }}
+        onSelectBot={(name) => { const id = idOf(name); if (id) { chooseBot(id); setDrawer(null); } }}
+        onStage={(name, stage) => {
+          const id = idOf(name);
+          if (id && id !== botId) chooseBot(id);     // the drawer then shows that bot's agent
+          setDrawer(STAGE_AGENT[stage]);
+        }} />
+    ),
   };
 
   const blocks = s.entry_blocks ?? [];

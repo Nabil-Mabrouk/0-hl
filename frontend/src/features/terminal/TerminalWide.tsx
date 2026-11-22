@@ -1,18 +1,10 @@
-// UI-01 Live Terminal — full-width layout, the only view (ADR-016, ADR-019;
-// spec 03-ecrans/M1-terminal-et-bots « UI-01 Live Terminal »).
-import { useMemo, useState } from "react";
-import { DASH, fmtPct, fmtUptime, fmtUsd, ratio } from "../shared/format";
-import {
-  activityChip,
-  agentCards,
-  type AgentKey,
-  candidateCards,
-  entryNotional,
-  logLines,
-  noSignal,
-  resultBar,
-  tradeView,
-} from "./viewModel";
+// UI-01 Live Terminal — ADR-028 layout (spec 03-ecrans/M1-terminal-et-bots « Refonte ADR-028 »):
+// header, Market radar with one card per bot (slot filled by the page), the step drawers of the
+// selected bot, then TRADE / RESULT / tail / LOG.
+import { useMemo, type ReactNode } from "react";
+import { DASH, fmtPct, fmtUptime, fmtUsd } from "../shared/format";
+import type { Stage } from "../shared/ui";
+import { activityChip, agentCards, type AgentKey, logLines, resultBar, tradeView } from "./viewModel";
 import type { ConnectionState, DomainEvent, Snapshot } from "../shared/types";
 import "./terminal-wide.css";
 
@@ -26,35 +18,31 @@ export interface TerminalViewProps {
   onTogglePause: () => void;
   onOpenTrace: (correlationId: string) => void;
   reducedMotion: boolean;
+  /** Market radar of all bots (built by the page); none ⇒ the section is omitted. */
+  radar?: ReactNode;
+  /** Agent drawer of the selected bot, opened from a pipeline step of its card. */
+  drawer: AgentKey | null;
+  onDrawer: (agent: AgentKey | null) => void;
 }
 
-const AGENT_CLASS: Record<AgentKey, string> = {
-  SCANNER: "scanner", RUG_CHECK: "rug", SIZER: "sizer", EXECUTOR: "executor",
-  LOGGER: "logger", EQUITY: "equity",
-};
-const AGENT_ICON: Record<AgentKey, string> = {
-  SCANNER: "◫", RUG_CHECK: "⚠", SIZER: "◈", EXECUTOR: "◧", LOGGER: "⬡", EQUITY: "♟",
+/** Pipeline step of a bot card → agent drawer (LOGGER and YOU are reached through the log). */
+export const STAGE_AGENT: Record<Stage, AgentKey> = {
+  Scan: "SCANNER", Check: "RUG_CHECK", Size: "SIZER", Execute: "EXECUTOR", Equity: "EQUITY",
 };
 
 export default function TerminalWide(props: TerminalViewProps) {
   const { snapshot: s, events, connection } = props;
-  const [drawer, setDrawer] = useState<AgentKey | null>(null);
+  const { drawer, onDrawer } = props;
   const lines = useMemo(() => logLines(events, s), [events, s]);
   const agents = useMemo(() => agentCards(s, events), [s, events]);
   const trade = useMemo(() => tradeView(s), [s]);
-  const cands = useMemo(() => candidateCards(events), [events]);
   const paused = s.bot.status === "PAUSED";
   const running = s.bot.status === "RUNNING";
   const motion = props.reducedMotion ? "" : " hw-motion";
-  const lastEvent = events[events.length - 1];
-  const filtered = noSignal(s);
   const bar = resultBar(s);
-  const lastClosed = s.recent_trades[0];
-  const lastOpen = s.open_positions[s.open_positions.length - 1];
-  const sizeRatio = lastOpen ? ratio(entryNotional(lastOpen), s.owner_capital) : null;
+  const card = drawer ? agents.find((a) => a.key === drawer) : undefined;
   const logRows = lines.filter((l) => ["ENTER", "EXIT", "FILTERED", "REFUSED"].includes(l.kind)).slice(-12).reverse();
   const tail = lines.slice(-40);
-  const last = tail[tail.length - 1];
 
   return (
     <div className={`hw-root${paused ? " hw-paused" : ""}${motion}`} data-testid="hl-canvas">
@@ -101,74 +89,10 @@ export default function TerminalWide(props: TerminalViewProps) {
         </div>
       </header>
 
+      {props.radar && <div className="hw-radar">{props.radar}</div>}
+
       <div className="hw-grid">
-        <aside className="hw-agents">
-          <div className="hw-label">AGENTS <span>{agents.filter((a) => a.status !== "DOWN").length} online</span></div>
-          {agents.map((a) => (
-            <button
-              key={a.key}
-              type="button"
-              className={`hw-agent ${AGENT_CLASS[a.key]} hw-status-${a.status.toLowerCase()}`}
-              onClick={() => setDrawer(a.key)}
-              data-testid={`hl-agent-${a.key}`}
-            >
-              <span className="hw-ico">{AGENT_ICON[a.key]}</span>
-              <span className="hw-agent-body">
-                <span className="hw-agent-top"><b>{a.label}</b><em>{a.status}</em></span>
-                <span className="hw-desc">{a.desc}</span>
-                <span className="hw-motto">{a.motto}</span>
-                <span className="hw-detail">{a.detail}</span>
-              </span>
-            </button>
-          ))}
-          <div className="hw-agent you">
-            <span className="hw-ico">Ⅱ</span>
-            <span className="hw-agent-body">
-              <span className="hw-agent-top"><b>YOU</b><em>READING</em></span>
-              <span className="hw-desc">reads the log</span>
-            </span>
-          </div>
-        </aside>
-
         <section className="hw-center">
-          <div className="hw-card hw-flow">
-            <div className="hw-label">
-              LIVE FLOW · SCAN → CHECK → SIZE → EXEC → LOG
-              <span data-testid="hl-checked">checked {s.scan?.evaluated ?? DASH}</span>
-            </div>
-            <div className="hw-pipeline">
-              <div className="hw-cands">
-                {cands.length === 0 && <div className="hw-muted">no candidate yet</div>}
-                {cands.map((c) => (
-                  <div key={c.position} className={`hw-coin${motion ? " hw-arrive" : ""}`}>
-                    <strong>{c.symbol}</strong><small>{c.spike}</small>
-                  </div>
-                ))}
-              </div>
-              <div className="hw-station rug"><span>!</span><b>RUG CHECK</b><small>{agents[1].detail}</small></div>
-              <div className="hw-track" aria-hidden="true" />
-              <div key={lastEvent?.event_type === "ORDER_FILLED" ? lastEvent.position : "exec"}
-                className={`hw-station exec${motion && lastEvent?.event_type === "ORDER_FILLED" ? " hw-ring" : ""}`}>
-                <span>✓</span><b>EXECUTOR</b><small>{agents[3].detail}</small>
-              </div>
-            </div>
-            <div className="hw-minis">
-              <div className="hw-mini filtered"><em>NO SIGNAL</em><strong>{filtered ?? DASH}</strong><small>+ {s.scan?.unknown ?? DASH} unknown</small></div>
-              <div key={lastOpen?.id ?? "sizer"} className={`hw-mini sized${motion && lastOpen ? " hw-flash" : ""}`}>
-                <em>SIZER</em><strong>{sizeRatio === null ? DASH : fmtPct(sizeRatio * 100, 0)} cap</strong>
-                <small>{lastOpen ? fmtUsd(entryNotional(lastOpen)) : DASH}</small>
-              </div>
-              <div className="hw-mini logged"><em>LOGGER</em><strong>line #{s.position}</strong><small>each with a reason</small></div>
-              <div className="hw-mini equity">
-                <em>EQUITY</em>
-                <strong className={lastClosed?.realized_pnl_net?.startsWith("-") ? "hw-neg" : ""}>
-                  {lastClosed ? fmtUsd(lastClosed.realized_pnl_net) : DASH}
-                </strong>
-                <small>last close</small>
-              </div>
-            </div>
-          </div>
-
           <div className="hw-pair">
             <div className="hw-card hw-trade" data-testid="hl-trade">
               <div className="hw-label">TRADE · ENTRY vs EXIT {trade && <span className="hw-pill">{trade.open ? "OPEN" : "CLOSED"}</span>}</div>
@@ -234,22 +158,20 @@ export default function TerminalWide(props: TerminalViewProps) {
         </section>
       </div>
 
-      <footer className="hw-ticker">
-        <span>{last ? `${last.time} ${last.kind} ${last.symbol} ${last.detail}` : "waiting for the first event"}</span>
-        <span>{s.feed.pairs_live}/{s.feed.pairs_subscribed} pairs live</span>
-      </footer>
-
-      {drawer && (
-        <div className="hw-drawer" role="dialog" aria-label={`${drawer} details`}>
-          <button type="button" aria-label="Close" onClick={() => setDrawer(null)}>×</button>
-          <h3>{agents.find((a) => a.key === drawer)?.label}</h3>
+      {drawer && card && (
+        <div className="hw-drawer" role="dialog" aria-label={`${drawer} details`} data-testid="hl-drawer">
+          <button type="button" aria-label="Close" onClick={() => onDrawer(null)}>×</button>
+          <h3>{card.label} <small>{s.bot.name}</small></h3>
+          <p className="hw-drawer-desc">{card.desc} · <b>{card.motto}</b></p>
+          <p className="hw-drawer-detail">{card.detail}</p>
           <p>
             status {s.agents[drawer]?.status ?? DASH} · last {s.agents[drawer]?.last_event_type ?? DASH} at{" "}
             {s.agents[drawer]?.last_event_at ?? DASH}
           </p>
           {drawer === "SCANNER" && s.scan && (
             <p data-testid="hl-scan-fails">
-              fails: {Object.entries(s.scan.fails).map(([k, v]) => `${k}=${v}`).join(" ") || DASH}
+              checked {s.scan.evaluated} · unknown {s.scan.unknown} · fails:{" "}
+              {Object.entries(s.scan.fails).map(([k, v]) => `${k}=${v}`).join(" ") || DASH}
             </p>
           )}
         </div>

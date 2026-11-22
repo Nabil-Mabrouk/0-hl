@@ -259,8 +259,10 @@ export default function MarketRadar({ data, failed, title = "Market radar", wind
   );
 }
 
-/** Polls a radar endpoint (landing: public, 20 s). */
-export function useRadar(url: string | null, intervalMs = 20_000, fetcher: (u: string) => Promise<Response>): { data: RadarData | null; failed: boolean } {
+/** Polls a radar endpoint (landing: public, 20 s; Terminal: authenticated, 15 s and at once when `nonce`
+ * changes, i.e. when the realtime stream reports a scan cycle, a fill or a close). */
+export function useRadar(url: string | null, intervalMs = 20_000, fetcher: (u: string) => Promise<Response>,
+                         nonce?: unknown): { data: RadarData | null; failed: boolean } {
   const [data, setData] = useState<RadarData | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -277,6 +279,6 @@ export function useRadar(url: string | null, intervalMs = 20_000, fetcher: (u: s
     void load();
     const t = setInterval(load, intervalMs);
     return () => { alive = false; clearInterval(t); };
-  }, [url, intervalMs, fetcher]);
+  }, [url, intervalMs, fetcher, nonce]);
   return { data, failed };
 }
