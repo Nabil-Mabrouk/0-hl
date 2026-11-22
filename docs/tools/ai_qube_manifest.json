@@ -111,7 +111,7 @@
   },
   "03-ecrans/M1-terminal-et-bots.md": {
     "path": "02-projects/0-hl/spec/ecrans-m1-5-live-terminal-ui-01-et-bots-sessions-ui-02.md",
-    "sha256": "4025adb0e3f86aef1112e4cec503ee149cba0e693f4095e630cd0598e76742d8",
+    "sha256": "337628fbce8e9a5e861d50e2724531ae60b892579b06f70cfcc5e6fd19334870",
     "order": 26
   },
   "04-metier/01-entites-et-etats.md": {
@@ -246,7 +246,7 @@
   },
   "13-roadmap/01-plan-execution.md": {
     "path": "02-projects/0-hl/spec/roadmap-backlog-et-consignes-aux-agents-developpeurs.md",
-    "sha256": "129617d4f94146f88116f3392d690f92faf05af988c11329d9982abad60591e0",
+    "sha256": "8335add6571ca2d181665811c8805f87b7a49ed1a1fc09ec4509d876be3ecf1e",
     "order": 61
   },
   "14-references/01-sources-et-limites.md": {
@@ -311,7 +311,7 @@
   },
   "02-design/05-market-radar.md": {
     "path": "02-projects/0-hl/spec/market-radar-figure-centrale-de-l-accueil-et-du-terminal.md",
-    "sha256": "395fcedf480b72cde95602a3092e373c44d89d8597de26bf67fc4c7de058eae6",
+    "sha256": "2b1ad4f994d6d65ab59d12d49c64aba6af7ed6e19980ce5ba9bb2da39898f100",
     "order": 8
   }
 }
