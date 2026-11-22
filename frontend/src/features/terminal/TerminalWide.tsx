@@ -137,7 +137,7 @@ export default function TerminalWide(props: TerminalViewProps) {
           <div className="hw-lines">
             {tail.length === 0 && <div className="hw-muted">{DASH}</div>}
             {tail.map((l) => (
-              <div key={l.position} className={l.kind === "ENTER" || l.kind === "EXIT" ? "g" : l.kind === "INFO" ? "b" : ""}>
+              <div key={l.position} className={l.kind === "ENTER" || l.kind === "EXIT" ? "g" : l.kind === "INFO" && l.tone === "bad" ? "b" : ""}>
                 <span>{l.time}</span> {l.kind} {l.symbol} {l.value || l.detail}
               </div>
             ))}

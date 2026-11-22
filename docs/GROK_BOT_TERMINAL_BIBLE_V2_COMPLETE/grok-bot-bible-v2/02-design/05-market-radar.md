@@ -96,6 +96,7 @@ Cycle rejoué pour chaque **nouvelle** `window_end` :
 ## Rendu et accessibilité
 
 - Deux `canvas` (figure, fils), densité de pixels plafonnée à 2, redimensionnement par `ResizeObserver` ; ≈ 60 images/s pendant une animation, aucune image au repos.
+- **Bulle au survol** (revue opérateur 2026-11-22) : pointer un point (rayon 12 px), BTC compris, affiche une bulle avec le nom de la paire, l'écart au BTC en pp et la volatilité relative (« thin » si non jugeable) ; elle disparaît en quittant la figure. Les noms des axes sont placés hors du cercle, à 28 px au-dessus et 36 px au-dessous, « ← Lags BTC » et « Beats BTC → » sous le cercle aux deux bords : un point plaqué au bord ne les recouvre jamais.
 - Figure : `role="img"` et `aria-label` décrivant les axes ; le sélecteur « Inspect pair » donne toutes les valeurs au clavier ; un clic sur un point (rayon de 17 px) le sélectionne ; les cartes de bots sont du texte (lisibles sans la figure).
 - Mobile (< 740 px) : cartes sous la figure, figure de 300 px de haut, fils masqués (étapes et lignes d'état conservées), noms seulement pour BTC, la sélection et les 3 paires les plus éloignées du centre.
 - États : `loading` (axes seuls), `stale` (cycle de plus de 5 min ou BTC indisponible : bandeau « Market data delayed »), `error` (« Radar unavailable », réessai 20 s), `empty` (aucun bot actif : la figure reste, cartes remplacées par « No bot running »).

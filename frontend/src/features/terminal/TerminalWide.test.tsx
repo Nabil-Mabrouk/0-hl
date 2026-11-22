@@ -123,4 +123,17 @@ describe("TerminalWide", () => {
     expect(within(log).getByText("$XRP")).toBeInTheDocument();
     expect(screen.getByTestId("hl-activity")).toHaveTextContent("EXECUTOR · EXITED $XRP");
   });
+
+  it("review 2026-11-22: a burst of feed transitions is one journal line, not one per pair", () => {
+    const stale = (sym: string) => ev("DATA_STALE", { instrument_id: `kraken_spot:${sym}/USD`, reason: "FEED_LAG" },
+      { aggregate_type: "market_feed", aggregate_id: `kraken_spot:${sym}/USD`, occurred_at: "2026-11-22T21:00:04Z" });
+    const events = ["DOGE", "XMR", "TRX", "BTC", "TAO", "INJ"].map(stale);
+    events.push(ev("DATA_FRESH", { instrument_id: "kraken_spot:DOGE/USD" },
+      { aggregate_type: "market_feed", aggregate_id: "kraken_spot:DOGE/USD", occurred_at: "2026-11-22T21:01:10Z" }));
+    renderCanvas({ events });
+    const tail = screen.getByTestId("hl-tail");
+    expect(tail.textContent?.match(/data stale/g)).toHaveLength(1);
+    expect(tail).toHaveTextContent("data stale FEED_LAG · 6 pairs ($DOGE $XMR $TRX $BTC …)");
+    expect(tail).toHaveTextContent("data fresh");
+  });
 });

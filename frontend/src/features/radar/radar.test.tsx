@@ -1,5 +1,5 @@
 // T-RAD-04 / T-RAD-05 — Market radar component (spec 02-design/05, ADR-028).
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import MarketRadar from "./MarketRadar";
@@ -116,5 +116,17 @@ describe("MarketRadar", () => {
     rerender(<MarketRadar data={data({ stale: true, bots: [] })} />);
     expect(screen.getByText("Market data delayed")).toBeInTheDocument();
     expect(screen.getByText("No bot running")).toBeInTheDocument();
+  });
+
+  it("review 2026-11-22: hovering a point shows a bubble with the pair name", () => {
+    motion(true);
+    render(<MarketRadar data={data()} />);
+    const canvas = screen.getByTestId("radar-canvas");       // jsdom: 0×0 box ⇒ centre (0,0), radius 40
+    fireEvent.mouseMove(canvas, { clientX: 11.2, clientY: -20 });   // SOL: nx 0.28, ny 0.5
+    expect(screen.getByRole("tooltip")).toHaveTextContent("SOL/USD+1.40 pp · 2.00× vol");
+    fireEvent.mouseMove(canvas, { clientX: 0, clientY: 0 });
+    expect(screen.getByRole("tooltip")).toHaveTextContent("BTC/USDreference");
+    fireEvent.mouseLeave(canvas);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 });

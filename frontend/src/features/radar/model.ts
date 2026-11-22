@@ -109,3 +109,9 @@ export function cycleLabel(iso: string | null | undefined): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? "—" : `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")} UTC`;
 }
+
+/** Short values of the hover bubble: return vs BTC and volatility vs BTC. */
+export function bubbleText(p: RadarPair): string {
+  const ex = p.excess_pp === null ? "—" : `${Number(p.excess_pp) > 0 ? "+" : ""}${p.excess_pp} pp`;
+  return `${ex} · ${p.vol_ratio === null ? "—" : `${p.vol_ratio}×`} vol${p.judgeable ? "" : " · thin"}`;
+}

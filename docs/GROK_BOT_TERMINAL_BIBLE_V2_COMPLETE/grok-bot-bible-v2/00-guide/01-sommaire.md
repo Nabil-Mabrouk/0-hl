@@ -34,6 +34,7 @@
 - [UI-14-alerts-monitoring](../03-ecrans/UI-14-alerts-monitoring.md)
 - [UI-15-system-security](../03-ecrans/UI-15-system-security.md)
 - [UI-16-services-ia](../03-ecrans/UI-16-services-ia.md)
+- [UI-17-learn](../03-ecrans/UI-17-learn.md)
 - [M1-terminal-et-bots](../03-ecrans/M1-terminal-et-bots.md)
 - [M2-trades-et-statistiques](../03-ecrans/M2-trades-et-statistiques.md)
 - [01-entites-et-etats](../04-metier/01-entites-et-etats.md)

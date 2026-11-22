@@ -9,6 +9,10 @@
 .hl-radar-wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .hl-radar-bots { position: relative; display: grid; gap: 8px; }
 .hl-radar-bots .hl-botcard-line { margin: 3px 0 5px; }
+.hl-radar-bubble { position: absolute; transform: translate(-50%, calc(-100% - 12px)); pointer-events: none; z-index: 2;
+  display: grid; gap: 2px; padding: 6px 9px; white-space: nowrap; font: 11px var(--hl-mono);
+  background: var(--hl-panel-2); color: var(--hl-muted); border: 1px solid var(--hl-control-line); border-radius: var(--hl-radius-control); }
+.hl-radar-bubble strong { color: var(--hl-text); font-weight: 600; }
 .hl-radar-inspect { display: inline-flex; align-items: center; gap: 8px; }
 .hl-radar output { color: var(--hl-text); }
 @media (max-width: 740px) {

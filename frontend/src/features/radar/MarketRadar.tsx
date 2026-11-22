@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BotCard, Board, Pct, Select, strategyColor, type Stage, type StageState } from "../shared/ui";
 import {
-  cycleLabel, headline, normalise, readout, smoothstep, stagesFor, stepCount, wiredPairs,
+  bubbleText, cycleLabel, headline, normalise, readout, smoothstep, stagesFor, stepCount, wiredPairs,
   type Outcome, type Point, type RadarData,
 } from "./model";
 import "./radar.css";
@@ -12,6 +12,9 @@ import "./radar.css";
 // jsdom (tests) has no 2D canvas: the figure is skipped, cards and readout stay testable
 const NO_CANVAS = typeof navigator !== "undefined" && /jsdom/i.test(navigator.userAgent);
 const SWEEP = 1.6, GLIDE = 1.35, BOT_GAP = 0.4, STEP = 1.1, FADE = 1.7, MAX_WIRES = 6;
+
+/** Radius of the radar circle: room left above and below for the axis labels (operator review 2026-11-22). */
+const radiusOf = (w: number, h: number) => Math.max(40, Math.min(w / 2 - 24, h / 2 - 48));
 
 function reducedMotion(): boolean {
   return typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -42,6 +45,7 @@ export default function MarketRadar({ data, failed, title = "Market radar", wind
   const reduced = useMemo(reducedMotion, []);
   const [playing, setPlaying] = useState(!reduced);
   const [selected, setSelected] = useState<string>("");
+  const [hover, setHover] = useState<{ symbol: string; x: number; y: number } | null>(null);
   const [clock, setClock] = useState(reduced ? 1e6 : 0);        // seconds since the cycle started
   const plotRef = useRef<HTMLCanvasElement>(null);
   const wiresRef = useRef<HTMLCanvasElement>(null);
@@ -103,7 +107,7 @@ export default function MarketRadar({ data, failed, title = "Market radar", wind
     if (canvas.width !== Math.round(rect.width * ratio)) { canvas.width = Math.round(rect.width * ratio); canvas.height = Math.round(rect.height * ratio); }
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.clearRect(0, 0, rect.width, rect.height);
-    const cx = rect.width / 2, cy = rect.height / 2, R = Math.min(rect.width / 2 - 24, rect.height / 2 - 30);
+    const cx = rect.width / 2, cy = rect.height / 2, R = radiusOf(rect.width, rect.height);
     const line = token("--hl-line", "gray"), faint = token("--hl-faint", "gray"), accent = token("--hl-accent", "gray");
     const muted = token("--hl-muted", "gray"), mono = token("--hl-mono", "monospace");
     // rings and axes
@@ -117,10 +121,11 @@ export default function MarketRadar({ data, failed, title = "Market radar", wind
       ctx.fillStyle = accent; ctx.globalAlpha = 0.15; ctx.fill(); ctx.globalAlpha = 1;
     }
     ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillStyle = muted;
-    ctx.fillText("Higher volatility", cx, cy - R - 10);
-    ctx.fillText("Lower volatility", cx, cy + R + 18);
-    ctx.textAlign = "left"; ctx.fillText("← Lags BTC", cx - R + 2, cy + 16);
-    ctx.textAlign = "right"; ctx.fillText("Beats BTC →", cx + R - 2, cy + 16);
+    // axis names well outside the circle, so that pinned points never cover them
+    ctx.fillText("Higher volatility", cx, cy - R - 28);
+    ctx.fillText("Lower volatility", cx, cy + R + 36);
+    ctx.textAlign = "left"; ctx.fillText("← Lags BTC", Math.max(2, cx - R - 6), cy + R + 36);
+    ctx.textAlign = "right"; ctx.fillText("Beats BTC →", Math.min(rect.width - 2, cx + R + 6), cy + R + 36);
     ctx.textAlign = "center";
     // points (glide from the previous cycle)
     const g = reduced ? 1 : smoothstep(clock / GLIDE);
@@ -197,15 +202,26 @@ export default function MarketRadar({ data, failed, title = "Market radar", wind
     return () => ro.disconnect();
   }, [draw]);
 
-  const onPlotClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  /** Nearest point under the pointer (BTC included), within `reach` pixels. */
+  const pick = (e: React.MouseEvent<HTMLCanvasElement>, reach: number) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const cx = rect.width / 2, cy = rect.height / 2, R = Math.min(rect.width / 2 - 24, rect.height / 2 - 30);
-    let best: [string, number] | null = null;
-    for (const p of points) {
-      const d = Math.hypot(e.clientX - rect.left - (cx + p.nx * R), e.clientY - rect.top - (cy - p.ny * R));
-      if (d <= 17 && (!best || d < best[1])) best = [p.symbol, d];
+    const cx = rect.width / 2, cy = rect.height / 2, R = radiusOf(rect.width, rect.height);
+    const px = e.clientX - rect.left, py = e.clientY - rect.top;
+    let best: { symbol: string; x: number; y: number; d: number } | null = null;
+    const ref = { symbol: data?.reference.symbol ?? "BTC/USD", nx: 0, ny: 0 };
+    for (const p of [...points, ref]) {
+      const x = cx + p.nx * R, y = cy - p.ny * R, d = Math.hypot(px - x, py - y);
+      if (d <= reach && (!best || d < best.d)) best = { symbol: p.symbol, x, y, d };
     }
-    if (best) setSelected(best[0]);
+    return best;
+  };
+  const onPlotClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const best = pick(e, 17);
+    if (best && best.symbol !== data?.reference.symbol) setSelected(best.symbol);
+  };
+  const onPlotMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const best = pick(e, 12);
+    setHover((h) => (best ? (h?.symbol === best.symbol ? h : { symbol: best.symbol, x: best.x, y: best.y }) : null));
   };
 
   const stale = data?.stale || (data && Date.now() - Date.parse(data.window_end) > 5 * 60_000);
@@ -237,8 +253,15 @@ export default function MarketRadar({ data, failed, title = "Market radar", wind
       {stale && <p className="hl-banner stale">Market data delayed</p>}
       <div className="hl-radar-scene" ref={sceneRef}>
         <div className="hl-radar-plot">
-          <canvas ref={plotRef} onClick={onPlotClick} role="img" data-testid="radar-canvas"
+          <canvas ref={plotRef} onClick={onPlotClick} onMouseMove={onPlotMove} onMouseLeave={() => setHover(null)}
+            role="img" data-testid="radar-canvas"
             aria-label={`Market radar, ${windowLabel} window. Horizontal axis: return versus BTC in percentage points. Vertical axis: volatility versus BTC, log scale. Use the pair selector for exact values.`} />
+          {hover && (
+            <div className="hl-radar-bubble" role="tooltip" data-testid="radar-bubble" style={{ left: hover.x, top: hover.y }}>
+              <strong>{hover.symbol}</strong>
+              {pairBySymbol[hover.symbol] ? <span>{bubbleText(pairBySymbol[hover.symbol])}</span> : <span>reference</span>}
+            </div>
+          )}
         </div>
         <canvas className="hl-radar-wires" ref={wiresRef} aria-hidden="true" />
         <div className="hl-radar-bots">

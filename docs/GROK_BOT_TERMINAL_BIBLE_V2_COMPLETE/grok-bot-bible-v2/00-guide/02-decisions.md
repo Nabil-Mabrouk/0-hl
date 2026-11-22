@@ -312,3 +312,14 @@ Hiérarchie : **service** (ce que l'utilisateur demande) → **agent** (qui rais
 - Le radar **remplace** le pipeline animé de l'accueil et le flux central du Terminal ; les étapes du pipeline vivent dans chaque carte de bot.
 - Lots D.1 à D.4 (13-roadmap) ; aucune modification du châssis : tokens dans `branding.local.css` et `landing.css`, Navbar et Footer du projet, composants dans `features/shared/ui/`.
 - L'admin du châssis garde son thème ; la maquette n'est pas versionnée (`temp/`), ses valeurs sont reprises dans 02-design/03 et 05.
+
+## ADR-029 — Rubrique Learn du projet et fiches de stratégie vivantes (proposée)
+
+**Constat (2026-11-22).** La page `/learn` du châssis est vide en production ; son contenu ne se remplit qu'en base, par un script lancé sur le serveur, en texte seul. L'opérateur veut une rubrique **publique** avec un article par stratégie et les **résultats réels** (ADR-028).
+
+**Proposition.** Spec [03-ecrans/UI-17](../03-ecrans/UI-17-learn.md) :
+1. Rubrique du projet à `/guide` (le lien *Learn* de la Navbar y mène) ; la page `/learn` du châssis n'est ni modifiée ni liée.
+2. Articles en Markdown versionnés dans le dépôt (brouillons validés dans `examples/learn/`, copiés dans le frontend, test d'égalité), en anglais, un dossier par langue.
+3. Chiffres en direct par `GET /api/v1/public/strategies` et `/{id}` (sans authentification, cache 60 s, aucun montant absolu) ; règles générées depuis la version publiée ; résultats d'étude datés dans l'article.
+4. Livraison en trois lots (L.1 rubrique + fiche modèle Breakout 1h, L.2 autres fiches, L.3 articles généraux), chaque texte validé avant intégration.
+

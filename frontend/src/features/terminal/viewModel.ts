@@ -13,6 +13,8 @@ export interface LogLine {
   value: string;
   tone: "good" | "bad" | "muted";
   correlationId: string;
+  /** Feed transitions of the same minute and motive are folded into one line (review 2026-11-22). */
+  group?: { key: string; symbols: string[] };
 }
 
 export const AGENT_ORDER = ["SCANNER", "RUG_CHECK", "SIZER", "EXECUTOR", "LOGGER", "EQUITY"] as const;
@@ -105,6 +107,22 @@ export function logLines(events: DomainEvent[], snap: Snapshot | null): LogLine[
           detail: `checked ${p.evaluated} · ${p.candidates} cand.`, value: "" });
         break;
       case "DATA_STALE":
+      case "DATA_FRESH": {
+        // a lag burst marks most pairs STALE in the same minute: one line, not forty
+        const stale = e.event_type === "DATA_STALE";
+        const motive = stale ? String(p.reason ?? "") : "";
+        const key = `${e.event_type}|${base.time}|${motive}`;
+        const prev = out[out.length - 1];
+        if (prev?.group?.key === key) {
+          prev.group.symbols.push(sym);
+          prev.symbol = "";
+          prev.detail = feedDetail(stale, motive, prev.group.symbols);
+        } else {
+          out.push({ ...base, kind: "INFO", symbol: sym, tone: stale ? "bad" : "muted", value: "",
+            detail: feedDetail(stale, motive, [sym]), group: { key, symbols: [sym] } });
+        }
+        break;
+      }
       case "PROVIDER_DEGRADED":
         out.push({ ...base, kind: "INFO", symbol: sym, tone: "bad",
           detail: `${e.event_type.toLowerCase()} ${String(p.reason ?? "")}`.trim(), value: "" });
@@ -114,6 +132,13 @@ export function logLines(events: DomainEvent[], snap: Snapshot | null): LogLine[
     }
   }
   return out;
+}
+
+function feedDetail(stale: boolean, motive: string, symbols: string[]): string {
+  const what = stale ? `data stale${motive ? ` ${motive}` : ""}` : "data fresh";
+  if (symbols.length === 1) return what;
+  const shown = symbols.slice(0, 4).join(" ");
+  return `${what} · ${symbols.length} pairs (${shown}${symbols.length > 4 ? " …" : ""})`;
 }
 
 export interface AgentCard {
