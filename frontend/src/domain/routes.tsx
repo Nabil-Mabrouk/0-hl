@@ -3,6 +3,7 @@
 // this extension point — App.tsx (chassis) is never patched locally.
 import { Route } from "react-router-dom";
 import AiPage from "../features/ai/AiPage";
+import { BasicsArticle, GuidePage, StrategySheet } from "../features/learn/GuidePages";
 import BotsPage from "../features/bots/BotsPage";
 import StatsPage from "../features/analytics/StatsPage";
 import TradesPage from "../features/analytics/TradesPage";
@@ -24,5 +25,9 @@ export const domainRoutes = (
     <Route path="risk" element={<RiskPage />} />
     {/* UI-16 AI services (spec 03-ecrans/UI-16-services-ia) */}
     <Route path="ai" element={<AiPage />} />
+    {/* UI-17 Learn section, public (spec 03-ecrans/UI-17-learn, ADR-029) */}
+    <Route path="guide" element={<GuidePage />} />
+    <Route path="guide/strategies/:id" element={<StrategySheet />} />
+    <Route path="guide/:slug" element={<BasicsArticle />} />
   </>
 );

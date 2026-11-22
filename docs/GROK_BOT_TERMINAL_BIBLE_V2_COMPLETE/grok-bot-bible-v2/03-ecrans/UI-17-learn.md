@@ -1,6 +1,6 @@
 # UI-17 — Learn : rubrique publique et fiches de stratégie vivantes
 
-> **0-hl — Bible V2.1 | 22 novembre 2026 | Statut : proposée (ADR-029), à valider par l'opérateur**
+> **0-hl — Bible V2.1 | 22 novembre 2026 | Statut : validée (ADR-029, 2026-11-22)**
 > **Traçabilité :** `[SPEC]` à construire ; `[OPEN]` à arbitrer ; `[ADR-xxx]` décision actée.
 
 Objectif (opérateur, 2026-11-22) : une rubrique **publique** qui explique 0-hl et chacune de ses stratégies, avec les **résultats réels** des bots paper (ADR-028, point 4), en anglais et prête pour d'autres langues. Style : 02-design/03 ; aucun nouvel écran de travail.
@@ -87,7 +87,8 @@ Chaque feature a un libellé anglais dans le frontend (`features.en.ts`), par ex
 
 ## Navigation et partage
 
-- Navbar : **Learn** ⇒ `/guide` pour tous ; page en cours marquée.
+- Navbar : **Learn** ⇒ `/guide` ; page en cours marquée. Mise en œuvre L.1 : le lien reste conditionné au module `tutorials` (actif en production) et garde le libellé traduit du châssis, pour ne pas casser les tests du châssis sur la Navbar.
+- Le lien vers le Terminal mène à `/terminal` (l'API publique n'expose pas l'identifiant du bot).
 - Chaque fiche a une URL stable ; titre du document = titre de l'article.
 - Depuis la fiche : lien vers le radar en direct (accueil) et, pour un utilisateur connecté, vers le Terminal sur le bot de la stratégie (`/terminal?bot=…`).
 

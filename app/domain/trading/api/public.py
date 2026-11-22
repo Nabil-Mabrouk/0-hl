@@ -19,6 +19,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.domain.trading.api.common import DomainRoute, ok
 from app.domain.trading.api.snapshot import worker_alive
+from app.domain.trading import learn
+from app.domain.trading.errors import NotFound
 from app.domain.trading.market.radar import cached_radar
 from app.domain.trading.enums import BotStatus, PositionStatus
 from app.domain.trading.market.service import CONNECTION_FEED_ID
@@ -70,3 +72,19 @@ async def stats(db: DB):
 async def radar(db: DB):
     """Market radar of the landing page (02-design/05): 1h window only, no authentication."""
     return ok(await cached_radar(db, utcnow(), 60), headers={"Cache-Control": "public, max-age=15"})
+
+
+@router.get("/strategies")
+async def strategies(db: DB):
+    """Learn (UI-17): strategies with a published version and their paper bot, in % only."""
+    items = await learn.cached("list", lambda: learn.list_strategies(db))
+    return ok({"items": items}, headers={"Cache-Control": "public, max-age=60"})
+
+
+@router.get("/strategies/{strategy_id}")
+async def strategy(strategy_id: str, db: DB):
+    """Learn (UI-17): live rules, results, latest trades and versions of one strategy."""
+    data = await learn.cached(f"one:{strategy_id}", lambda: learn.strategy_detail(db, strategy_id, utcnow()))
+    if data is None:
+        raise NotFound(f"unknown strategy {strategy_id}")
+    return ok(data, headers={"Cache-Control": "public, max-age=60"})

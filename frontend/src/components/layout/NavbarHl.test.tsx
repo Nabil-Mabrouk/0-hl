@@ -28,7 +28,7 @@ describe("0-hl header", () => {
     expect(screen.getByRole("group", { name: "Lab" })).toHaveTextContent("StrategiesRisk");
     expect(screen.getByRole("link", { name: "Trades" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Bots" })).not.toHaveAttribute("aria-current");
-    await waitFor(() => expect(screen.getByRole("link", { name: "nav.learn" })).toHaveAttribute("href", "/learn"));
+    await waitFor(() => expect(screen.getByRole("link", { name: "nav.learn" })).toHaveAttribute("href", "/guide"));
   });
 
   it("shows only Learn and Log in to a visitor", async () => {

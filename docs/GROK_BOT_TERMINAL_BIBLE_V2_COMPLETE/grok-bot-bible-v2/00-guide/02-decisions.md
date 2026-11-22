@@ -313,7 +313,7 @@ Hiérarchie : **service** (ce que l'utilisateur demande) → **agent** (qui rais
 - Lots D.1 à D.4 (13-roadmap) ; aucune modification du châssis : tokens dans `branding.local.css` et `landing.css`, Navbar et Footer du projet, composants dans `features/shared/ui/`.
 - L'admin du châssis garde son thème ; la maquette n'est pas versionnée (`temp/`), ses valeurs sont reprises dans 02-design/03 et 05.
 
-## ADR-029 — Rubrique Learn du projet et fiches de stratégie vivantes (proposée)
+## ADR-029 — Rubrique Learn du projet et fiches de stratégie vivantes (acceptée le 2026-11-22)
 
 **Constat (2026-11-22).** La page `/learn` du châssis est vide en production ; son contenu ne se remplit qu'en base, par un script lancé sur le serveur, en texte seul. L'opérateur veut une rubrique **publique** avec un article par stratégie et les **résultats réels** (ADR-028).
 

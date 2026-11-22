@@ -1,0 +1,50 @@
+/* Learn section — spec 03-ecrans/UI-17, style 02-design/03. Tokens only. */
+.hl-guide { font-size: 16px; }
+.hl-guide-head h1, .hl-guide-article h1 { font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; letter-spacing: -.04em; margin: 0 0 .5rem; }
+.hl-guide-head p, .hl-guide-lede { color: var(--hl-muted); font-size: 1.1rem; margin: 0 0 var(--hl-space-5); max-width: 60ch; }
+.hl-guide h2 { font-size: 1.25rem; font-weight: 700; margin: var(--hl-space-6) 0 var(--hl-space-3); }
+.hl-guide-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--hl-space-3); }
+.hl-guide-card h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.hl-guide-card h3 a { color: var(--hl-text); text-decoration: none; }
+.hl-guide-card h3 a:hover { color: var(--accent); }
+.hl-guide-strap { margin: 0 0 10px; color: var(--hl-muted); font-size: .9rem; min-height: 2.6em; }
+.hl-guide-meta { margin: 0; display: flex; gap: 8px; align-items: center; font-size: .85rem; color: var(--hl-muted); }
+.hl-guide-list { list-style: none; padding: 0; display: grid; gap: 10px; }
+.hl-guide-list a { color: var(--hl-text); font-weight: 600; }
+.hl-guide-list span { color: var(--hl-muted); font-size: .9rem; }
+
+.hl-guide-article { max-width: 820px; line-height: 1.65; }
+.hl-guide-article h1 .hl-dot { width: 14px; height: 14px; background: var(--accent); vertical-align: middle; }
+.hl-guide-article h2 { border-top: 1px solid var(--hl-line); padding-top: var(--hl-space-5); }
+.hl-guide-article p, .hl-guide-article li { color: var(--hl-text); }
+.hl-guide-article a { color: var(--hl-accent); }
+.hl-guide-article p { margin: .75em 0; }
+.hl-guide-article ul, .hl-guide-article ol { padding-left: 1.4rem; margin: .5em 0 .9em; }
+.hl-guide-article ul { list-style: disc; }
+.hl-guide-article ol { list-style: decimal; }
+.hl-guide-article li { margin: .25em 0; }
+.hl-guide-article li::marker { color: var(--accent, var(--hl-accent)); }
+.hl-guide-article strong { color: var(--hl-text); }
+.hl-guide-block .hl-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 560px) { .hl-guide-block .hl-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.hl-guide-crumb { font-size: .85rem; color: var(--hl-muted); margin: 0 0 var(--hl-space-3); }
+.hl-guide-crumb a { color: var(--hl-muted); }
+.hl-guide-badges { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 var(--hl-space-5); }
+.hl-guide-terminal { margin-left: auto; font-size: .9rem; }
+.hl-guide-note { color: var(--hl-muted); font-size: .9rem; }
+.hl-guide-block { margin: var(--hl-space-4) 0; }
+.hl-guide-block h3 { font-size: 1rem; margin: 0 0 var(--hl-space-3); }
+.hl-guide-block h3 small { color: var(--hl-muted); font-weight: 400; font-size: .8rem; margin-left: 6px; }
+.hl-guide-rules { background: var(--hl-panel); border: 1px solid var(--hl-line); border-left: 3px solid var(--accent);
+  border-radius: var(--hl-radius-card); padding: var(--hl-space-4) var(--hl-space-5); }
+.hl-guide-rules ul { margin: 6px 0 12px; }
+.hl-guide-other { color: var(--hl-muted); }
+.hl-guide-study { border-left: 3px solid var(--hl-warn); padding-left: var(--hl-space-4); }
+.hl-guide-versions { font-size: .9rem; color: var(--hl-muted); }
+.hl-guide-radar { display: grid; gap: 6px; justify-items: start; }
+.hl-guide-radar svg { width: min(260px, 100%); }
+.hl-guide-radar .ring { fill: none; stroke: var(--hl-line); }
+.hl-guide-radar .zone { fill-opacity: .22; stroke-width: 1.5; }
+.hl-guide-radar .btc { fill: var(--hl-accent); }
+.hl-guide-radar .lbl { fill: var(--hl-muted); font: 10px var(--hl-mono); text-anchor: middle; }
+.hl-guide-radar figcaption { font-size: .85rem; color: var(--hl-muted); }

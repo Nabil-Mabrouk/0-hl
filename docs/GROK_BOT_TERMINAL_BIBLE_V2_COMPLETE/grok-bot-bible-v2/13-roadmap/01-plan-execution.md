@@ -95,11 +95,11 @@ Objectif : pouvoir juger une stratégie **avant** de la faire tourner, sur des s
 | D.3 Terminal — **livré (local, 2026-11-22)** | disposition ADR-028 (radar, cartes de bots, tiroirs par étape, TRADE/RESULT/journal/LOG) ; tests existants du Terminal adaptés | M1-terminal-et-bots |
 | D.4 Autres écrans — **livré (local, 2026-11-22)** | Bots, Trades, Stats, Strategies et éditeur, Risk, AI (et Terminal, accueil en attendant D.2/D.3) passés aux tokens, sans changement fonctionnel : une seule feuille partagée `features/shared/ui/ui.css` (classes des pages et composants), plus aucune couleur en dur (test T-D4) | 02-design/03 |
 
-**Rubrique Learn (ADR-029, proposée le 2026-11-22).**
+**Rubrique Learn (ADR-029, acceptée le 2026-11-22).**
 
 | Lot | Contenu | Références |
 |---|---|---|
-| L.1 Rubrique et fiche modèle | `/api/v1/public/strategies` et `/{id}`, page `/guide`, modèle de fiche (blocs en direct), lien Navbar, fiche Breakout 1h ; T-L01..06 | **03-ecrans/UI-17** |
+| L.1 Rubrique et fiche modèle — **livré (local, 2026-11-22)** | `/api/v1/public/strategies` et `/{id}`, page `/guide`, modèle de fiche (blocs en direct), lien Navbar, fiche Breakout 1h ; T-L01..06 | **03-ecrans/UI-17** |
 | L.2 Fiches | Volume Spike, Rebound after excess, Rotation of the strongest, Pullback in an uptrend | UI-17, 05-strategies/02 |
 | L.3 Basics | six articles généraux | UI-17 |
 

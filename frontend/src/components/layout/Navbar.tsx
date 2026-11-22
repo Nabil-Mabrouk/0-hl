@@ -107,7 +107,7 @@ export default function Navbar() {
             {(user || modules.tutorials) && (
               <div className="site-nav-group" role="group" aria-label="More">
                 {user && link("/ai", "AI")}
-                {modules.tutorials && link("/learn", t("nav.learn"))}
+                {modules.tutorials && link("/guide", t("nav.learn"))}  {/* UI-17: the project Learn section */}
                 {user?.role === "admin" && <a href="/admin">{t("admin.nav")}</a>}
               </div>
             )}
