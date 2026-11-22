@@ -11,7 +11,7 @@
   },
   "00-guide/02-decisions.md": {
     "path": "02-projects/0-hl/spec/registre-des-decisions-d-architecture-adr.md",
-    "sha256": "405f30e77950c3b31474dfbdfab91ea9f586ba480388f744139b7d0e9d15dacc",
+    "sha256": "e0ea9d7e75f579aea767c18ce15ac2a46387e017c014597e2f1c6699c0a7c554",
     "order": 3
   },
   "01-produit/01-vision-et-perimetre.md": {
@@ -131,7 +131,7 @@
   },
   "05-strategies/02-catalogue-strategies.md": {
     "path": "02-projects/0-hl/spec/catalogue-des-strategies-configurables.md",
-    "sha256": "b161f789292b62b703e8710735e1706939e9396a96707b4ebd9ccad82e3e93fa",
+    "sha256": "7b5c6bceee30ec86edea6cb6ef1c68004979e8c89eeebfad80581865b007b654",
     "order": 30
   },
   "05-strategies/03-risque-mathematique.md": {
@@ -216,7 +216,7 @@
   },
   "10-backend/03-modele-donnees-m1.md": {
     "path": "02-projects/0-hl/spec/modele-de-donnees-et-fondations-m1-1.md",
-    "sha256": "2e7767887c86df60ba5e79458b76f8fc9313baba5f54f9f577c92f40701095c5",
+    "sha256": "f89ea9f8a16e7d10b322d16bbd555d0fd77a605211ad15e1051bc8050ac4303f",
     "order": 53
   },
   "10-backend/04-api-m1.md": {
@@ -246,7 +246,7 @@
   },
   "13-roadmap/01-plan-execution.md": {
     "path": "02-projects/0-hl/spec/roadmap-backlog-et-consignes-aux-agents-developpeurs.md",
-    "sha256": "ad7d87290ec555f1b7039866fe93e224216946da663371a402618c199afc34c9",
+    "sha256": "abf7cb573393d9e14f28357470af01ac93311fecf852c8e24db4d5dca37cbe74",
     "order": 60
   },
   "14-references/01-sources-et-limites.md": {
