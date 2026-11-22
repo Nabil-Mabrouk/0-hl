@@ -18,6 +18,8 @@ Les animations traduisent la réception d'un événement métier et n'en sont ja
 | `ORDER_FILLED` | Anneau vert + trade card | 250 ms | Trade card ouverte |
 | `POSITION_CLOSED` | Compteur et log | 380 ms | Mise à jour directe |
 | `BOT_PAUSED` | Stop des pulses de scanner | immédiat | Texte PAUSED |
+| `SCAN_CYCLE_COMPLETED` | Market radar : fils et étapes de la carte du bot (02-design/05) | 0,4 s de décalage par bot, 1,1 s par étape | État final direct |
+| nouvelle minute de marché | Market radar : balayage puis glissement des points | 1,6 s + 1,35 s | Positions finales directes |
 
 ## Politique de coalescence
 

@@ -11,33 +11,13 @@
    Import uniquement depuis Landing.tsx : n'affecte aucune autre page. */
 
 :root {
-  --bg: #ffffff;
-  --surface: #ffffff;
-  --text: #111111;
-  --border: rgba(0, 0, 0, 0.08);
-  --nav-bg: rgba(255, 255, 255, 0.92);
-}
-
-/* Dark mode automatique (OS/navigateur du visiteur), ZÉRO JS — pas de
-   toggle. Change uniquement les tokens de SURFACE/texte — --color-primary
-   reste le même (l'identité de marque ne doit pas changer entre les deux
-   modes). */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0b0b0c;
-    --surface: #151517;
-    --text: #f2f2f0;
-    --border: rgba(255, 255, 255, 0.12);
-    --nav-bg: rgba(11, 11, 12, 0.85);
-    /* --color-primary utilisé comme COULEUR DE TEXTE (badge, etc.) sur fond
-       sombre a besoin d'être éclairci. Vérifié numériquement (script
-       contrast_ratio du guardrail) sur les 10 primaires curées + Bleu
-       France (#000091, politique-ia) : un mix à 68% vers blanc échoue le
-       contraste WCAG AA pour les primaires les plus sombres (#1A1A1A,
-       #000091 -> ~3.0, sous le seuil 4.5) — 40% primaire / 60% blanc donne
-       un pire cas de 7.36 sur l'ensemble testé. */
-    --primary-ink: color-mix(in srgb, var(--color-primary) 40%, white);
-  }
+  /* 0-hl: dark only (ADR-028, 02-design/03). Values come from branding.local.css tokens. */
+  --bg: var(--hl-bg);
+  --surface: var(--hl-panel);
+  --text: var(--hl-text);
+  --border: var(--hl-line);
+  --nav-bg: color-mix(in srgb, var(--hl-bg) 92%, transparent);
+  --primary-ink: var(--hl-accent);
 }
 
 /* Base partagée par tous les skins ET par .site-shell (App.tsx::AppShell,
@@ -76,27 +56,61 @@
 
 /* Navbar/Footer sont des composants PARTAGÉS (App.tsx::AppShell) : rendus
    aussi bien dans .landing que dans .site-shell (Login, Learn, Admin...).
-   Bug réel trouvé en peuplant les tutoriels de fleet-dashboard (2026-11-05) :
-   ces règles ne ciblaient QUE .landing — toute autre page affichait une nav
-   sans mise en page du tout (liens collés, pas de sticky/flex/fond). */
-.landing .site-nav, .site-shell .site-nav {
-  position: sticky; top: 0; z-index: 10;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 1rem 1.5rem; background: var(--nav-bg);
-  backdrop-filter: blur(6px); border-bottom: 1px solid var(--border);
+   0-hl header and footer (02-design/03 « Mise en page », ADR-028). */
+.site-nav {
+  position: sticky; top: 0; z-index: 20;
+  background: var(--nav-bg); backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--hl-line);
 }
-.landing .site-nav .brand, .site-shell .site-nav .brand { font-weight: 700; color: var(--text); text-decoration: none; font-family: var(--font-family-display); }
-.landing .site-nav .btn, .site-shell .site-nav .btn { padding: 0.5rem 1rem; font-size: 0.9rem; border: none; font: inherit; }
-.landing .site-nav-links, .site-shell .site-nav-links { display: flex; align-items: center; gap: 1.25rem; }
-.landing .site-nav-links a:not(.btn), .site-shell .site-nav-links a:not(.btn) { color: var(--text); text-decoration: none; font-size: 0.95rem; }
-.landing .site-nav-links a:not(.btn):hover, .site-shell .site-nav-links a:not(.btn):hover { opacity: 0.75; }
+.site-nav-inner {
+  max-width: var(--hl-page-max); margin: 0 auto; padding: 0 var(--hl-gutter);
+  min-height: var(--hl-header-h); display: flex; align-items: center; gap: var(--hl-space-5);
+}
+.site-nav .brand {
+  font-family: var(--hl-font); font-size: 1.5rem; font-weight: 800; letter-spacing: -.06em;
+  color: var(--hl-text); text-decoration: none; white-space: nowrap;
+}
+.site-nav .brand::before { content: "\25C9\00A0"; color: var(--hl-accent); }
+.site-nav-links { display: flex; align-items: center; gap: var(--hl-space-5); margin-left: auto; }
+.site-nav-group { display: flex; align-items: center; gap: var(--hl-space-4); }
+.site-nav-group + .site-nav-group { padding-left: var(--hl-space-5); border-left: 1px solid var(--hl-line); }
+.site-nav-links a:not(.btn) {
+  color: var(--hl-muted); text-decoration: none; font-size: .92rem; font-weight: 500;
+  padding: 6px 0; border-bottom: 2px solid transparent;
+}
+.site-nav-links a:not(.btn):hover { color: var(--hl-text); }
+.site-nav-links a[aria-current="page"] { color: var(--hl-text); border-bottom-color: var(--hl-accent); }
+.site-nav .btn, .site-nav .site-nav-lang {
+  font: inherit; font-size: .9rem; cursor: pointer; text-decoration: none; display: inline-block;
+  background: var(--hl-control); color: var(--hl-text);
+  border: 1px solid var(--hl-control-line); border-radius: var(--hl-radius-control); padding: 6px 12px;
+}
+.site-nav .site-nav-lang { text-transform: uppercase; font-family: var(--hl-mono); font-size: .8rem; }
+.site-nav-toggle {
+  display: none; margin-left: auto; min-width: 44px; min-height: 44px; font: inherit; cursor: pointer;
+  background: var(--hl-control); color: var(--hl-text);
+  border: 1px solid var(--hl-control-line); border-radius: var(--hl-radius-control); padding: 0 12px;
+}
+@media (max-width: 900px) {
+  .site-nav-toggle { display: inline-block; }
+  .site-nav-links {
+    display: none; position: fixed; inset: var(--hl-header-h) 0 0 0; z-index: 30; margin: 0;
+    flex-direction: column; align-items: stretch; gap: var(--hl-space-5); overflow-y: auto;
+    padding: var(--hl-space-5) var(--hl-gutter); background: var(--hl-bg);
+  }
+  .site-nav-links.open { display: flex; }
+  .site-nav-group { flex-direction: column; align-items: stretch; gap: 0; }
+  .site-nav-group + .site-nav-group { padding: var(--hl-space-4) 0 0; border-left: 0; border-top: 1px solid var(--hl-line); }
+  .site-nav-links a:not(.btn) { padding: 12px 0; min-height: 44px; font-size: 1rem; border-bottom: 0; }
+  .site-nav-links a[aria-current="page"] { color: var(--hl-accent); }
+}
 
-.landing .site-footer, .site-shell .site-footer {
-  padding: 1.5rem; text-align: center; max-width: none;
-  border-top: 1px solid var(--border); color: var(--text); opacity: 0.7;
-  font-size: 0.875rem;
+.site-footer { border-top: 1px solid var(--hl-line); color: var(--hl-muted); font-size: .8rem; }
+.site-footer-inner {
+  max-width: var(--hl-page-max); margin: 0 auto; padding: var(--hl-space-5) var(--hl-gutter);
+  display: flex; flex-wrap: wrap; gap: var(--hl-space-3) var(--hl-space-5); justify-content: space-between;
 }
-.landing .site-footer p, .site-shell .site-footer p { margin: 0; }
+.site-footer p { margin: 0; }
 
 /* Apparition douce au scroll — CSS pur (scroll-driven animations), AUCUN
    JS : @supports dégrade proprement (contenu simplement visible, jamais

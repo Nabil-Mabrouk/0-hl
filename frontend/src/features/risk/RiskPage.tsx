@@ -6,8 +6,7 @@ import { ApiError, fieldErrors, getJson, sendJson } from "../shared/client";
 import { DASH } from "../shared/format";
 import { useTradingAccess } from "../shared/hooks";
 import type { Change, PolicyVersionView } from "../shared/types";
-import "../terminal/terminal.css";
-import "../strategies/versions.css";
+import "../shared/ui/ui.css";
 
 type Kind = "dec" | "int" | "flag";
 export const POLICY_FIELDS: { key: string; label: string; unit: string; kind: Kind }[] = [

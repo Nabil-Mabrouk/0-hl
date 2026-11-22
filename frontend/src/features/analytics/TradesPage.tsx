@@ -9,8 +9,7 @@ import { useTradingAccess } from "../shared/hooks";
 import type { DomainEvent, PositionView } from "../shared/types";
 import FiltersBar from "./FiltersBar";
 import { apiQuery, readFilters, writeFilters, type Filters } from "./filters";
-import "../terminal/terminal.css";
-import "../strategies/versions.css";
+import "../shared/ui/ui.css";
 
 export interface TradeView {
   id: string;

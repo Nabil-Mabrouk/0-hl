@@ -1,22 +1,86 @@
-/* branding.local.css — point d'extension pour personnaliser la marque
-   après génération (Chap 24, round theming). Contrairement à theme.css
-   (généré depuis le branding Studio, ne pas éditer à la main), ce fichier
-   n'est jamais re-templaté par copier update après le scaffold initial —
-   comme components/layout/{Navbar,Footer}.tsx, c'est un fichier normal du
-   châssis, généré vide, à vous ensuite.
+/* branding.local.css — 0-hl design tokens and global base (spec 02-design/03, ADR-028).
+   Project file (never re-templated by copier update), imported by index.css AFTER theme.css:
+   the chassis variables redefined here (--color-primary, --font-family-*) win.
+   Every colour used by a page goes through a token below — no hard-coded colour in feature CSS.
+   Fonts (Inter, JetBrains Mono) are loaded by the project Navbar (02-design/03 « Typographie »). */
 
-   Importé APRÈS theme.css dans index.css : une redéfinition ici gagne sur
-   celle de theme.css (dernière déclaration de la custom property sur
-   :root) — pas de !important, pas de nouveau mécanisme à apprendre.
+:root {
+  color-scheme: dark;
+  /* surfaces */
+  --hl-bg: #101514;
+  --hl-panel: #171f1c;
+  --hl-panel-2: #1c2622;
+  --hl-control: #202b23;
+  --hl-control-line: #4d5e4f;
+  --hl-line: #354239;
+  --hl-line-soft: #26302b;
+  /* text */
+  --hl-text: #f1f4e8;
+  --hl-muted: #a9b8ad;
+  --hl-faint: #7d8c81;
+  /* accent and functional */
+  --hl-accent: #dcf995;
+  --hl-accent-ink: #101514;
+  --hl-gain: #8be3a5;
+  --hl-loss: #ffac9b;
+  --hl-warn: #ffd08a;
+  --hl-info: #9bc8ff;
+  /* strategies (always shown with their name) */
+  --hl-s-volume-spike: #ffd09b;
+  --hl-s-breakout-1h: #9bc8ff;
+  --hl-s-rebound: #d7baff;
+  --hl-s-rotation: #8ee6dc;
+  --hl-s-pullback: #f9a8d4;
+  --hl-s-other: #c9d3c6;
+  /* shape and spacing */
+  --hl-radius-board: 16px;
+  --hl-radius-card: 8px;
+  --hl-radius-control: 5px;
+  --hl-space-1: 4px;
+  --hl-space-2: 8px;
+  --hl-space-3: 12px;
+  --hl-space-4: 16px;
+  --hl-space-5: 24px;
+  --hl-space-6: 32px;
+  --hl-space-7: 48px;
+  --hl-page-max: 1440px;
+  --hl-gutter: clamp(16px, 5vw, 72px);
+  --hl-header-h: 68px;
+  /* typography */
+  --hl-font: "Inter", system-ui, sans-serif;
+  --hl-mono: "JetBrains Mono", ui-monospace, monospace;
+  /* chassis variables (theme.css, landing.css, learn.css) */
+  --color-primary: var(--hl-accent);
+  --color-primary-foreground: var(--hl-accent-ink);
+  --font-family-base: var(--hl-font);
+  --font-family-display: var(--hl-font);
+}
 
-   Propriétés personnalisables (définies par défaut dans theme.css) :
-   --color-primary
-   --color-primary-foreground
-   --font-family-base
-   --font-family-display
+html, body { background: var(--hl-bg); color: var(--hl-text); }
+body { font-family: var(--hl-font); -webkit-font-smoothing: antialiased; }
+::selection { background: color-mix(in srgb, var(--hl-accent) 35%, transparent); color: var(--hl-text); }
 
-   Exemple :
-   :root {
-     --color-primary: #16a34a;
-   }
-*/
+/* Visible focus everywhere (02-design/03 « Accessibilité »). */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--hl-accent);
+  outline-offset: 3px;
+}
+
+/* Low-specificity defaults for form controls, so the chassis pages (Login, Learn…) read well
+   in the dark theme; feature styles and shared components override them. */
+:where(input, select, textarea) {
+  background: var(--hl-control);
+  color: var(--hl-text);
+  border-color: var(--hl-control-line);
+  border-radius: var(--hl-radius-control);
+}
+:where(input, textarea)::placeholder { color: var(--hl-faint); }
+:where(a) { color: inherit; }
+
+/* Chassis forms paint their submit button with var(--color-primary) and white text: on the
+   lime accent the text must be dark to stay readable (contrast AA). */
+.site-shell button[style*="--color-primary"] { color: var(--hl-accent-ink); font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}

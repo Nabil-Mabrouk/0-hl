@@ -7,8 +7,7 @@ import { DASH, fmtPct, fmtSignedUsd, fmtUptime, fmtUsd, symbolOf } from "../shar
 import { useTradingAccess } from "../shared/hooks";
 import FiltersBar from "./FiltersBar";
 import { apiQuery, periodRange, readFilters, writeFilters, type Filters } from "./filters";
-import "../terminal/terminal.css";
-import "../strategies/versions.css";
+import "../shared/ui/ui.css";
 
 export interface Stats {
   trades: number; wins: number; losses: number;
@@ -156,11 +155,11 @@ export function CurveChart({ curve, width = 900, height = 220 }: { curve: Curve;
   return (
     <svg className="hl-curve" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img"
       aria-label={`performance curve, max drawdown ${curve.max_drawdown_pct ? Number(curve.max_drawdown_pct).toFixed(2) : "unknown"} %`} data-testid="curve">
-      <line x1={pad} x2={width - pad} y1={y(0)} y2={y(0)} stroke="#c9c7d0" strokeDasharray="4 4" />
-      <polyline fill="none" stroke="#0d4f97" strokeWidth="2" points={pts.map((p) => `${x(p.t)},${y(p.v)}`).join(" ")} />
-      {trough && <circle data-testid="trough" cx={x(trough.t)} cy={y(trough.v)} r="5" fill="#b23c63" />}
-      <text x={pad} y={14} fontSize="11" fill="#6b6875">{fmtSignedUsd(hi.toFixed(2))}</text>
-      <text x={pad} y={height - 6} fontSize="11" fill="#6b6875">{fmtSignedUsd(lo.toFixed(2))}</text>
+      <line x1={pad} x2={width - pad} y1={y(0)} y2={y(0)} className="zero" strokeDasharray="4 4" />
+      <polyline className="line" fill="none" strokeWidth="2" points={pts.map((p) => `${x(p.t)},${y(p.v)}`).join(" ")} />
+      {trough && <circle data-testid="trough" cx={x(trough.t)} cy={y(trough.v)} r="5" className="trough" />}
+      <text x={pad} y={14} fontSize="11">{fmtSignedUsd(hi.toFixed(2))}</text>
+      <text x={pad} y={height - 6} fontSize="11">{fmtSignedUsd(lo.toFixed(2))}</text>
     </svg>
   );
 }

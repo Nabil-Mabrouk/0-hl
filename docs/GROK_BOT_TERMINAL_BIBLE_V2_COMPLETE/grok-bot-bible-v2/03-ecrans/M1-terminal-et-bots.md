@@ -26,6 +26,15 @@ Ce chapitre détaille le lot **M1.5** ([13-roadmap](../13-roadmap/01-plan-execut
 
 ## UI-01 Live Terminal
 
+**Refonte ADR-028 (2026-11-22, acceptée) — remplace la disposition ci-dessous ; le contenu des zones et les corrections après revue restent valables.**
+- **Barre de tête** inchangée en contenu (pause, titre, statut et uptime, puce d'activité, environnement, balance, trades, wins, losses), dans le style 02-design/03 ; bandeaux PAPER, ENTRIES PAUSED et entrées bloquées sous la barre.
+- **Market radar** pleine largeur ([02-design/05](../02-design/05-market-radar.md)) : figure à gauche, **une carte par bot** actif à droite ; fenêtre 1h / 4h / 24h (défaut 1h) ; animation pilotée par le flux temps réel. Le **bot sélectionné** (sélecteur existant, ou clic sur sa carte) est mis en avant (bordure accent) ; les zones suivantes portent sur lui.
+- Le **flux central** (candidats, stations RUG CHECK et EXECUTOR, mini-cartes NO SIGNAL / SIZER / LOGGER / EQUITY) et la **colonne des six agents** sont remplacés par les étapes de la carte du bot : un clic sur une étape (Scan, Check, Size, Execute, Equity) ouvre le **tiroir** de l'agent correspondant (SCANNER, RUG CHECK, SIZER, EXECUTOR, EQUITY), avec ses lignes de détail et ses derniers événements ; LOGGER et YOU sont accessibles par le journal.
+- **Sous le radar** : TRADE · ENTRY vs EXIT et RESULT · start vs now côte à côte, `$ tail -f night.log` à droite (≈ 380 px), puis le tableau LOG pleine largeur ; bandeau inférieur supprimé (doublon du journal).
+- Responsive : sous 1200 px le journal passe sous TRADE/RESULT ; sous 740 px une colonne, radar en version mobile.
+
+**Disposition V2.1 (avant ADR-028), pour mémoire :**
+
 **Vue unique : pleine largeur (ADR-016, ADR-019).** Grille responsive dans le langage visuel de la capture 3 :
 - **barre de tête** pleine largeur : bouton pause, « **0-hl** Terminal » + version, statut et uptime, puce d'activité, badge environnement/connexion ; à droite balance (grand), trades, wins, losses ;
 - **colonne gauche** (≈ 300 px) : six cartes agents + YOU (clic ⇒ tiroir) ;

@@ -6,8 +6,7 @@ import { ApiError, getJson, sendJson } from "../shared/client";
 import { DASH } from "../shared/format";
 import { useTradingAccess } from "../shared/hooks";
 import type { Change, StrategyVersionView } from "../shared/types";
-import "../terminal/terminal.css";
-import "./versions.css";
+import "../shared/ui/ui.css";
 
 type Dialog =
   | { kind: "duplicate"; v: StrategyVersionView }

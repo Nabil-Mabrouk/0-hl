@@ -5,8 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { ApiError, getJson, sendJson } from "../shared/client";
 import { useTradingAccess } from "../shared/hooks";
-import "../terminal/terminal.css";
-import "../strategies/versions.css";
+import "../shared/ui/ui.css";
 import "./ai.css";
 
 export interface Budget {

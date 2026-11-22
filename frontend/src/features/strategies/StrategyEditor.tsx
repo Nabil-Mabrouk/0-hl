@@ -5,8 +5,7 @@ import { Navigate, useParams } from "react-router-dom";
 import { ApiError, fieldErrors, getJson, sendJson } from "../shared/client";
 import { useTradingAccess } from "../shared/hooks";
 import type { FeatureInfo, PolicyVersionView, StrategyCondition, StrategyConditions, StrategyConfig, StrategyVersionView } from "../shared/types";
-import "../terminal/terminal.css";
-import "./versions.css";
+import "../shared/ui/ui.css";
 
 const OPS: StrategyCondition["op"][] = ["gte", "gt", "lte", "lt"];
 const asError = (e: unknown) => (e instanceof ApiError ? e : new ApiError(0, "NETWORK", String(e), null));

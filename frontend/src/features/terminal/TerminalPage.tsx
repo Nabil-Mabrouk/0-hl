@@ -9,7 +9,7 @@ import type { Bot, DomainEvent } from "../shared/types";
 import TerminalWide from "./TerminalWide";
 import { blockText } from "./viewModel";
 import { fmtUsd } from "../shared/format";
-import "./terminal.css";
+import "../shared/ui/ui.css";
 
 function ErrorBox({ error }: { error: ApiError }) {
   return (

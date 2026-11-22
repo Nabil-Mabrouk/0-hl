@@ -8,7 +8,7 @@ import CreateBotDialog from "./CreateBotDialog";
 import { DASH, fmtUptime, fmtUsd } from "../shared/format";
 import { useTradingAccess } from "../shared/hooks";
 import type { Bot, Session } from "../shared/types";
-import "../terminal/terminal.css";
+import "../shared/ui/ui.css";
 
 interface BotDetail extends Bot {
   session: Session | null;

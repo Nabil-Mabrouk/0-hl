@@ -16,6 +16,7 @@
 - [02-personas-parcours-gouvernance](../01-produit/02-personas-parcours-gouvernance.md)
 - [03-design-system](../02-design/03-design-system.md)
 - [04-animation-interactions](../02-design/04-animation-interactions.md)
+- [05-market-radar](../02-design/05-market-radar.md)
 - [UI-00-accueil-public](../03-ecrans/UI-00-accueil-public.md)
 - [UI-01-live-terminal](../03-ecrans/UI-01-live-terminal.md)
 - [UI-02-bots-sessions](../03-ecrans/UI-02-bots-sessions.md)

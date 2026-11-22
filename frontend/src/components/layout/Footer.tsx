@@ -2,11 +2,9 @@ import { useEffect, useState } from "react";
 import { apiFetch } from "../../api";
 
 // Footer partagé par la landing ET le reste de l'app (Chap 24, round
-// theming) — minimal par défaut, à personnaliser librement (AGENTS.md).
-// Pas de contenu inventé au-delà du copyright : pas de fausses mentions
-// légales, pas de liens qui ne mènent nulle part. Autonome (GET /health,
-// même patron que Navbar) plutôt qu'une prop `project` : usable tel quel
-// sur n'importe quelle page, sans faire remonter cet état plus haut.
+// theming) — fichier du projet (AGENTS.md). Autonome (GET /health, même
+// patron que Navbar). 0-hl (02-design/03, ADR-028) : copyright et rappel
+// factuel du mode PAPER, rien d'inventé.
 export default function Footer() {
   const [project, setProject] = useState("");
 
@@ -19,9 +17,12 @@ export default function Footer() {
 
   return (
     <footer className="site-footer">
-      <p>
-        © {new Date().getFullYear()} {project}
-      </p>
+      <div className="site-footer-inner">
+        <p>
+          © {new Date().getFullYear()} {project}
+        </p>
+        <p>Paper trading on real Kraken prices · simulated execution · not investment advice</p>
+      </div>
     </footer>
   );
 }

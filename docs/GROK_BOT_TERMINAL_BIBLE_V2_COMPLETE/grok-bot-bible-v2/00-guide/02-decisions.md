@@ -297,3 +297,18 @@ Hiérarchie : **service** (ce que l'utilisateur demande) → **agent** (qui rais
 
 **Conséquence pour le gate M2.** Le gate (13-roadmap) exige toujours une stratégie dont le résultat net est reproductible sur une période non utilisée pour la choisir ; les bots d'observation fournissent la comparaison dans UI-12, pas le verdict.
 
+## ADR-028 — Direction artistique sombre, Market radar et données publiques (acceptée le 2026-11-22)
+
+**Constat (2026-11-22).** Le style actuel mélange le thème du châssis, `landing.css` et une feuille par page avec des couleurs écrites en dur (≈ 130) ; la navigation aligne 7 liens à plat et recharge le site à chaque clic. L'opérateur veut une refonte du **style et de la mise en page** (pas de nouvel écran), des représentations animées de l'action des bots et du marché, et a fourni une maquette (« Market radar », 2026-11-22).
+
+**Décisions de l'opérateur (2026-11-22).**
+1. **Thème sombre uniquement**, vert citron comme seul accent, **Inter** pour le texte et **JetBrains Mono** pour les chiffres ; même langage sur toutes les pages, Terminal compris ([02-design/03](../02-design/03-design-system.md), qui remplace la direction claire et monospace issue de la capture 3).
+2. **Market radar** comme figure centrale de la page d'accueil **et** du Terminal ([02-design/05](../02-design/05-market-radar.md)) : BTC au centre ; x = performance moins celle du BTC (pp) ; y = volatilité rapportée à celle du BTC (log2) ; fils vers les bots qui évaluent les paires.
+3. Site **en anglais**, prêt pour d'autres langues (textes d'interface par fichiers de traduction, articles par dossier de langue).
+4. **Résultats publics** : les articles d'Apprendre et la page d'accueil peuvent montrer les résultats des bots paper. La règle provisoire d'UI-00 (« activité seulement », 2026-11-20) est levée : l'API publique peut exposer les noms des bots, leur stratégie, leurs paires détenues, le résultat de leur dernier cycle et leur résultat net **en %** ; jamais de montant absolu, d'identifiant interne ni de donnée d'utilisateur.
+
+**Proposition (validée par l'opérateur le 2026-11-22, y compris les résultats publics en % et le Terminal sans colonne des six agents).**
+- Le moteur publie, dans `SCAN_CYCLE_COMPLETED`, le résultat par paire (`outcomes`) ; deux routes de calcul du radar (`/api/v1/public/radar` sans authentification, 1h ; `/api/v1/market/radar`, 1h/4h/24h).
+- Le radar **remplace** le pipeline animé de l'accueil et le flux central du Terminal ; les étapes du pipeline vivent dans chaque carte de bot.
+- Lots D.1 à D.4 (13-roadmap) ; aucune modification du châssis : tokens dans `branding.local.css` et `landing.css`, Navbar et Footer du projet, composants dans `features/shared/ui/`.
+- L'admin du châssis garde son thème ; la maquette n'est pas versionnée (`temp/`), ses valeurs sont reprises dans 02-design/03 et 05.
