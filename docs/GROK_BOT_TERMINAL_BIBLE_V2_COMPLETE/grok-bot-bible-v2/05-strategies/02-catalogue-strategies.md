@@ -77,7 +77,7 @@ Deuxième stratégie implémentée, **candidate du gate M2** (13-roadmap « Jalo
 
 **Coûts.** Identiques à STRAT-01 (frais taker ADR-010, glissement par le carnet) ; le résultat est jugé **net de frais**.
 
-**État de validation.** `RESEARCH_ONLY` pour le LIVE (ADR-009). Lancement en `PAPER` sur un bot dédié `paper-kraken-02` **seulement** si l'étude 09-recherche/05 remplit ses critères sur la période de contrôle (ADR-023).
+**État de validation.** `RESEARCH_ONLY` pour le LIVE (ADR-009). Lancée en `PAPER` d'observation sur `paper-kraken-02` sans attendre le verdict de l'étude 09-recherche/05, qui reste la référence pour la juger (ADR-027, remplace la condition d'ADR-023).
 
 ## STRAT-03 — Launch Discovery
 
@@ -153,7 +153,7 @@ Troisième stratégie implémentée, **opposée à STRAT-02** : STRAT-02 parie q
 
 **Sortie v0.1.0.** Stop 4 % sous le prix d'entrée ; **sortie sur condition** (05-strategies/04 « Sorties sur condition ») `gap_to_mean_4h ≥ 0` : le prix est revenu à sa moyenne des 4 h ; pas de take-profit fixe ; sortie temporelle **12 h** ; sortie si la paire passe hors `online`.
 
-**État de validation.** `RESEARCH_ONLY` pour le LIVE. Lancement `PAPER` sur un bot dédié seulement si l'étude remplit ses critères (ADR-024).
+**État de validation.** `RESEARCH_ONLY` pour le LIVE. Lancée en `PAPER` d'observation sur `paper-kraken-03` sans attendre le verdict de l'étude, qui reste la référence pour la juger (ADR-027).
 
 ## STRAT-07 — Volatility Breakout
 
@@ -243,7 +243,7 @@ Quatrième stratégie implémentée : **très peu de trades**, détentions de pl
 
 **Policy dédiée `rotation`.** Le stop large rend la taille calculée par le SIZER à 0,5 % de risque minuscule (5 % du capital) : la policy `rotation` porte `max_trade_risk_pct` à **3** (≈ 30 % du capital par position avec un stop de 10 %), `max_token_exposure_pct` à **33**, `max_open_positions` à **3**, `max_daily_loss_pct` à **6** (portefeuille presque entièrement investi), le reste comme `paper-default`.
 
-**État de validation.** `RESEARCH_ONLY` pour le LIVE. L'étude n'est **jugeable qu'à partir de 4 semaines de données** (détentions de plusieurs jours) ; d'ici là elle tourne à titre indicatif.
+**État de validation.** `RESEARCH_ONLY` pour le LIVE. L'étude n'est **jugeable qu'à partir de 4 semaines de données** (détentions de plusieurs jours) ; d'ici là elle tourne à titre indicatif. Lancée en `PAPER` d'observation sur `paper-kraken-04` avec la policy `rotation` (ADR-027).
 
 ## STRAT-12 — Pullback in Uptrend
 
@@ -275,7 +275,7 @@ Cinquième stratégie, **construite à partir des premières études** (09-reche
 
 **Critères.** Ceux de 09-recherche/05 (20 trades, 5 critères), sans adaptation, fixés avant tout résultat.
 
-**État de validation.** `RESEARCH_ONLY` pour le LIVE. Lancement `PAPER` sur un bot dédié seulement si l'étude remplit ses critères (ADR-025).
+**État de validation.** `RESEARCH_ONLY` pour le LIVE. Lancée en `PAPER` d'observation sur `paper-kraken-05` sans attendre le verdict de l'étude, qui reste la référence pour la juger (ADR-027).
 
 **Exécution de l'étude.** `python -m app.domain.trading.research.study --file docs/GROK_BOT_TERMINAL_BIBLE_V2_COMPLETE/grok-bot-bible-v2/examples/strategy-pullback.json --grid docs/GROK_BOT_TERMINAL_BIBLE_V2_COMPLETE/grok-bot-bible-v2/examples/grid-pullback.json --days 30` (options par défaut : 20 trades, sans `--min-days`).
 

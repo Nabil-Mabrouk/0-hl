@@ -110,6 +110,13 @@ Exécuté au démarrage du worker (et réexécutable sans effet) :
 
 Chaque étape vérifie l'existence avant de créer ; deux exécutions successives produisent le même état.
 
+**Bots d'observation (ADR-027).** Après les étapes 1 à 4, le seed crée, s'ils n'existent pas :
+5. Politique `rotation` version `1` ([`examples/risk-policy-rotation.json`](../examples/risk-policy-rotation.json)), publiée par `system:seed`.
+6. Stratégies `breakout-1h`, `rebound`, `rotation` et `pullback` version `0.1.0` (fichiers `examples/strategy-*.json`), publiées par `system:seed` pour PAPER uniquement (audit `self_approved=true`, motif « ADR-027 observation paper »).
+7. Bots `paper-kraken-02` (`breakout-1h`), `-03` (`rebound`), `-04` (`rotation`, policy `rotation`), `-05` (`pullback`), créés par la même fonction que « New bot » (06-agents/04 : mêmes validations, limite de 5 bots non arrêtés, dépôt paper de 10 000 USD), à l'état `READY` : **le démarrage reste une commande de l'opérateur**.
+
+Règles propres à ces étapes : une version ou un bot qui existe déjà (quel que soit son statut : brouillon, retiré, bot en pause ou arrêté) n'est **jamais** modifié, republié ni recréé ; un bot n'est créé que si sa stratégie et sa policy sont publiées. Chaque élément est créé dans sa propre sous-transaction : un échec (par exemple la limite de bots atteinte) est journalisé (`seed: observation … skipped`) et n'empêche ni les autres éléments ni le démarrage du worker. Les copies se trouvent dans `app/domain/trading/seed_data/` et un test vérifie qu'elles restent identiques aux exemples.
+
 ## Environnement de développement (correction d'ADR-012)
 
 Le `docker-compose.dev.yml` du châssis lance **backend (SQLite) + frontend**, sans PostgreSQL ni worker. En développement : backend via ce compose (ou `uvicorn` local), worker lancé localement (`python -m app.modules.worker.runner`) sur la même base. Les tests `pytest` utilisent SQLite en mémoire ; des tests marqués `postgres` s'exécutent contre une base PostgreSQL jetable lorsque `TEST_POSTGRES_URL` est défini (verrou consultatif, `NUMERIC`), sinon ils sont ignorés.

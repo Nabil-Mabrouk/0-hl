@@ -17,7 +17,14 @@ from app.domain.trading.models import (
     RiskPolicyVersion,
     StrategyVersion,
 )
-from app.domain.trading.seed import POLICY_FILE, STRATEGY_FILE, run_seed
+from app.domain.trading.seed import (
+    OBSERVATION_BOTS,
+    OBSERVATION_POLICIES,
+    POLICY_FILE,
+    SEED_DIR,
+    STRATEGY_FILE,
+    run_seed,
+)
 
 from .factories import SPEC_ROOT
 
@@ -59,6 +66,7 @@ async def test_seed_is_idempotent(session_factory):
     [
         (STRATEGY_FILE, "examples/strategy-volume-spike.json"),
         (POLICY_FILE, "examples/risk-policy-paper-default.json"),
+        *[(SEED_DIR / f, f"examples/{f}") for f, *_ in (*OBSERVATION_POLICIES, *OBSERVATION_BOTS)],
     ],
 )
 def test_seed_data_matches_spec_examples(seed_file, spec_file):
@@ -104,3 +112,68 @@ async def test_seed_rebinds_never_started_bot_only(session_factory):
     async with session_factory() as db:
         result = await run_seed(db)
         assert result.bot.strategy_version_id == v1.id
+
+
+# ADR-027 — observation bots (10-backend/03 « Bots d'observation ») -------------------------
+OBS = {"paper-kraken-02": ("breakout-1h", "paper-default"), "paper-kraken-03": ("rebound", "paper-default"),
+       "paper-kraken-04": ("rotation", "rotation"), "paper-kraken-05": ("pullback", "paper-default")}
+
+
+async def _bots(db) -> dict:
+    out = {}
+    for b in (await db.scalars(select(Bot))).all():
+        sv = await db.get(StrategyVersion, b.strategy_version_id)
+        pv = await db.get(RiskPolicyVersion, b.risk_policy_version_id)
+        out[b.name] = (b.status, sv.strategy_id, sv.status, pv.policy_id, pv.status)
+    return out
+
+
+async def test_observation_seed_creates_ready_bots_and_is_idempotent(session_factory):
+    from app.domain.trading.enums import PolicyVersionStatus
+    async with session_factory() as db:
+        await run_seed(db, observation=True)
+        bots, first = await _bots(db), await _counts(db)
+        for name, (sid, pid) in OBS.items():
+            assert bots[name] == (BotStatus.READY, sid, StrategyVersionStatus.PUBLISHED, pid,
+                                  PolicyVersionStatus.PUBLISHED)
+            bot = await db.scalar(select(Bot).where(Bot.name == name))
+            assert (await equity_summary(db, bot.id, positions_mark_value=None)).equity == Decimal("10000")
+        audits = (await db.scalars(select(AuditEvent).where(AuditEvent.reason == "ADR-027 observation paper"))).all()
+        assert audits and {a.actor for a in audits} == {"system:seed"}
+    async with session_factory() as db:
+        await run_seed(db, observation=True)
+        assert await _counts(db) == first
+
+
+async def test_observation_seed_never_touches_existing_bots(session_factory):
+    async with session_factory() as db:
+        await run_seed(db, observation=True)
+        bot = await db.scalar(select(Bot).where(Bot.name == "paper-kraken-03"))
+        bot.status = BotStatus.STOPPED  # stopped by the operator after a session
+        await db.commit()
+        before = await _counts(db)
+    async with session_factory() as db:
+        await run_seed(db, observation=True)
+        assert await _counts(db) == before
+        bot = await db.scalar(select(Bot).where(Bot.name == "paper-kraken-03"))
+        assert bot.status is BotStatus.STOPPED
+
+
+async def test_observation_seed_skips_on_bot_limit_without_failing(session_factory, caplog):
+    from app.domain.trading import lifecycle as lc
+    async with session_factory() as db:
+        await run_seed(db)
+        sv = await db.scalar(select(StrategyVersion))
+        pv = await db.scalar(select(RiskPolicyVersion))
+        for i in range(lc.MAX_ACTIVE_BOTS - 1):
+            await lc.create_paper_bot(db, name=f"other-{i}", strategy_version=sv, risk_policy_version=pv,
+                                      capital=Decimal(1000), actor="user:x", reason="fill")
+        await db.commit()
+    async with session_factory() as db:
+        with caplog.at_level("WARNING", logger="hl.seed"):
+            await run_seed(db, observation=True)
+        names = set(await _bots(db))
+        assert not names & set(OBS)
+        assert await db.scalar(select(func.count()).select_from(StrategyVersion)) == 5  # versions still created
+        assert "BotLimitReached" in caplog.text
+

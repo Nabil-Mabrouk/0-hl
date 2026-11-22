@@ -56,17 +56,17 @@ Objectif : pouvoir juger une stratégie **avant** de la faire tourner, sur des s
 | Lot | Contenu | Références |
 |---|---|---|
 | S2.1 Features — **livré (local, 2026-11-21)** | `breakout_1h`, `range_1h`, `trend_4h` dans le SCANNER et le catalogue de l'éditeur ; historique chargé 250 min ; tests T-R11/12 | 05-strategies/02, 06-agents/03 |
-| S2.2 Étude — **livré (local, 2026-11-21)** ; exécution en production à faire | `strat02_study` (grille, référence, partie de contrôle, verdict des 5 critères) ; exécution en production, résultats consignés | **09-recherche/05** |
-| S2.3 Lancement *(si l'étude passe)* | publication de STRAT-02 v0.1.0 (ou de la variante retenue) par l'éditeur, backtest M2.2, bot `paper-kraken-02` | 05-strategies/04, 09-recherche/04, 06-agents/04 |
+| S2.2 Étude — **livré** ; 1re exécution en production le 2026-11-21 (pas de verdict favorable), relance hebdomadaire | `strat02_study` (grille, référence, partie de contrôle, verdict des 5 critères) ; exécution en production, résultats consignés | **09-recherche/05** |
+| S2.3 Lancement paper d'observation (ADR-027) | publication de STRAT-02 v0.1.0, bot `paper-kraken-02` ; la variante retenue suivra le verdict de l'étude | 05-strategies/04, 09-recherche/04, 06-agents/04 |
 
 **STRAT-06 et STRAT-11 (ADR-024, actée le 2026-11-21).**
 
 | Lot | Contenu | Références |
 |---|---|---|
 | S6.0 Socle — **livré (local, 2026-11-21)** | sorties sur condition (schéma, cohérence, moteur, motif `EXIT_CONDITION`, éditeur UI-05) ; features de marché par fenêtre ; `drop_from_high_3h`, `gap_to_mean_4h`, `trend_24h` (lecture étroite à 24 h) ; tests T-M2.3-07 | 05-strategies/04, 06-agents/03 |
-| S6.1 Étude STRAT-06 — **livré (local, 2026-11-21)** ; exécution en production à faire | `strat06_study` ; exécution en production | **09-recherche/06** |
+| S6.1 Étude STRAT-06 — **livré** ; 1re exécution en production le 2026-11-21 (pas de verdict favorable), relance hebdomadaire | `strat06_study` ; exécution en production | **09-recherche/06** |
 | S11.1 Étude STRAT-11 — **livré (local, 2026-11-21)** ; jugeable vers le 15/12 | `strat11_study` (portefeuille, verdict « NON JUGEABLE » sous 28 jours) ; exécution en production | **09-recherche/07** |
-| S6.2 / S11.2 Lancement *(si l'étude passe)* | publication de la version (et de la policy `rotation`), backtest M2.2, bot paper dédié | 05-strategies/04, 09-recherche/04, 06-agents/04 |
+| S6.2 / S11.2 Lancement paper d'observation (ADR-027) | publication de `rebound@0.1.0` → `paper-kraken-03`, de la policy `rotation` v1 et de `rotation@0.1.0` → `paper-kraken-04` | 05-strategies/04, 09-recherche/04, 06-agents/04 |
 
 **Étude générique et STRAT-12 (ADR-025, acceptée le 2026-11-21).**
 
@@ -75,7 +75,7 @@ Objectif : pouvoir juger une stratégie **avant** de la faire tourner, sur des s
 | R.1 Étude générique — **livré (local, 2026-11-21)** | `research.study` : version en base ou fichier, grille (≤ 500 variantes), features calculées une fois, spread des instantanés, `max_open_positions` et `--order-by`, taux de passage par condition, verdict ; tests T-R41..47 | **09-recherche/08** |
 | S12.0 Feature — **livré (local, 2026-11-21)** | `breadth_24h` dans la vue de marché et le catalogue | 06-agents/03 |
 | S12.1 Étude STRAT-12 | exécution de l'étude générique sur `strategy-pullback.json` et `grid-pullback.json` en production, résultats consignés | 05-strategies/02, 09-recherche/08 |
-| S12.2 Lancement *(si l'étude passe)* | publication, backtest M2.2, bot paper dédié | 05-strategies/04, 06-agents/04 |
+| S12.2 Lancement paper d'observation (ADR-027) | publication de `pullback@0.1.0` → `paper-kraken-05` | 05-strategies/04, 06-agents/04 |
 
 **Services IA (ADR-026, UI-16 validée le 2026-11-21).**
 

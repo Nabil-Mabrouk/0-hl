@@ -4,7 +4,10 @@
 2. strategy `volume-spike` v0.1.0, published by `system:seed` for PAPER only
    (audited `self_approved=true`, reason « amorçage M1 »);
 3. bot `paper-kraken-01`, PAPER, READY;
-4. initial paper deposit of 10 000 USD (ADR-010).
+4. initial paper deposit of 10 000 USD (ADR-010);
+5–7. ADR-027 observation bots: policy `rotation` v1, strategies `breakout-1h`, `rebound`,
+   `rotation`, `pullback` v0.1.0 and bots `paper-kraken-02..05` (READY, never started here).
+   Anything that already exists is left untouched; a failure is logged and skipped.
 
 The JSON files in `seed_data/` are copies of the spec examples; a test fails if
 they drift from `docs/.../examples/` (the documentation is the source of truth).
@@ -13,6 +16,7 @@ they drift from `docs/.../examples/` (the documentation is the source of truth).
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
@@ -52,6 +56,18 @@ from app.domain.trading.versioning import (
 SEED_DIR = Path(__file__).parent / "seed_data"
 STRATEGY_FILE = SEED_DIR / "strategy-volume-spike.json"
 POLICY_FILE = SEED_DIR / "risk-policy-paper-default.json"
+
+OBSERVATION_POLICIES = (("risk-policy-rotation.json", "Rotation"),)
+# (strategy file, display name, bot name)
+OBSERVATION_BOTS = (
+    ("strategy-breakout-1h.json", "Breakout 1h (STRAT-02)", "paper-kraken-02"),
+    ("strategy-rebound.json", "Rebond après excès (STRAT-06)", "paper-kraken-03"),
+    ("strategy-rotation.json", "Rotation des plus fortes (STRAT-11)", "paper-kraken-04"),
+    ("strategy-pullback.json", "Repli dans une tendance haussière (STRAT-12)", "paper-kraken-05"),
+)
+OBSERVATION_REASON = "ADR-027 observation paper"
+
+log = logging.getLogger("hl.seed")
 
 SEED_ACTOR = system_actor("seed")
 SEED_BOT_NAME = "paper-kraken-01"
@@ -143,11 +159,70 @@ async def _ensure_initial_deposit(db: AsyncSession, bot: Bot) -> None:
         )
 
 
-async def run_seed(db: AsyncSession) -> SeedResult:
-    """Create/complete the bootstrap data; safe to run any number of times."""
+async def _observation_step(db: AsyncSession, label: str, step) -> None:
+    """One ADR-027 element in its own savepoint: a failure is logged, never raised."""
+    try:
+        async with db.begin_nested():
+            await step()
+    except Exception as exc:  # noqa: BLE001 — the worker must start anyway
+        log.warning("seed: observation %s skipped: %s: %s", label, type(exc).__name__, exc)
+
+
+async def _ensure_observation(db: AsyncSession) -> None:
+    """ADR-027 (10-backend/03 « Bots d'observation »): create what is missing, touch nothing else."""
+    from app.domain.trading import lifecycle as lc
+
+    for file, name in OBSERVATION_POLICIES:
+        config = _load(SEED_DIR / file)
+
+        async def policy(config=config, name=name) -> None:
+            if await get_policy_version(db, config["policy_id"], config["version"]) is None:
+                pv = await create_policy_version(db, config=config, name=name, actor=SEED_ACTOR)
+                await publish_policy_version(db, pv, actor=SEED_ACTOR, reason=OBSERVATION_REASON,
+                                             self_approved=True)
+                log.info("seed: policy %s@%s published", config["policy_id"], config["version"])
+
+        await _observation_step(db, f"policy {file}", policy)
+
+    for file, name, bot_name in OBSERVATION_BOTS:
+        config = _load(SEED_DIR / file)
+
+        async def strategy(config=config, name=name) -> None:
+            if await get_strategy_version(db, config["strategy_id"], config["version"]) is None:
+                sv = await create_strategy_version(db, config=config, name=name, actor=SEED_ACTOR)
+                await publish_strategy_version(db, sv, actor=SEED_ACTOR, reason=OBSERVATION_REASON,
+                                               self_approved=True)
+                log.info("seed: strategy %s@%s published", config["strategy_id"], config["version"])
+
+        async def bot(config=config, bot_name=bot_name) -> None:
+            if await db.scalar(select(Bot.id).where(Bot.name == bot_name)) is not None:
+                return
+            sv = await get_strategy_version(db, config["strategy_id"], config["version"])
+            pv = await db.scalar(
+                select(RiskPolicyVersion)
+                .where(RiskPolicyVersion.policy_id == config["risk_policy_id"],
+                       RiskPolicyVersion.status == PolicyVersionStatus.PUBLISHED)
+                .order_by(RiskPolicyVersion.created_at.desc()).limit(1))
+            if sv is None or pv is None:
+                raise LookupError(f"{config['strategy_id']} or policy {config['risk_policy_id']} missing")
+            await lc.create_paper_bot(db, name=bot_name, strategy_version=sv, risk_policy_version=pv,
+                                      capital=PAPER_INITIAL_CAPITAL_USD, actor=SEED_ACTOR,
+                                      reason=OBSERVATION_REASON)
+            log.info("seed: bot %s created (READY)", bot_name)
+
+        await _observation_step(db, f"strategy {file}", strategy)
+        await _observation_step(db, f"bot {bot_name}", bot)
+
+
+async def run_seed(db: AsyncSession, *, observation: bool = False) -> SeedResult:
+    """Create/complete the bootstrap data; safe to run any number of times.
+    `observation` (the worker passes True) adds the ADR-027 steps 5–7."""
     pv = await _ensure_policy(db)
     sv = await _ensure_strategy(db)
     bot = await _ensure_bot(db, sv, pv)
     await _ensure_initial_deposit(db, bot)
     await db.commit()
+    if observation:
+        await _ensure_observation(db)
+        await db.commit()
     return SeedResult(strategy_version=sv, policy_version=pv, bot=bot)

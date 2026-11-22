@@ -35,7 +35,7 @@ async def run_cycle(db: AsyncSession, stop_requested: asyncio.Event) -> None:
     if stop_requested.is_set():
         return
     log.info("0-hl worker starting")
-    seed = await run_seed(db)
+    seed = await run_seed(db, observation=True)
     log.info("seed ok: bot %s (%s, %s)", seed.bot.name, seed.bot.environment.value,
              seed.bot.status.value)
     async with httpx.AsyncClient(timeout=20.0) as http:

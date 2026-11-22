@@ -284,3 +284,16 @@ Hiérarchie : **service** (ce que l'utilisateur demande) → **agent** (qui rais
 
 **Suite.** Spec de la vue IA, des outils, des agents, du journal et du budget : [03-ecrans/UI-16](../03-ecrans/UI-16-services-ia.md) (validée par l'opérateur le 2026-11-21).
 
+## ADR-027 — Lancement paper d'observation sans attendre le verdict des études (actée)
+
+**Constat (2026-11-21).** Les ADR-023, 024 et 025 ne lançaient une stratégie en paper que si son étude hors production passait ses critères. Résultat : un seul bot tourne (STRAT-01, perdante) et quatre stratégies prêtes restent dans des fichiers. Or le paper n'engage aucun argent réel ; un bot paper apporte au contraire ce que l'étude ne rejoue pas (carnets, spreads et exécutions réels, comportement du moteur en continu).
+
+**Décision (opérateur, 2026-11-21).**
+1. Toute version de stratégie validée par le schéma peut être **publiée pour PAPER et lancée sur un bot paper dédié d'observation**, sans attendre le verdict de son étude. Cela remplace les conditions « si l'étude passe » des lancements paper d'ADR-023 (S2.3), ADR-024 (S6.2, S11.2) et ADR-025 (S12.2).
+2. Les études et leurs critères fixés à l'avance restent la référence pour **juger** une stratégie, choisir une variante et, plus tard, préparer un éventuel LIVE (ADR-009 inchangé : aucun LIVE sans ADR explicite). Un bot d'observation lancé avant verdict ne vaut pas validation.
+3. Lancement initial : STRAT-02 `breakout-1h@0.1.0` → `paper-kraken-02`, STRAT-06 `rebound@0.1.0` → `paper-kraken-03`, STRAT-11 `rotation@0.1.0` (policy `rotation` v1) → `paper-kraken-04`, STRAT-12 `pullback@0.1.0` → `paper-kraken-05` ; 10 000 USD paper chacun (ADR-010) ; versions telles que dans `examples/`, sans variante choisie a posteriori. STRAT-01 (`paper-kraken-01`) reste en entrées suspendues.
+4. Les cinq bots atteignent la limite de 5 bots non arrêtés (06-agents/04) : un nouveau lancement exige d'arrêter un bot.
+5. Exécution **au démarrage du worker, par le seed** (10-backend/03 « Bots d'observation »), car aucun écran ne crée encore une nouvelle stratégie et l'opérateur n'a pas à se connecter au serveur : versions publiées par `system:seed`, bots créés par la même fonction que « New bot » (mêmes validations et audits), à l'état `READY` ; l'opérateur les démarre depuis la page Bots. Motif « ADR-027 observation paper ». La création de nouvelles stratégies depuis l'interface (catalogue UI-04) est un lot ultérieur.
+
+**Conséquence pour le gate M2.** Le gate (13-roadmap) exige toujours une stratégie dont le résultat net est reproductible sur une période non utilisée pour la choisir ; les bots d'observation fournissent la comparaison dans UI-12, pas le verdict.
+
