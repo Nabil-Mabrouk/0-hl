@@ -6,12 +6,12 @@
   },
   "00-guide/01-sommaire.md": {
     "path": "chapitre-2.md",
-    "sha256": "7b276d1e329df83c1223d02599ecf9a338dd2b449fcf418b0e24ae47d3d8c6e8",
+    "sha256": "ddf493912883d1d4da1fa700cb401316a8051cfe6cda5e41da022ccf4fc71926",
     "order": 2
   },
   "00-guide/02-decisions.md": {
     "path": "02-projects/0-hl/spec/registre-des-decisions-d-architecture-adr.md",
-    "sha256": "dddcebaf4e6f8ff71f8f6893affae05d9d32cae2eaf0886a3cf489a51c57cab4",
+    "sha256": "995c117f496822d9afa0be99075a37402ab966de29aca54bb89299c11c4c4baf",
     "order": 3
   },
   "01-produit/01-vision-et-perimetre.md": {
@@ -112,192 +112,192 @@
   "03-ecrans/M1-terminal-et-bots.md": {
     "path": "02-projects/0-hl/spec/ecrans-m1-5-live-terminal-ui-01-et-bots-sessions-ui-02.md",
     "sha256": "d7a292d51f38514e0b4fd7d0cbeaf10ef8e0f99849c158e3e9eb3961b1805387",
-    "order": 27
+    "order": 28
   },
   "04-metier/01-entites-et-etats.md": {
     "path": "02-projects/0-hl/spec/modele-metier-etats-et-invariants.md",
     "sha256": "46239df3d0edb3b8bdcf4e7893ba89cd8108b86b64ee1611aa6f2c2615eeeca3",
-    "order": 29
+    "order": 30
   },
   "04-metier/02-evenements-et-commands.md": {
     "path": "02-projects/0-hl/spec/bus-devenements-commandes-et-reconciliation.md",
     "sha256": "5720412448b3da379f5ea2885ccd81eef3a6ccdd3107321cc9e8d26f2a502b7b",
-    "order": 30
+    "order": 31
   },
   "05-strategies/01-theorie-signaux.md": {
     "path": "02-projects/0-hl/spec/theorie-de-marche-et-construction-des-signaux.md",
     "sha256": "23cc2d412059395c03d0132543eebdf381e4ef52053321383668da65554f8b64",
-    "order": 31
+    "order": 32
   },
   "05-strategies/02-catalogue-strategies.md": {
     "path": "02-projects/0-hl/spec/catalogue-des-strategies-configurables.md",
     "sha256": "7b5c6bceee30ec86edea6cb6ef1c68004979e8c89eeebfad80581865b007b654",
-    "order": 32
+    "order": 33
   },
   "05-strategies/03-risque-mathematique.md": {
     "path": "02-projects/0-hl/spec/formules-du-risque-pnl-et-metriques.md",
     "sha256": "4bd98371cbf0baf6de55d355fea8654024e346c488461fa1ecd1a6c4b7b90be3",
-    "order": 33
+    "order": 34
   },
   "06-agents/01-architecture-agents.md": {
     "path": "02-projects/0-hl/spec/six-agents-orchestration-et-responsabilites.md",
     "sha256": "743e9a333369fb49885a9413190f5e95a94cdf32037703f3b67388651d9b2825",
-    "order": 35
+    "order": 36
   },
   "06-agents/02-ia-et-explicabilite.md": {
     "path": "02-projects/0-hl/spec/agents-ia-outils-et-explicabilite.md",
     "sha256": "c3c1a96d5251a56b477525c588613046b3b43eafffff305959810af20d0fb399",
-    "order": 36
+    "order": 37
   },
   "06-agents/03-agents-m1.md": {
     "path": "02-projects/0-hl/spec/agents-de-decision-conception-m1-3.md",
     "sha256": "800a9244a1f6a4d61ee99bf8ed84ec7a60544dcd5b804eca125734b32f77706b",
-    "order": 37
+    "order": 38
   },
   "07-data/01-connecteurs-et-normalisation.md": {
     "path": "02-projects/0-hl/spec/collecte-provenance-et-normalisation-de-donnees.md",
     "sha256": "2455ed2b64e64a6963c7d4ecfdc5ff124e75336937905ad48aff795cdd1e3321",
-    "order": 39
+    "order": 40
   },
   "07-data/02-onchain-graph-et-rug.md": {
     "path": "02-projects/0-hl/spec/analyse-on-chain-graphes-de-wallets-et-anti-rug.md",
     "sha256": "222dbb8bfdff1d9c32a5cb9bbd32d76d1e076aecce7f35d438a24e07c57cb755",
-    "order": 40
+    "order": 41
   },
   "07-data/03-connecteur-kraken-m1.md": {
     "path": "02-projects/0-hl/spec/connecteur-kraken-spot-conception-m1-2.md",
     "sha256": "1e104b9a217d5a80806f7c175ab27a53ff71f49bdaab431e453aee2dceac6a24",
-    "order": 41
+    "order": 42
   },
   "08-risque-execution/01-risk-engine.md": {
     "path": "02-projects/0-hl/spec/risk-engine-regles-deterministes-et-garde-fous.md",
     "sha256": "c5603cf3ba04c7cb4adea4f0945a5a05772fd18c910a9982305da8fd34a8b0c3",
-    "order": 42
+    "order": 43
   },
   "08-risque-execution/02-execution-engine.md": {
     "path": "02-projects/0-hl/spec/execution-engine-cex-dex-idempotence.md",
     "sha256": "560f421277e2fde770ec526f02adf1bd449604bc0dd31ec81e594642967d270a",
-    "order": 43
+    "order": 44
   },
   "08-risque-execution/03-ledger-et-reconciliation.md": {
     "path": "02-projects/0-hl/spec/ledger-positions-et-reconciliation.md",
     "sha256": "2430b0d6f4f162fce2f2180c804536b74ade5fa7d3afda48f088ca2486f00a8e",
-    "order": 44
+    "order": 45
   },
   "09-recherche/01-backtests-et-validation.md": {
     "path": "02-projects/0-hl/spec/backtesting-evenementiel-replay-et-validation-scientifique.md",
     "sha256": "b44989b98b89391bb2afed2c348a9071b7b06461999575e4920de74a66e2509f",
-    "order": 45
+    "order": 46
   },
   "09-recherche/02-laboratoire-quant.md": {
     "path": "02-projects/0-hl/spec/laboratoire-quantitatif-et-gouvernance-experimentale.md",
     "sha256": "1d78037b019f2e8744ec3c8c470c09f0cfc910290cf199dbd0c32034ba31966e",
-    "order": 46
+    "order": 47
   },
   "09-recherche/03-etude-strat01.md": {
     "path": "02-projects/0-hl/spec/etude-strat-01-hors-production-adr-020.md",
     "sha256": "f650e2237fc7889b44f494186381bd1822dc71eaf69245c78ca22ce9a362e427",
-    "order": 47
+    "order": 48
   },
   "09-recherche/04-backtest-m2.md": {
     "path": "02-projects/0-hl/spec/backtest-m2-2-rejeu-des-agents-reels-sur-l-historique-enregistre-adr-021.md",
     "sha256": "abc372273937f6b6e0e5232ac1eb2168d4cbe0364692d16c6e2d33b5795bd8eb",
-    "order": 48
+    "order": 49
   },
   "10-backend/01-architecture-deploiement.md": {
     "path": "02-projects/0-hl/spec/architecture-backend-et-modules-techniques.md",
     "sha256": "bc5bdde092001494105719c7745612cc8704dc982cfa40f60b991f8bb498cd47",
-    "order": 53
+    "order": 54
   },
   "10-backend/02-api-websocket-modeles.md": {
     "path": "02-projects/0-hl/spec/api-rest-websocket-schemas-et-erreurs.md",
     "sha256": "fb46e791af281ba39d64d1c572ae0891b1655445bc41f542e50547b3bd30e500",
-    "order": 54
+    "order": 55
   },
   "10-backend/03-modele-donnees-m1.md": {
     "path": "02-projects/0-hl/spec/modele-de-donnees-et-fondations-m1-1.md",
     "sha256": "c5a63577920bba7130569091ff0fbeeb830567d896505761614293c718c2ec33",
-    "order": 55
+    "order": 56
   },
   "10-backend/04-api-m1.md": {
     "path": "02-projects/0-hl/spec/api-rest-et-flux-terminal-conception-m1-4.md",
     "sha256": "73855da5adef9c0133ed02f6a068087278a352c6db8aacf9c2ec7fba13912fed",
-    "order": 56
+    "order": 57
   },
   "11-securite-ops/01-securite-et-conformite.md": {
     "path": "02-projects/0-hl/spec/securite-applicative-droits-secrets-et-conformite.md",
     "sha256": "1b8f4d0e04263622c33329ddb4356ce6b6d47994b22294ca7ce3eb794614139d",
-    "order": 57
+    "order": 58
   },
   "11-securite-ops/02-runbooks-slo.md": {
     "path": "02-projects/0-hl/spec/exploitation-24-7-incidents-et-observabilite.md",
     "sha256": "2b8c6fd444e09ae360dbc6383b6f52d57e7d63652bd26176146f70bb64978817",
-    "order": 58
+    "order": 59
   },
   "12-tests/01-plan-de-recette.md": {
     "path": "02-projects/0-hl/spec/plan-de-tests-et-criteres-de-livraison.md",
     "sha256": "4fbc718bc2e61ac3db28fcebcf5630b6e5fae153caf44d7679c0223a7403325c",
-    "order": 59
+    "order": 60
   },
   "12-tests/02-recette-m1.md": {
     "path": "02-projects/0-hl/spec/recette-du-jalon-m1-outillage-et-procedure-m1-6.md",
     "sha256": "5f501181fb88b7aed89dffcd51bfe8cba42ebf3d289152eb3a6646e92d5f42a7",
-    "order": 60
+    "order": 61
   },
   "13-roadmap/01-plan-execution.md": {
     "path": "02-projects/0-hl/spec/roadmap-backlog-et-consignes-aux-agents-developpeurs.md",
-    "sha256": "dfb221870f78e2ed4023b37b65fa11223acb4b52d8e4e29f246bcfbe1e2ada91",
-    "order": 62
+    "sha256": "c7229cd8fc14a24dc0d56a2ffba4d53a9154b02575b4f95b240867abf2076d44",
+    "order": 63
   },
   "14-references/01-sources-et-limites.md": {
     "path": "02-projects/0-hl/spec/sources-hypotheses-et-limitations.md",
     "sha256": "f7c477c87b571643a3a655b4f806d43b20b8f926861b1059ea7f3317d8278522",
-    "order": 63
+    "order": 64
   },
   "README.md": {
     "path": "02-projects/0-hl/spec/0-hl-bible-de-developpement-v2-1.md",
     "sha256": "63f8c8d3e9e5d823db006cd9840737d535931fb12a554966ed5cf5d6c0e495ce",
-    "order": 75
+    "order": 76
   },
   "05-strategies/04-versions-sans-code-m2.md": {
     "path": "02-projects/0-hl/spec/versions-de-strategie-et-de-policy-sans-code-conception-m2-3-adr-021.md",
     "sha256": "2f7e85e2d65017bbba87aae80d9fed55790d4d8bfeebf87b7e0c7cfe42c9d1a1",
-    "order": 34
+    "order": 35
   },
   "03-ecrans/M2-trades-et-statistiques.md": {
     "path": "02-projects/0-hl/spec/ecrans-m2-5-trades-ui-03-et-statistiques-ui-12-adr-021.md",
     "sha256": "7368c6d9608312350bcdbf9331b760cf26db6a938a7475c6496661c5f9254409",
-    "order": 28
+    "order": 29
   },
   "06-agents/04-plusieurs-bots-m2.md": {
     "path": "02-projects/0-hl/spec/plusieurs-bots-paper-conception-m2-4-adr-021.md",
     "sha256": "36fb74d50de0659c17a0548652fc2965a76e4be5c468a569f4fb79d620221f7e",
-    "order": 38
+    "order": 39
   },
   "12-tests/03-recette-m2.md": {
     "path": "02-projects/0-hl/spec/recette-du-jalon-m2-tests-de-parcours-rapport-et-procedure-de-gate-m2-6-adr-021.md",
     "sha256": "d2c0a7ce41bca158491f97088adedeaf190aa4d0f21762ad7cf646eeeb0dc5a1",
-    "order": 61
+    "order": 62
   },
   "03-ecrans/UI-00-accueil-public.md": {
     "path": "02-projects/0-hl/spec/ui-00-page-d-accueil-publique-0-hl-com.md",
-    "sha256": "3c7b2e6dbc365294f1fdd83ab34eeff579ad0d9c3b214c5b1409bcc991971a51",
+    "sha256": "737e22c0697ed210323d1e9286b7b65b84f1a62804e6e23f8f14b3e19929f2b3",
     "order": 9
   },
   "09-recherche/05-etude-strat02.md": {
     "path": "02-projects/0-hl/spec/etude-strat-02-breakout-1h-hors-production-adr-023.md",
     "sha256": "8301538c7f8da3b26ffbc743b2dbc97ec33e8dafd08b608946d6374ca5281854",
-    "order": 49
+    "order": 50
   },
   "09-recherche/06-etude-strat06.md": {
     "path": "02-projects/0-hl/spec/etude-strat-06-rebond-apres-exces-hors-production-adr-024.md",
     "sha256": "2458c0271e618970014462bf8efbf4c1b2455ed831a725cad5c39975f71a65ec",
-    "order": 50
+    "order": 51
   },
   "09-recherche/07-etude-strat11.md": {
     "path": "02-projects/0-hl/spec/etude-strat-11-rotation-des-plus-fortes-hors-production-adr-024.md",
     "sha256": "bb0504c6c943a9fa2b39a2f611380384b5218b3669b3e198b1ef6f377c72095d",
-    "order": 51
+    "order": 52
   },
   "03-ecrans/UI-16-services-ia.md": {
     "path": "02-projects/0-hl/spec/ui-16-services-ia-agents-outils-journal-et-budget-adr-026.md",
@@ -307,7 +307,7 @@
   "09-recherche/08-etude-generique.md": {
     "path": "02-projects/0-hl/spec/etude-generique-d-une-version-de-strategie-adr-025.md",
     "sha256": "57f41b71c3a8886c612a70efa8cf5f29ee6a27ed573029af9e1b9fbaa661a630",
-    "order": 52
+    "order": 53
   },
   "02-design/05-market-radar.md": {
     "path": "02-projects/0-hl/spec/market-radar-figure-centrale-de-l-accueil-et-du-terminal.md",
@@ -322,56 +322,61 @@
   "examples/learn/en/strategies/breakout-1h.md": {
     "path": "02-projects/0-hl/spec/examples-learn-en-strategies-breakout-1h-md.md",
     "sha256": "f013d51e1d1383e7b602d1150d64a2d805a9e69ba22a72e32c1c4bd8ad5aa894",
-    "order": 70
+    "order": 71
   },
   "examples/learn/en/strategies/pullback.md": {
     "path": "02-projects/0-hl/spec/examples-learn-en-strategies-pullback-md.md",
     "sha256": "92e702f95a663f09b023eddf37ead255e5596405ea489b113e4e64d448cd0f98",
-    "order": 71
+    "order": 72
   },
   "examples/learn/en/strategies/rebound.md": {
     "path": "02-projects/0-hl/spec/examples-learn-en-strategies-rebound-md.md",
     "sha256": "a38b7f37a4f1cfbadf7c7cb4b8505539e712309f0ba1589e1a16a58207943f37",
-    "order": 72
+    "order": 73
   },
   "examples/learn/en/strategies/rotation.md": {
     "path": "02-projects/0-hl/spec/examples-learn-en-strategies-rotation-md.md",
     "sha256": "34f434abbe271f2d264f0e962a10e78aff9b81e47d2eefb5814cd1d3070f2a10",
-    "order": 73
+    "order": 74
   },
   "examples/learn/en/strategies/volume-spike.md": {
     "path": "02-projects/0-hl/spec/examples-learn-en-strategies-volume-spike-md.md",
     "sha256": "e2d5b4ce0b50ed703fc76679c0710f33559cbfb757e96a44e6bc802105fc6b58",
-    "order": 74
+    "order": 75
   },
   "examples/learn/en/basics/fees-spread-slippage.md": {
     "path": "02-projects/0-hl/spec/examples-learn-en-basics-fees-spread-slippage-md.md",
     "sha256": "5d14756d1c5713481a99b262f253620af577db738ad38b729a49408f7b4244a6",
-    "order": 64
+    "order": 65
   },
   "examples/learn/en/basics/glossary.md": {
     "path": "02-projects/0-hl/spec/examples-learn-en-basics-glossary-md.md",
     "sha256": "bff50e795cd852189f26a06e7e96a75c3ee540d838bc68d8d1dd4e0cfff19d5e",
-    "order": 65
+    "order": 66
   },
   "examples/learn/en/basics/how-we-judge.md": {
     "path": "02-projects/0-hl/spec/examples-learn-en-basics-how-we-judge-md.md",
     "sha256": "88178fe3d15303701b46e00faf281dc6563c74cf440b23a189ce07711c21c9e6",
-    "order": 66
+    "order": 67
   },
   "examples/learn/en/basics/reading-the-radar.md": {
     "path": "02-projects/0-hl/spec/examples-learn-en-basics-reading-the-radar-md.md",
     "sha256": "3962ec34b2348f7c44d30ae855106c58eb7a6fcbe1dc4eedc7c6f9907dd78984",
-    "order": 67
+    "order": 68
   },
   "examples/learn/en/basics/stops-targets-r.md": {
     "path": "02-projects/0-hl/spec/examples-learn-en-basics-stops-targets-r-md.md",
     "sha256": "71adca6c524d8aff939d83d14b82c478301f310911c18e56ad48b35c97c0d673",
-    "order": 68
+    "order": 69
   },
   "examples/learn/en/basics/what-is-0-hl.md": {
     "path": "02-projects/0-hl/spec/examples-learn-en-basics-what-is-0-hl-md.md",
     "sha256": "c969a71643b11c3c1ef5cc4800613ec71d2cde871e38e049abefac7728c74612",
-    "order": 69
+    "order": 70
+  },
+  "03-ecrans/UI-18-market-reports.md": {
+    "path": "02-projects/0-hl/spec/ui-18-rapports-de-marche-generes-market-reports.md",
+    "sha256": "5b287bede98bd096ce49647b55eb34d6df660dfea415ee7619a8d215aa80250d",
+    "order": 27
   }
 }
