@@ -246,7 +246,7 @@
   },
   "13-roadmap/01-plan-execution.md": {
     "path": "02-projects/0-hl/spec/roadmap-backlog-et-consignes-aux-agents-developpeurs.md",
-    "sha256": "b51a0088099a4852e1ea4bb32e550f712ba6a3b450532e0210386b6d3d59e888",
+    "sha256": "dfb221870f78e2ed4023b37b65fa11223acb4b52d8e4e29f246bcfbe1e2ada91",
     "order": 62
   },
   "14-references/01-sources-et-limites.md": {
@@ -257,7 +257,7 @@
   "README.md": {
     "path": "02-projects/0-hl/spec/0-hl-bible-de-developpement-v2-1.md",
     "sha256": "63f8c8d3e9e5d823db006cd9840737d535931fb12a554966ed5cf5d6c0e495ce",
-    "order": 69
+    "order": 75
   },
   "05-strategies/04-versions-sans-code-m2.md": {
     "path": "02-projects/0-hl/spec/versions-de-strategie-et-de-policy-sans-code-conception-m2-3-adr-021.md",
@@ -322,26 +322,56 @@
   "examples/learn/en/strategies/breakout-1h.md": {
     "path": "02-projects/0-hl/spec/examples-learn-en-strategies-breakout-1h-md.md",
     "sha256": "f013d51e1d1383e7b602d1150d64a2d805a9e69ba22a72e32c1c4bd8ad5aa894",
-    "order": 64
+    "order": 70
   },
   "examples/learn/en/strategies/pullback.md": {
     "path": "02-projects/0-hl/spec/examples-learn-en-strategies-pullback-md.md",
     "sha256": "92e702f95a663f09b023eddf37ead255e5596405ea489b113e4e64d448cd0f98",
-    "order": 65
+    "order": 71
   },
   "examples/learn/en/strategies/rebound.md": {
     "path": "02-projects/0-hl/spec/examples-learn-en-strategies-rebound-md.md",
     "sha256": "a38b7f37a4f1cfbadf7c7cb4b8505539e712309f0ba1589e1a16a58207943f37",
-    "order": 66
+    "order": 72
   },
   "examples/learn/en/strategies/rotation.md": {
     "path": "02-projects/0-hl/spec/examples-learn-en-strategies-rotation-md.md",
     "sha256": "34f434abbe271f2d264f0e962a10e78aff9b81e47d2eefb5814cd1d3070f2a10",
-    "order": 67
+    "order": 73
   },
   "examples/learn/en/strategies/volume-spike.md": {
     "path": "02-projects/0-hl/spec/examples-learn-en-strategies-volume-spike-md.md",
     "sha256": "e2d5b4ce0b50ed703fc76679c0710f33559cbfb757e96a44e6bc802105fc6b58",
+    "order": 74
+  },
+  "examples/learn/en/basics/fees-spread-slippage.md": {
+    "path": "02-projects/0-hl/spec/examples-learn-en-basics-fees-spread-slippage-md.md",
+    "sha256": "5d14756d1c5713481a99b262f253620af577db738ad38b729a49408f7b4244a6",
+    "order": 64
+  },
+  "examples/learn/en/basics/glossary.md": {
+    "path": "02-projects/0-hl/spec/examples-learn-en-basics-glossary-md.md",
+    "sha256": "bff50e795cd852189f26a06e7e96a75c3ee540d838bc68d8d1dd4e0cfff19d5e",
+    "order": 65
+  },
+  "examples/learn/en/basics/how-we-judge.md": {
+    "path": "02-projects/0-hl/spec/examples-learn-en-basics-how-we-judge-md.md",
+    "sha256": "88178fe3d15303701b46e00faf281dc6563c74cf440b23a189ce07711c21c9e6",
+    "order": 66
+  },
+  "examples/learn/en/basics/reading-the-radar.md": {
+    "path": "02-projects/0-hl/spec/examples-learn-en-basics-reading-the-radar-md.md",
+    "sha256": "3962ec34b2348f7c44d30ae855106c58eb7a6fcbe1dc4eedc7c6f9907dd78984",
+    "order": 67
+  },
+  "examples/learn/en/basics/stops-targets-r.md": {
+    "path": "02-projects/0-hl/spec/examples-learn-en-basics-stops-targets-r-md.md",
+    "sha256": "71adca6c524d8aff939d83d14b82c478301f310911c18e56ad48b35c97c0d673",
     "order": 68
+  },
+  "examples/learn/en/basics/what-is-0-hl.md": {
+    "path": "02-projects/0-hl/spec/examples-learn-en-basics-what-is-0-hl-md.md",
+    "sha256": "c969a71643b11c3c1ef5cc4800613ec71d2cde871e38e049abefac7728c74612",
+    "order": 69
   }
 }
