@@ -18,6 +18,13 @@ from app.domain.ai import runner
 from app.domain.ai.models import AiAlert, AiRun, AiSettings, AiStep
 from app.domain.ai.proxy import ProxyClient
 from app.domain.ai.services import SERVICES
+from app.domain.market_reports.facts import CADENCES
+from app.domain.market_reports.scheduler import DEFAULT_SERIES, generate as generate_report
+from app.domain.market_reports.writer import SERVICE_ID as MARKET_SERVICE_ID, LlmWriter
+
+# services with a configurable model: the AI services of UI-16 and the market reports of UI-18
+MODEL_SERVICES = [*SERVICES, MARKET_SERVICE_ID]
+_report_tasks: set[Any] = set()
 from fastapi.responses import JSONResponse
 
 from app.domain.trading.api.common import ALL_ROLES, DomainRoute, parse_uuid
@@ -64,6 +71,11 @@ class SettingsBody(_Body):
     daily_budget_usd: str | None = None
     models: dict[str, str] | None = None
     prices: dict[str, dict[str, str]] | None = None
+    market_series: list[str] | None = None          # UI-18: "1h", "4h", "24h"
+
+
+class GenerateBody(_Body):
+    cadence: str = Field(pattern="^(1h|4h|24h)$")
 
 
 def _money(v: Decimal | None) -> str | None:
@@ -93,7 +105,8 @@ def run_json(r: AiRun, steps: list[AiStep] | None = None) -> dict[str, Any]:
 
 def settings_json(s: AiSettings) -> dict[str, Any]:
     return {"daily_budget_usd": _money(s.daily_budget_usd), "max_budget_usd": _money(bud.MAX_BUDGET),
-            "models": {sid: bud.model_for(s, sid) for sid in SERVICES}, "prices": s.prices,
+            "models": {sid: bud.model_for(s, sid) for sid in MODEL_SERVICES}, "prices": s.prices,
+            "market_series": s.market_series if getattr(s, "market_series", None) is not None else list(DEFAULT_SERIES),
             "version": s.version, "updated_at": s.updated_at, "email_configured": bool(os.environ.get("ALERT_EMAIL_TO"))}
 
 
@@ -217,19 +230,25 @@ async def patch_settings(body: SettingsBody, p: Admin, db: DB,
             raise ValidationFailed(f"plafond hors de 0 à {bud.MAX_BUDGET} USD (budget du proxy)")
     models = {**(current.models or {}), **(body.models or {})}
     for sid, m in models.items():
-        if sid not in SERVICES:
+        if sid not in MODEL_SERVICES:
             raise ValidationFailed(f"service inconnu : {sid}")
         if m not in prices:
             raise ValidationFailed(f"modèle {m} sans barème de prix")
     if s is None:
         s = AiSettings(id="default", version=0)
         db.add(s)
+    if body.market_series is not None:
+        if len(set(body.market_series)) != len(body.market_series) or any(c not in CADENCES for c in body.market_series):
+            raise ValidationFailed("séries de rapports : sous-ensemble de 1h, 4h, 24h, sans doublon")
+        s.market_series = sorted(body.market_series, key=list(CADENCES).index)
+    elif s.market_series is None and current.market_series is not None:
+        s.market_series = current.market_series
     s.daily_budget_usd, s.models, s.prices = budget_v, models, prices
     s.version = current.version + 1
     s.updated_at, s.updated_by = utcnow(), p.actor
     await db.flush()
     after = settings_json(s)
-    diff = {k: {"before": before[k], "after": after[k]} for k in ("daily_budget_usd", "models", "prices")
+    diff = {k: {"before": before[k], "after": after[k]} for k in ("daily_budget_usd", "models", "prices", "market_series")
             if before[k] != after[k]}
     await record_audit(db, actor=p.actor, action="AI_SETTINGS_UPDATED", entity_type="ai_settings",
                        entity_id="default", diff=diff)
@@ -251,3 +270,17 @@ async def ack_alert(alert_id: str, p: Admin, db: DB):
         await record_audit(db, actor=p.actor, action="AI_ALERT_ACKED", entity_type="ai_alert", entity_id=a.id)
         await db.commit()
     return ok({"id": a.id, "acked_at": a.acked_at})
+
+
+@router.post("/market-reports/generate")
+async def generate_market_report(body: GenerateBody, p: Admin, db: DB):
+    """UI-18 « Generate now »: the last closed period of a series, if it has no report yet (never overwritten).
+    Runs in the background with the same rules as the worker; the result appears in /market."""
+    import asyncio
+    task = asyncio.create_task(generate_report(SESSIONS(), body.cadence, utcnow(), LlmWriter(PROXY())))
+    _report_tasks.add(task)
+    task.add_done_callback(_report_tasks.discard)
+    await record_audit(db, actor=p.actor, action="MARKET_REPORT_REQUESTED", entity_type="market_report",
+                       entity_id=body.cadence)
+    await db.commit()
+    return ok({"cadence": body.cadence, "status": "STARTED"}, status=202)

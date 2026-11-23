@@ -82,9 +82,12 @@ class ProxyClient:
                                  headers={"Authorization": f"Bearer {self.token}"})
 
     async def chat(self, *, model: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]] | None,
-                   temperature: float, max_tokens: int, timeout: float = CHAT_TIMEOUT_S) -> ChatResult:
+                   temperature: float, max_tokens: int, timeout: float = CHAT_TIMEOUT_S,
+                   response_format: dict[str, Any] | None = None) -> ChatResult:
         body: dict[str, Any] = {"model": model, "messages": messages, "temperature": temperature,
                                 "max_tokens": max_tokens}
+        if response_format is not None:              # UI-18: structured JSON output, no tools
+            body["response_format"] = response_format
         if tools:
             body["tools"] = tools
             body["tool_choice"] = "auto"

@@ -214,7 +214,9 @@ function Journal({ onOpen }: { onOpen: (id: string) => void }) {
 }
 
 interface Settings { daily_budget_usd: string; max_budget_usd: string; models: Record<string, string>;
-  prices: Record<string, { input: string; output: string }>; version: number; email_configured: boolean }
+  prices: Record<string, { input: string; output: string }>; version: number; email_configured: boolean;
+  market_series?: string[] }
+const CADENCES = ["1h", "4h", "24h"];
 
 function SettingsPanel({ services, onSaved }: { services: Service[]; onSaved: () => void }) {
   const [s, setS] = useState<Settings | null>(null);
@@ -228,7 +230,8 @@ function SettingsPanel({ services, onSaved }: { services: Service[]; onSaved: ()
   const save = async () => {
     try {
       const out = await sendJson<Settings>("PATCH", "/api/v1/ai/settings",
-        { daily_budget_usd: s.daily_budget_usd, models: s.models, prices: s.prices }, { "If-Match": `"${s.version}"` });
+        { daily_budget_usd: s.daily_budget_usd, models: s.models, prices: s.prices, market_series: s.market_series },
+        { "If-Match": `"${s.version}"` });
       setS(out);
       setMsg("saved");
       onSaved();
@@ -237,6 +240,16 @@ function SettingsPanel({ services, onSaved }: { services: Service[]; onSaved: ()
       setMsg(`${err.code}: ${err.detail}`);
     }
   };
+  const generateNow = async (cadence: string) => {
+    try {
+      await sendJson("POST", "/api/v1/ai/market-reports/generate", { cadence });
+      setMsg(`${cadence} report requested — it appears in Market within a minute if the period has none yet`);
+    } catch (e) {
+      const err = asError(e);
+      setMsg(`${err.code}: ${err.detail}`);
+    }
+  };
+  const series = s.market_series ?? ["4h", "24h"];
   const priced = Object.keys(s.prices);
   const choices = Array.from(new Set([...models.filter((m) => m.selectable).map((m) => m.id), ...priced])).filter((m) => priced.includes(m));
   return (
@@ -249,6 +262,19 @@ function SettingsPanel({ services, onSaved }: { services: Service[]; onSaved: ()
         <label key={svc.id} className="hl-field">{svc.name}
           <select value={s.models[svc.id] ?? ""} onChange={(e) => setS({ ...s, models: { ...s.models, [svc.id]: e.target.value } })}>
             {choices.map((m) => <option key={m} value={m}>{m}</option>)}</select></label>))}
+      <h2>Market reports (UI-18)</h2>
+      <fieldset className="hl-field" data-testid="market-series"><legend>Series published automatically</legend>
+        <div className="hl-actions">
+          {CADENCES.map((c) => (
+            <label key={c}><input type="checkbox" checked={series.includes(c)}
+              onChange={(e) => setS({ ...s, market_series: e.target.checked ? [...series, c] : series.filter((x) => x !== c) })} /> {c}</label>))}
+        </div></fieldset>
+      <label className="hl-field">Model for market reports
+        <select value={s.models["market-report"] ?? ""} onChange={(e) => setS({ ...s, models: { ...s.models, "market-report": e.target.value } })}>
+          {choices.map((m) => <option key={m} value={m}>{m}</option>)}</select></label>
+      <div className="hl-actions">
+        {CADENCES.map((c) => <button key={c} type="button" className="hl-btn" onClick={() => void generateNow(c)}>Generate {c} now</button>)}
+      </div>
       <h2>Price table (USD per million tokens)</h2>
       <table className="hl-grid"><thead><tr><th>model</th><th>input</th><th>output</th></tr></thead>
         <tbody>{priced.map((m) => (

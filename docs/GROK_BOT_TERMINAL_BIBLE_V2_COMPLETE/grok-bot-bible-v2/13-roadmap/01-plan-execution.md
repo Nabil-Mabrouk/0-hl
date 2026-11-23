@@ -108,7 +108,7 @@ Objectif : pouvoir juger une stratégie **avant** de la faire tourner, sur des s
 | Lot | Contenu | Références |
 |---|---|---|
 | MR.1 Faits et « données seules » — **livré (local, 2026-11-23)**, API publique de lecture comprise | dossier de faits, étiquettes, catalogue de graphiques, `hl_market_report` (+ `user_id` facultatif), calendrier du worker ; T-MR-01..03 | **03-ecrans/UI-18** |
-| MR.2 Génération LLM | agent `market-analyst`, appel, vérification, relance, budget, journal, réglages, *Generate now* ; T-MR-04, 05 | UI-18, UI-16 |
+| MR.2 Génération LLM — **livré (local, 2026-11-23)** ; meneurs et traînards limités aux paires jugeables, signe du résumé corrigé | agent `market-analyst`, appel, vérification, relance, budget, journal, réglages, *Generate now* ; T-MR-04, 05 | UI-18, UI-16 |
 | MR.3 Pages | API publique, `/market`, page rapport, carte d'accueil, graphiques SVG ; T-MR-06, 07 | UI-18, UI-00 |
 | MR.4 Relecture | premiers rapports réels relus, instructions et seuils ajustés | UI-18 |
 

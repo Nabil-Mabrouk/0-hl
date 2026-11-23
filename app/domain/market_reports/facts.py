@@ -283,7 +283,8 @@ def compute(raw: Raw) -> Result:
     excess = {i: (float(m["ret"]) - float(btc["ret"])) * 100 for i, m in others.items()} if btc else {}
     vol_ratio = {i: m["vol"] / btc["vol"] for i, m in others.items()
                  if btc and btc["vol"] > 0 and m["vol"] > 0 and m["minutes_traded"] >= W / 3}
-    ranked = sorted(excess, key=lambda i: -excess[i])
+    # leaders and laggards: only pairs traded often enough to be judged (same rule as the radar)
+    ranked = sorted((i for i in excess if others[i]["minutes_traded"] >= W / 3), key=lambda i: -excess[i])
     rets = sorted(float(m["ret"]) * 100 for m in others.values())
 
     def entry(i: str) -> dict[str, Any]:

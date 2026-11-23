@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import SessionLocal
 from app.domain.market_reports.scheduler import MarketReportScheduler
+from app.domain.market_reports.writer import LlmWriter
 from app.domain.trading.agents.engine import DecisionEngine
 from app.domain.trading.logging_setup import configure_logging
 from app.domain.trading.market.kraken_rest import KrakenRestClient
@@ -45,7 +46,7 @@ async def run_cycle(db: AsyncSession, stop_requested: asyncio.Event) -> None:
             SessionLocal, KrakenRestClient(http), websockets_connector()
         )
         engine = DecisionEngine(SessionLocal, service.state)
-        reports = MarketReportScheduler(SessionLocal)          # UI-18 market reports (ADR-030)
+        reports = MarketReportScheduler(SessionLocal, LlmWriter())   # UI-18 market reports (ADR-030)
         await asyncio.gather(service.run(stop_requested), engine.run(stop_requested),
                              reports.run(stop_requested))
     log.info("0-hl worker stopped cleanly")

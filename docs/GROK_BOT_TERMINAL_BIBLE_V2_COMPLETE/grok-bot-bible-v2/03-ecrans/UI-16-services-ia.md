@@ -130,3 +130,5 @@ Outils qui écrivent (même avec confirmation) ; agents dans le worker ou en tâ
 | T-AI-10 | exécution `RUNNING` depuis plus de 5 min ⇒ `ABANDONED` ; au plus 2 exécutions simultanées ; `Idempotency-Key` rejouée ⇒ même exécution |
 | T-AI-11 | journal immuable (aucune route de modification) ; détail complet restitué par `GET /ai/runs/{id}` |
 | T-AI-12 | écran : barre de budget, progression en direct, chronologie dépliable, *Lancer* désactivé budget épuisé, bandeau ADMIN |
+
+**Complément UI-18 (2026-11-23).** Les réglages portent aussi les séries de rapports de marché (`market_series`) et le modèle du service `market-report` ; les rapports générés par le worker sont des exécutions du journal sans utilisateur (`user_id` vide), service `market-report`, avec des étapes `MODEL_CALL` et `CHECK`.

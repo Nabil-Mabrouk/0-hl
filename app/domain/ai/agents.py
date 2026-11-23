@@ -42,11 +42,12 @@ class Agent:
     role: str
     tools: tuple[str, ...]
     limits: Limits = field(default_factory=Limits)
-    output: str = "text"            # text | strategy_json
+    output: str = "text"            # text | strategy_json | market_report_json
+    common: str | None = COMMON     # shared rules of the tool-using agents; None for a self-contained role
 
     @property
     def instructions(self) -> str:
-        return f"{self.role}\n\n{COMMON}"
+        return self.role if self.common is None else f"{self.role}\n\n{self.common}"
 
     @property
     def sha256(self) -> str:

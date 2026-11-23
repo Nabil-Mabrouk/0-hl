@@ -122,4 +122,25 @@ describe("AI services screen", () => {
     render(<AiBudgetBanner />);
     expect(await screen.findByTestId("ai-global-alert")).toHaveTextContent("over 80 %");
   });
+
+  it("UI-18: settings show the market report series and request a report now", async () => {
+    const m = mockFetch(["ADMIN", "OBSERVER"], (u, init) => {
+      if (u.endsWith("/api/v1/ai/budget")) return json(budget());
+      if (u.endsWith("/api/v1/ai/models")) return json({ items: [{ id: "groq-gpt-oss-120b", selectable: true }] });
+      if (u.endsWith("/api/v1/ai/settings")) return json({ daily_budget_usd: "10", max_budget_usd: "12", version: 1,
+        models: { "market-report": "groq-gpt-oss-120b" }, prices: { "groq-gpt-oss-120b": { input: "0.15", output: "0.60" } },
+        email_configured: true, market_series: ["4h", "24h"] });
+      if (u.endsWith("/api/v1/ai/market-reports/generate") && init?.method === "POST") return json({ status: "STARTED" }, 202);
+      return undefined;
+    });
+    page("/ai?tab=settings");
+    const series = await screen.findByTestId("market-series");
+    expect(series.querySelectorAll("input:checked")).toHaveLength(2);
+    expect(screen.getByLabelText("Model for market reports")).toHaveValue("groq-gpt-oss-120b");
+    await userEvent.click(screen.getByRole("button", { name: "Generate 4h now" }));
+    const post = m.mock.calls.find(([u, i]) => String(u).endsWith("/market-reports/generate") && i?.method === "POST")!;
+    expect(JSON.parse(String(post[1]!.body))).toEqual({ cadence: "4h" });
+    expect(await screen.findByText(/4h report requested/)).toBeInTheDocument();
+  });
 });
+

@@ -41,11 +41,12 @@ def data_only_text(facts: dict[str, Any]) -> tuple[str, list[str], list[dict[str
              "btc-dominance": "BTC holds up best", "high-volatility": "high volatility", "calm": "calm market"}
     mood = next((words[t] for t in tags if t in words), "mixed market")
     p = facts["period"]
-    title = f"BTC {'+' if btc and not btc.startswith('-') else ''}{btc or '—'} % · {br or '—'} % of pairs up · {mood}"
+    signed = f"{'+' if btc and not btc.startswith('-') else ''}{btc or '—'}"
+    title = f"BTC {signed} % · {br or '—'} % of pairs up · {mood}"
     lead = facts["leaders"][0] if facts["leaders"] else None
     lag = facts["laggards"][0] if facts["laggards"] else None
     summary = [
-        f"BTC moved {btc or '—'} % over the {p['cadence']} to {p['end']:%H:%M} UTC; volatility was "
+        f"BTC moved {signed} % over the {p['cadence']} to {p['end']:%H:%M} UTC; volatility was "
         f"{facts['btc']['volatility_vs_7d'] or '—'}× its 7-day norm.",
         f"{br or '—'} % of the {p['pairs']} pairs rose and {facts['breadth']['beating_btc_pct'] or '—'} % beat BTC.",
         (f"Best against BTC: {lead['symbol']} ({lead['excess_pp']} pp); worst: {lag['symbol']} ({lag['excess_pp']} pp)."
@@ -67,7 +68,8 @@ async def previous_reports(db: AsyncSession, cadence: str, end: datetime) -> tup
 
 
 async def build_report(db: AsyncSession, cadence: str, end: datetime,
-                       writer: Callable[[AsyncSession, MarketReport, F.Result], Awaitable[None]] | None = None) -> MarketReport:
+                       writer: Callable[[AsyncSession, MarketReport, F.Result, list[dict[str, Any]]], Awaitable[None]] | None = None
+                       ) -> MarketReport:
     """Facts + charts for one period; DATA_ONLY unless `writer` (MR.2, LLM) fills the text."""
     prev2, prev7 = await previous_reports(db, cadence, end)
     raw = await F.load(db, cadence, end, prev2, prev7)
@@ -84,7 +86,11 @@ async def build_report(db: AsyncSession, cadence: str, end: datetime,
         dispersion_pp=_dec(result.facts["dispersion"]["iqr_pp"]),
         btc_vol_ratio=_dec(result.facts["btc"]["volatility_vs_7d"]), volume_ratio=_dec(result.facts["volume"]["vs_7d"]))
     if writer is not None:
-        await writer(db, report, result)
+        try:
+            await writer(db, report, result, prev2)
+        except Exception as exc:  # noqa: BLE001 — an unexpected writer error keeps the data-only report
+            log.exception("market report %s %s: LLM writer failed", cadence, end.isoformat())
+            report.error_detail = f"LLM writer error: {type(exc).__name__}: {exc}"[:500]
     return report
 
 
@@ -96,43 +102,51 @@ async def active_series(db: AsyncSession) -> list[str]:
 
 
 async def run_once(sessions: async_sessionmaker[AsyncSession], now: datetime, writer=None) -> list[MarketReport]:
-    """Generate what is due now; returns the reports written (tests, Generate now)."""
+    """Generate what is due now for every active series; returns the reports written."""
     written: list[MarketReport] = []
     async with sessions() as db:
         series = await active_series(db)
     for cadence in series:
-        end = F.last_closed_end(cadence, now)
-        if now < end + DELAY:
-            end -= timedelta(minutes=F.CADENCES[cadence])
-        async with sessions() as db:
-            if await db.scalar(select(MarketReport.id).where(MarketReport.cadence == cadence, MarketReport.period_end == end)):
-                continue
-            last = await db.scalar(select(MarketReport.period_end).where(MarketReport.cadence == cadence)
-                                   .order_by(MarketReport.period_end.desc()).limit(1))
-            if last is not None:      # periods skipped while the worker was down
-                gap = last + timedelta(minutes=F.CADENCES[cadence])
-                while gap < end:
-                    db.add(MarketReport(cadence=cadence, period_start=gap - timedelta(minutes=F.CADENCES[cadence]),
-                                        period_end=gap, status="MISSED"))
-                    gap += timedelta(minutes=F.CADENCES[cadence])
-            try:
-                report = await build_report(db, cadence, end, writer)
-                db.add(report)
-                await db.commit()
-                written.append(report)
-                log.info("market report %s %s: %s (%s)", cadence, end.isoformat(), report.status, report.title)
-            except IntegrityError:
-                await db.rollback()           # generated meanwhile by another process: never overwritten
-            except Exception as exc:  # noqa: BLE001 — a failed report never stops the worker
-                await db.rollback()
-                log.exception("market report %s %s failed", cadence, end.isoformat())
-                async with sessions() as db2:
-                    db2.add(MarketReport(cadence=cadence, period_start=end - timedelta(minutes=F.CADENCES[cadence]),
-                                         period_end=end, status="FAILED", error_detail=f"{type(exc).__name__}: {exc}"[:500]))
-                    try:
-                        await db2.commit()
-                    except IntegrityError:
-                        await db2.rollback()
+        written += await generate(sessions, cadence, now, writer)
+    return written
+
+
+async def generate(sessions: async_sessionmaker[AsyncSession], cadence: str, now: datetime,
+                   writer=None) -> list[MarketReport]:
+    """The last closed period of one series, if it has no report yet (never overwritten)."""
+    written: list[MarketReport] = []
+    end = F.last_closed_end(cadence, now)
+    if now < end + DELAY:
+        end -= timedelta(minutes=F.CADENCES[cadence])
+    async with sessions() as db:
+        if await db.scalar(select(MarketReport.id).where(MarketReport.cadence == cadence, MarketReport.period_end == end)):
+            return written
+        last = await db.scalar(select(MarketReport.period_end).where(MarketReport.cadence == cadence)
+                               .order_by(MarketReport.period_end.desc()).limit(1))
+        if last is not None:      # periods skipped while the worker was down
+            gap = last + timedelta(minutes=F.CADENCES[cadence])
+            while gap < end:
+                db.add(MarketReport(cadence=cadence, period_start=gap - timedelta(minutes=F.CADENCES[cadence]),
+                                    period_end=gap, status="MISSED"))
+                gap += timedelta(minutes=F.CADENCES[cadence])
+        try:
+            report = await build_report(db, cadence, end, writer)
+            db.add(report)
+            await db.commit()
+            written.append(report)
+            log.info("market report %s %s: %s (%s)", cadence, end.isoformat(), report.status, report.title)
+        except IntegrityError:
+            await db.rollback()           # generated meanwhile by another process: never overwritten
+        except Exception as exc:  # noqa: BLE001 — a failed report never stops the worker
+            await db.rollback()
+            log.exception("market report %s %s failed", cadence, end.isoformat())
+            async with sessions() as db2:
+                db2.add(MarketReport(cadence=cadence, period_start=end - timedelta(minutes=F.CADENCES[cadence]),
+                                     period_end=end, status="FAILED", error_detail=f"{type(exc).__name__}: {exc}"[:500]))
+                try:
+                    await db2.commit()
+                except IntegrityError:
+                    await db2.rollback()
     return written
 
 

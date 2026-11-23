@@ -94,10 +94,12 @@ Le modèle cite 3 à 5 graphiques par un marqueur `{{chart:<id>}}` sur une ligne
 - **Erreurs** : `budget_exceeded` ⇒ rapport « données seules », pas de relance ; `429` ⇒ une relance après 20 s ; `tool_use_failed` / délai / JSON invalide ⇒ une relance ; ensuite « données seules ».
 - **Budget et journal** : mêmes règles qu'UI-16 (estimation maximale avant l'appel, coût réel ensuite, plafond journalier commun de 10 USD, alertes 80 / 100 % dans l'application et par e-mail depuis le worker) ; chaque génération est une exécution du journal IA (`hl_ai_run`, service `market-report`, `user_id` vide pour une exécution système : **migration** rendant `user_id` facultatif).
 
+**Mise en œuvre (MR.2).** `response_format` = `{"type": "json_object"}` (le mode le plus largement accepté ; le schéma attendu est décrit dans les instructions et contrôlé par la vérification) — à confirmer au premier appel réel. Agent `market-analyst` 1.0.0 sans les règles communes des agents à outils (rôle autonome, en anglais). Au plus 4 appels par rapport : une relance de transport (429 après 20 s, délai, `tool_use_failed`, proxy injoignable) et une correction. Chaque appel est une étape `MODEL_CALL` du journal, chaque contrôle une étape `CHECK` avec la liste des erreurs. Une erreur inattendue du rédacteur laisse le rapport « données seules ». Réglages dans la vue AI (UI-16, ADMIN) : séries actives, modèle `market-report`, boutons *Generate 1h / 4h / 24h now* (`POST /api/v1/ai/market-reports/generate`, audit `MARKET_REPORT_REQUESTED`).
+
 ## Vérification avant publication
 
-1. JSON conforme ; 3 points de résumé ; sections connues ; 350 à 900 mots.
-2. **Chiffres** : tout nombre du texte (avec ou sans %, pp, ×, bps, USD) doit correspondre à une valeur du dossier ou des rapports précédents, à l'arrondi d'affichage près ; les dates et heures doivent être celles de la période.
+1. JSON conforme ; 3 points de résumé ; sections connues ; 300 à 900 mots dans les sections (les instructions demandent 350 à 700 : la vérification laisse une marge).
+2. **Chiffres** : tout nombre du texte (avec ou sans %, pp, ×, bps, USD, signe ignoré) doit correspondre à une valeur du dossier ou des rapports précédents, à l'arrondi d'affichage près ; les entiers jusqu'à 31 (comptes, jours, heures) et les durées des cadences (60, 240, 1 440) sont admis ; les dates et heures doivent figurer dans le dossier. Les symboles de paires (`1INCH/USD`) sont ignorés.
 3. Graphiques : 3 à 5, identifiants du catalogue, chaque marqueur cité dans le texte a sa légende et inversement.
 4. Étiquettes : au plus 2, dans la liste.
 5. Ton : aucune expression de la liste interdite (`buy`, `sell` à l'impératif, `price target`, `will reach`, `guaranteed`, `you should`…) ; Markdown sans HTML ni lien externe.
@@ -143,7 +145,7 @@ ADMIN : `POST /api/v1/ai/market-reports/generate` (`cadence`) ; réglages des s�
 | Lot | Contenu |
 |---|---|
 | MR.1 — **livré (local, 2026-11-23)** | dossier de faits, étiquettes, catalogue de graphiques, table et migration (`hl_market_report`, `user_id` facultatif, `hl_ai_settings.market_series`), calendrier du worker, rapports **« données seules »**, et l'**API publique de lecture** (avancée de MR.3) ; T-MR-01..03, T-MR-06 |
-| MR.2 | agent `market-analyst`, appel au modèle, vérification, relance, budget et journal, réglages des séries, *Generate now* ; premier appel réel (validation de `response_format`) ; T-MR-04, 05 |
+| MR.2 — **livré (local, 2026-11-23)** | agent `market-analyst`, appel au modèle, vérification, relance, budget et journal, réglages des séries, *Generate now* ; premier appel réel (validation de `response_format`) ; T-MR-04, 05 |
 | MR.3 | API publique, page `/market`, page rapport, carte d'accueil, composants de graphiques SVG ; T-MR-06, 07 |
 | MR.4 | relecture des premiers rapports réels avec l'opérateur, ajustement des instructions (nouvelle version d'agent) et des seuils d'étiquettes |
 
