@@ -323,3 +323,16 @@ Hiérarchie : **service** (ce que l'utilisateur demande) → **agent** (qui rais
 3. Chiffres en direct par `GET /api/v1/public/strategies` et `/{id}` (sans authentification, cache 60 s, aucun montant absolu) ; règles générées depuis la version publiée ; résultats d'étude datés dans l'article.
 4. Livraison en trois lots (L.1 rubrique + fiche modèle Breakout 1h, L.2 autres fiches, L.3 articles généraux), chaque texte validé avant intégration.
 
+## ADR-030 — Rapports de marché générés par LLM depuis le worker (acceptée le 2026-11-23)
+
+**Constat (2026-11-22/23).** L'opérateur veut une analyse du marché publiée automatiquement (1 h, 4 h ou 24 h), qui explique la dynamique à partir des deux rapports précédents, illustrée de graphiques, visible sur l'accueil et sur une page Market avec tri et recherche. Le châssis a ouvert l'accès au proxy LLM depuis le worker (réseau `gitsky-llm-net`, même jeton et même budget que l'API, e-mail disponible dans le worker ; commit 0ce58d3).
+
+**Décisions de l'opérateur (2026-11-23).** Séries indépendantes (4 h et 24 h actives par défaut, 1 h activable) ; rapports **publics** ; section sur l'activité des bots incluse ; Groq `gpt-oss-120b` par défaut, modifiable ; génération par le **worker**.
+
+**Proposition.** Spec [03-ecrans/UI-18](../03-ecrans/UI-18-market-reports.md) :
+1. Le code construit un **dossier de faits** déterministe et le catalogue des graphiques ; le modèle ne produit jamais un chiffre ni la donnée d'un graphique : il rédige, choisit 3 à 5 graphiques et légende.
+2. **Vérification** avant publication (chiffres présents dans les faits, graphiques et étiquettes connus, ton sans conseil) ; une relance ; sinon rapport **« données seules »**. La série ne s'interrompt jamais.
+3. Étiquettes de situation **calculées par règles** pour la recherche ; données des graphiques figées avec le rapport.
+4. Budget, journal et alertes d'UI-16 (plafond commun de 10 USD / jour) ; `hl_ai_run.user_id` devient facultatif pour les exécutions système.
+5. Lots MR.1 (faits, graphiques, rapports « données seules ») à MR.4 (relecture des premiers rapports réels).
+

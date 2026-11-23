@@ -26,6 +26,8 @@ class AiSettings(Base):
     daily_budget_usd: Mapped[Decimal] = mapped_column(Dec, nullable=False)
     models: Mapped[dict[str, Any]] = mapped_column(JsonType, nullable=False)     # service_id -> model
     prices: Mapped[dict[str, Any]] = mapped_column(JsonType, nullable=False)     # model -> {input, output} USD / 1M tokens
+    # UI-18: active market report series ("1h", "4h", "24h"); NULL = defaults (4h, 24h)
+    market_series: Mapped[list[str] | None] = mapped_column(JsonType, nullable=True)
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
     updated_by: Mapped[str] = mapped_column(String(64), nullable=False, default="system")
@@ -41,7 +43,7 @@ class AiRun(Base):
     agent_version: Mapped[str] = mapped_column(String(32), nullable=False)
     instructions_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     model: Mapped[str] = mapped_column(String(128), nullable=False)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)  # NULL: system run (UI-18)
     idempotency_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
     input: Mapped[dict[str, Any]] = mapped_column(JsonType, nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False)

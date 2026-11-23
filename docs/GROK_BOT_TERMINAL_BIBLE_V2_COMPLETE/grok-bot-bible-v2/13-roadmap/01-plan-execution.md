@@ -103,6 +103,15 @@ Objectif : pouvoir juger une stratégie **avant** de la faire tourner, sur des s
 | L.2 Fiches — **livré (local, 2026-11-23, textes validés par l'opérateur)** | Volume Spike, Rebound after excess, Rotation of the strongest, Pullback in an uptrend | UI-17, 05-strategies/02 |
 | L.3 Basics — **livré (local, 2026-11-23, textes validés par l'opérateur)** | six articles généraux | UI-17 |
 
+**Rapports de marché (ADR-030, acceptée le 2026-11-23).**
+
+| Lot | Contenu | Références |
+|---|---|---|
+| MR.1 Faits et « données seules » — **livré (local, 2026-11-23)**, API publique de lecture comprise | dossier de faits, étiquettes, catalogue de graphiques, `hl_market_report` (+ `user_id` facultatif), calendrier du worker ; T-MR-01..03 | **03-ecrans/UI-18** |
+| MR.2 Génération LLM | agent `market-analyst`, appel, vérification, relance, budget, journal, réglages, *Generate now* ; T-MR-04, 05 | UI-18, UI-16 |
+| MR.3 Pages | API publique, `/market`, page rapport, carte d'accueil, graphiques SVG ; T-MR-06, 07 | UI-18, UI-00 |
+| MR.4 Relecture | premiers rapports réels relus, instructions et seuils ajustés | UI-18 |
+
 **Ordre proposé.** M2.1 d'abord (chaque jour d'attente est un jour d'historique perdu), puis M2.2, M2.3, M2.5, M2.4.
 
 **Hors M2.** LIVE (ADR-009), autres venues que Kraken, assistant IA, alertes avancées.

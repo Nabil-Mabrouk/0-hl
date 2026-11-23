@@ -8,3 +8,4 @@ docs/.../10-backend/03-modele-donnees-m1.md (source unique de vérité, ADR-000)
 
 from app.domain.trading.models import *  # noqa: F401,F403
 from app.domain.ai.models import *  # noqa: F401,F403,E402  (UI-16 AI services)
+from app.domain.market_reports.models import *  # noqa: F401,F403,E402  (UI-18 market reports)

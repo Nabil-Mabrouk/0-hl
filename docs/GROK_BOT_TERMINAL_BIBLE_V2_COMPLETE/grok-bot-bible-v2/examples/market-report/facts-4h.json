@@ -1,0 +1,43 @@
+{
+  "_comment": "Illustrative, fictitious data (UI-18). Every value has a stable id used by the verification.",
+  "version": "facts/1",
+  "period": { "cadence": "4h", "start": "2026-11-23T08:00:00Z", "end": "2026-11-23T12:00:00Z", "pairs": 31, "pairs_without_data": 0 },
+  "btc": { "return_pct": "-1.84", "high": "86420", "low": "84610", "volatility_pct_per_min": "0.071", "volatility_vs_7d": "1.62", "volume_vs_7d": "1.48" },
+  "eth": { "return_pct": "-2.41", "volatility_vs_7d": "1.55", "volume_vs_7d": "1.37" },
+  "breadth": { "up_pct": "19.4", "beating_btc_pct": "35.5" },
+  "dispersion": { "iqr_pp": "1.92", "iqr_vs_7d": "1.21", "median_return_pct": "-2.37" },
+  "leaders": [
+    { "symbol": "TRX/USD", "excess_pp": "2.66", "vol_ratio": "0.61" },
+    { "symbol": "XMR/USD", "excess_pp": "1.95", "vol_ratio": "0.88" },
+    { "symbol": "LTC/USD", "excess_pp": "0.74", "vol_ratio": "1.12" },
+    { "symbol": "BCH/USD", "excess_pp": "0.41", "vol_ratio": "1.20" },
+    { "symbol": "XRP/USD", "excess_pp": "0.18", "vol_ratio": "1.31" }
+  ],
+  "laggards": [
+    { "symbol": "PEPE/USD", "excess_pp": "-4.12", "vol_ratio": "2.84" },
+    { "symbol": "SUI/USD", "excess_pp": "-3.37", "vol_ratio": "2.21" },
+    { "symbol": "TAO/USD", "excess_pp": "-3.05", "vol_ratio": "2.47" },
+    { "symbol": "INJ/USD", "excess_pp": "-2.88", "vol_ratio": "2.05" },
+    { "symbol": "ENA/USD", "excess_pp": "-2.61", "vol_ratio": "2.33" }
+  ],
+  "events": [
+    { "type": "volume_spike", "symbol": "PEPE/USD", "at": "2026-11-23T09:35:00Z", "ratio": "6.2" },
+    { "type": "fast_drop", "symbol": "SUI/USD", "at": "2026-11-23T10:10:00Z", "drop_pct": "-4.6" }
+  ],
+  "liquidity": { "spread_bps_median": "4.1", "spread_vs_7d": "1.34", "depth_vs_7d": "0.82" },
+  "bots": [
+    { "name": "paper-kraken-02", "strategy": "Breakout 1h", "signals": 0, "refusals": {}, "opened": 0, "closed": 0, "net_pct": "0.00" },
+    { "name": "paper-kraken-03", "strategy": "Rebound after excess", "signals": 2, "refusals": { "spread": 1 }, "opened": 1, "closed": 0, "net_pct": "-0.31" },
+    { "name": "paper-kraken-04", "strategy": "Rotation of the strongest", "signals": 0, "refusals": {}, "opened": 0, "closed": 1, "net_pct": "-0.87" },
+    { "name": "paper-kraken-05", "strategy": "Pullback in an uptrend", "signals": 0, "refusals": {}, "opened": 0, "closed": 0, "net_pct": "0.00" }
+  ],
+  "regime": { "tags": ["btc-down", "broad-selloff", "high-volatility"] },
+  "changes": {
+    "previous": [
+      { "period_end": "2026-11-23T08:00:00Z", "btc_return_pct": "-0.62", "breadth_up_pct": "38.7", "dispersion_iqr_pp": "1.10" },
+      { "period_end": "2026-11-23T04:00:00Z", "btc_return_pct": "0.48", "breadth_up_pct": "61.3", "dispersion_iqr_pp": "0.94" }
+    ],
+    "btc_return_delta_pp": "-1.22",
+    "breadth_delta_pp": "-19.3"
+  }
+}

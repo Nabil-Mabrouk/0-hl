@@ -10,7 +10,8 @@ redéploiement) :
   1. amorçage idempotent des données (10-backend/03) ;
   2. flux Kraken Spot (M1.2) jusqu'à l'arrêt ;
   3. agents de décision (M1.3, 06-agents/03) en parallèle, sur l'état de marché
-     en mémoire.
+     en mémoire ;
+  4. rapports de marché (UI-18, ADR-030), calcul lourd dans un thread.
 """
 
 import asyncio
@@ -20,6 +21,7 @@ import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import SessionLocal
+from app.domain.market_reports.scheduler import MarketReportScheduler
 from app.domain.trading.agents.engine import DecisionEngine
 from app.domain.trading.logging_setup import configure_logging
 from app.domain.trading.market.kraken_rest import KrakenRestClient
@@ -43,5 +45,7 @@ async def run_cycle(db: AsyncSession, stop_requested: asyncio.Event) -> None:
             SessionLocal, KrakenRestClient(http), websockets_connector()
         )
         engine = DecisionEngine(SessionLocal, service.state)
-        await asyncio.gather(service.run(stop_requested), engine.run(stop_requested))
+        reports = MarketReportScheduler(SessionLocal)          # UI-18 market reports (ADR-030)
+        await asyncio.gather(service.run(stop_requested), engine.run(stop_requested),
+                             reports.run(stop_requested))
     log.info("0-hl worker stopped cleanly")

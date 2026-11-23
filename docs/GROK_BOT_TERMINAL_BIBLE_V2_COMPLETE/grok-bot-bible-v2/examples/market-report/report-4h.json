@@ -1,0 +1,43 @@
+{
+  "_comment": "Illustrative model output for facts-4h.json (UI-18). Every number appears in the facts or the previous reports.",
+  "title": "A falling market widens: only 19.4 % of pairs up as BTC slips -1.84 %",
+  "summary": [
+    "BTC fell -1.84 % between 08:00 and 12:00 UTC, with volatility at 1.62× its 7-day norm.",
+    "The decline spread: 19.4 % of pairs rose, down from 38.7 % in the previous report and 61.3 % before it.",
+    "Defensive names held up best (TRX/USD +2.66 pp vs BTC), while volatile small caps such as PEPE/USD lagged by -4.12 pp."
+  ],
+  "sections": [
+    {
+      "id": "regime",
+      "heading": "A broad sell-off",
+      "body": "Three reports in a row show the same direction: BTC went from +0.48 % to -0.62 % and now -1.84 %. The weakness is no longer limited to a few coins: the median pair lost -2.37 %, more than BTC itself.\n\n{{chart:btc-breadth}}"
+    },
+    {
+      "id": "leaders",
+      "heading": "Who held up, who did not",
+      "body": "The pairs that did best against BTC were the calmer ones — TRX/USD and XMR/USD moved less than BTC (0.61× and 0.88× its volatility). The laggards were the most volatile: PEPE/USD, SUI/USD and TAO/USD all moved more than twice as much as BTC.\n\n{{chart:leaders}}"
+    },
+    {
+      "id": "volatility",
+      "heading": "Nervous and thinner",
+      "body": "Volume ran at 1.48× its usual level and order books were thinner (depth at 0.82× normal), so prices moved more for the same amount traded. PEPE/USD saw a burst of 6.2× its usual volume at 09:35 UTC; SUI/USD dropped -4.6 % within an hour from 10:10 UTC.\n\n{{chart:distribution}}"
+    },
+    {
+      "id": "bots",
+      "heading": "What the paper bots did",
+      "body": "Little. Rebound after excess saw 2 signals, entered 1 trade and had 1 refused for a wide spread. Rotation of the strongest closed 1 position. Breakout 1h and Pullback in an uptrend stayed out, as their rules require a rising market.\n\n{{chart:bots}}"
+    },
+    {
+      "id": "watch",
+      "heading": "What to watch",
+      "body": "Whether the share of rising pairs keeps falling, and whether volatility stays above its norm in the next report."
+    }
+  ],
+  "charts": [
+    { "id": "btc-breadth", "caption": "BTC fell through the period while the share of rising pairs stayed low." },
+    { "id": "leaders", "caption": "The calmer pairs beat BTC; the most volatile ones lagged it." },
+    { "id": "distribution", "caption": "Most pairs ended below zero, with a long tail of large losses." },
+    { "id": "bots", "caption": "Only the rebound strategy found entries in this market." }
+  ],
+  "tags": []
+}
