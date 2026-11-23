@@ -246,7 +246,7 @@
   },
   "13-roadmap/01-plan-execution.md": {
     "path": "02-projects/0-hl/spec/roadmap-backlog-et-consignes-aux-agents-developpeurs.md",
-    "sha256": "c7229cd8fc14a24dc0d56a2ffba4d53a9154b02575b4f95b240867abf2076d44",
+    "sha256": "f5b214a6b977dd9298cd0af2df721336db296cc4e21309e0ed1372a777b8933f",
     "order": 63
   },
   "14-references/01-sources-et-limites.md": {
@@ -301,7 +301,7 @@
   },
   "03-ecrans/UI-16-services-ia.md": {
     "path": "02-projects/0-hl/spec/ui-16-services-ia-agents-outils-journal-et-budget-adr-026.md",
-    "sha256": "e5367bf38d2812a846eb4629312a554f99663da1a0e39099fc0e26b267e22818",
+    "sha256": "26f9e922477289524c016193ef676cb5eb15ce206f0595da084d7ac7e727c398",
     "order": 25
   },
   "09-recherche/08-etude-generique.md": {
@@ -376,7 +376,7 @@
   },
   "03-ecrans/UI-18-market-reports.md": {
     "path": "02-projects/0-hl/spec/ui-18-rapports-de-marche-generes-market-reports.md",
-    "sha256": "5b287bede98bd096ce49647b55eb34d6df660dfea415ee7619a8d215aa80250d",
+    "sha256": "df5a7f884bc998b88e91eee594e0acc20e646de98eade3e86eaa216f08e20a7a",
     "order": 27
   }
 }
