@@ -1,0 +1,52 @@
+/* Market reports — spec 03-ecrans/UI-18, style 02-design/03. Tokens only. */
+.hl-market { font-size: 16px; }
+.hl-mfilters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 var(--hl-space-5); }
+.hl-mfilters .hl-input { min-width: 0; }
+.hl-mfilters input[type="search"] { flex: 1 1 220px; }
+.hl-mfilters input[inputmode="decimal"] { width: 130px; }
+.hl-mlist { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.hl-mitem { background: var(--hl-panel); border: 1px solid var(--hl-line); border-radius: var(--hl-radius-card); padding: 12px 16px; }
+.hl-mitem.missed { opacity: .6; }
+.hl-mitem h2 { margin: 6px 0 4px; font-size: 1.05rem; font-weight: 600; }
+.hl-mitem h2 a, .hl-mcard h3 a { color: var(--hl-text); text-decoration: none; }
+.hl-mitem h2 a:hover, .hl-mcard h3 a:hover { color: var(--hl-accent); }
+.hl-mitem-meta { display: flex; gap: 8px; align-items: center; color: var(--hl-muted); font-size: .85rem; margin: 0; }
+.hl-mitem-figs { margin: 0 0 6px; color: var(--hl-muted); font-size: .9rem; }
+.hl-mtags { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.hl-mtag { font: 500 11px var(--hl-mono); padding: 2px 8px; border-radius: 999px; border: 1px solid var(--hl-control-line); color: var(--hl-muted); }
+.hl-mtag.model { border-style: dashed; }
+.hl-mpager { justify-content: space-between; margin-top: var(--hl-space-5); }
+.hl-msummary { padding-left: 1.2rem; list-style: disc; }
+.hl-msummary li { margin: .3em 0; }
+.hl-mreport section h2 { font-size: 1.3rem; font-weight: 700; letter-spacing: -.01em; margin: var(--hl-space-5) 0 var(--hl-space-3); }
+.hl-mreport h1 { font-size: clamp(1.6rem, 3.4vw, 2.4rem); letter-spacing: -.03em; }
+.hl-mfoot { color: var(--hl-muted); font-size: .85rem; border-top: 1px solid var(--hl-line); padding-top: var(--hl-space-4); }
+
+.hl-mfigure { margin: var(--hl-space-4) 0; background: var(--hl-panel); border: 1px solid var(--hl-line);
+  border-radius: var(--hl-radius-card); padding: 12px; }
+.hl-mfigure figcaption { color: var(--hl-muted); font-size: .85rem; margin-top: 6px; }
+.hl-mfigure { overflow-x: auto; }
+.hl-mchart { width: 100%; min-width: 560px; height: auto; display: block; }
+.hl-mradar { min-width: 0; }
+.hl-mradar { max-width: 420px; margin: 0 auto; }
+.hl-mchart .lbl { fill: var(--hl-muted); font: 11px var(--hl-mono); }
+.hl-mchart .val { fill: var(--hl-text); font: 11px var(--hl-mono); }
+.hl-mchart .end { text-anchor: end; }
+.hl-mchart .mid { text-anchor: middle; }
+.hl-mchart .series { fill: none; stroke: var(--hl-accent); stroke-width: 2; }
+.hl-mchart .area { fill: color-mix(in srgb, var(--hl-info) 35%, transparent); stroke: var(--hl-info); stroke-width: 1; }
+.hl-mchart .guide, .hl-mchart .ring { stroke: var(--hl-line); stroke-dasharray: 3 3; fill: none; }
+.hl-mchart .ring { stroke-dasharray: none; }
+.hl-mchart .gain { fill: var(--hl-gain); }
+.hl-mchart .loss { fill: var(--hl-loss); }
+.hl-mchart .col { fill: var(--hl-faint); }
+.hl-mchart .dot, .hl-mchart .btc { fill: var(--hl-accent); }
+.hl-mchart .pt { fill: var(--hl-muted); }
+.hl-mchart .pt.hollow { fill: none; stroke: var(--hl-faint); }
+.hl-mchart .held { fill: none; stroke-width: 1.5; }
+.hl-mtable { font-size: 13px; }
+
+.hl-mcard .hl-board-body { padding: 18px; }
+.hl-mcard-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: var(--hl-space-5); align-items: start; }
+.hl-mcard h3 { margin: 0 0 8px; font-size: 1.15rem; }
+@media (max-width: 800px) { .hl-mcard-grid { grid-template-columns: 1fr; } }

@@ -104,13 +104,12 @@ export default function Navbar() {
                 {link("/risk", "Risk")}
               </div>
             )}
-            {(user || modules.tutorials) && (
-              <div className="site-nav-group" role="group" aria-label="More">
-                {user && link("/ai", "AI")}
-                {modules.tutorials && link("/guide", t("nav.learn"))}  {/* UI-17: the project Learn section */}
-                {user?.role === "admin" && <a href="/admin">{t("admin.nav")}</a>}
-              </div>
-            )}
+            <div className="site-nav-group" role="group" aria-label="More">
+              {user && link("/ai", "AI")}
+              {link("/market", "Market")}  {/* UI-18: public market reports */}
+              {modules.tutorials && link("/guide", t("nav.learn"))}  {/* UI-17: the project Learn section */}
+              {user?.role === "admin" && <a href="/admin">{t("admin.nav")}</a>}
+            </div>
             <div className="site-nav-group" role="group" aria-label="Account">
               {modules.i18n && (
                 <button className="site-nav-lang" onClick={toggleLang} type="button">

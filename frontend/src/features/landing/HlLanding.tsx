@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { apiFetch } from "../../api";
 import { useAuth } from "../../context/AuthContext";
 import MarketRadar, { useRadar } from "../radar/MarketRadar";
+import { LatestReportCard } from "../market/MarketPages";
 import "../shared/ui/ui.css";
 import "./landing-hl.css";
 
@@ -134,6 +135,10 @@ export default function HlLanding({ greeting }: { greeting?: string }) {
 
       <section className="hl-radar-section" aria-label="market radar">
         <MarketRadar data={radar.data} failed={radar.failed} />
+      </section>
+
+      <section className="hl-radar-section" aria-label="latest market report">
+        <LatestReportCard />
       </section>
 
       <section className="hl-stats" aria-label="live statistics">

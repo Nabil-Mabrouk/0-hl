@@ -4,6 +4,7 @@
 import { Route } from "react-router-dom";
 import AiPage from "../features/ai/AiPage";
 import { BasicsArticle, GuidePage, StrategySheet } from "../features/learn/GuidePages";
+import { MarketListPage, MarketReportPage } from "../features/market/MarketPages";
 import BotsPage from "../features/bots/BotsPage";
 import StatsPage from "../features/analytics/StatsPage";
 import TradesPage from "../features/analytics/TradesPage";
@@ -29,5 +30,8 @@ export const domainRoutes = (
     <Route path="guide" element={<GuidePage />} />
     <Route path="guide/strategies/:id" element={<StrategySheet />} />
     <Route path="guide/:slug" element={<BasicsArticle />} />
+    {/* UI-18 market reports, public (spec 03-ecrans/UI-18-market-reports, ADR-030) */}
+    <Route path="market" element={<MarketListPage />} />
+    <Route path="market/:id" element={<MarketReportPage />} />
   </>
 );

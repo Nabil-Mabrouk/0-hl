@@ -36,7 +36,7 @@ describe("HlLanding", () => {
     expect(screen.getByTestId("stat-pairs")).toHaveTextContent("38 / 40");
     expect(screen.getByTestId("stat-evals")).toHaveTextContent("51,840");
     expect(screen.getByTestId("stat-days")).toHaveTextContent("3.1");
-    expect(String((fetchMock.mock.calls[0] as unknown[])[0])).toContain("/api/v1/public/stats");
+    expect(fetchMock.mock.calls.some((c) => String((c as unknown[])[0]).includes("/api/v1/public/stats"))).toBe(true);
   });
 
   it("shows — (never 0) when the endpoint fails, and OFFLINE when the worker is down", async () => {
