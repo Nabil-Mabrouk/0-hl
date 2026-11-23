@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { article, articles, parseArticle, segments } from "./content";
-import { GuidePage, StrategySheet, type StrategyDetail } from "./GuidePages";
+import { BasicsArticle, GuidePage, StrategySheet, type StrategyDetail } from "./GuidePages";
 import { rules, sentence, value } from "./rules";
 
 vi.mock("../../context/AuthContext", () => ({ useAuth: () => ({ user: null }) }));
@@ -51,10 +51,12 @@ describe("Learn content", () => {
     const fs = (await import(/* @vite-ignore */ fsName)) as { readFileSync(p: string, e: string): string };
     const cwd = (globalThis as unknown as { process: { cwd(): string } }).process.cwd();
     const norm = (s: string) => s.replace(/\r\n/g, "\n");
-    for (const a of articles("strategies")) {
-      const shipped = fs.readFileSync(`${cwd}/src/domain/content/en/strategies/${a.id}.md`, "utf-8");
-      const draft = fs.readFileSync(`${cwd}/../docs/GROK_BOT_TERMINAL_BIBLE_V2_COMPLETE/grok-bot-bible-v2/examples/learn/en/strategies/${a.id}.md`, "utf-8");
-      expect(norm(shipped)).toBe(norm(draft));
+    for (const kind of ["strategies", "basics"] as const) {
+      for (const a of articles(kind)) {
+        const shipped = fs.readFileSync(`${cwd}/src/domain/content/en/${kind}/${a.id}.md`, "utf-8");
+        const draft = fs.readFileSync(`${cwd}/../docs/GROK_BOT_TERMINAL_BIBLE_V2_COMPLETE/grok-bot-bible-v2/examples/learn/en/${kind}/${a.id}.md`, "utf-8");
+        expect(norm(shipped)).toBe(norm(draft));
+      }
     }
   });
 });
@@ -85,6 +87,19 @@ describe("pages (T-L04)", () => {
     expect(card).toHaveTextContent("Breakout 1h");
     expect(card).toHaveTextContent("−0.42%");
     expect(card).toHaveTextContent("Buy a pair when it breaks above");
+    const basics = screen.getByRole("heading", { level: 2, name: "Basics" }).parentElement!;
+    expect([...basics.querySelectorAll("li a")].map((l) => l.textContent)).toEqual([
+      "What 0-hl is", "Reading the market radar", "Fees, spread and slippage", "Stops, targets and R",
+      "How we judge a strategy", "Glossary"]);
+    expect(screen.getByRole("link", { name: "Glossary" })).toHaveAttribute("href", "/guide/glossary");
+  });
+
+  it("renders a Basics article with internal links through the router", () => {
+    render(<MemoryRouter initialEntries={["/guide/glossary"]}>
+      <Routes><Route path="/guide/:slug" element={<BasicsArticle />} /></Routes></MemoryRouter>);
+    expect(screen.getByRole("heading", { level: 1, name: "Glossary" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "How we judge a strategy" })).toHaveAttribute("href", "/guide/how-we-judge");
+    expect(document.querySelector("script, iframe")).toBeNull();
   });
 
   it("renders the article with its live blocks at the reserved lines, without raw HTML", async () => {
