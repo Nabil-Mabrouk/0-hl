@@ -100,7 +100,7 @@ Objectif : pouvoir juger une stratégie **avant** de la faire tourner, sur des s
 | Lot | Contenu | Références |
 |---|---|---|
 | L.1 Rubrique et fiche modèle — **livré (local, 2026-11-22)** | `/api/v1/public/strategies` et `/{id}`, page `/guide`, modèle de fiche (blocs en direct), lien Navbar, fiche Breakout 1h ; T-L01..06 | **03-ecrans/UI-17** |
-| L.2 Fiches | Volume Spike, Rebound after excess, Rotation of the strongest, Pullback in an uptrend | UI-17, 05-strategies/02 |
+| L.2 Fiches — **livré (local, 2026-11-23, textes validés par l'opérateur)** | Volume Spike, Rebound after excess, Rotation of the strongest, Pullback in an uptrend | UI-17, 05-strategies/02 |
 | L.3 Basics | six articles généraux | UI-17 |
 
 **Ordre proposé.** M2.1 d'abord (chaque jour d'attente est un jour d'historique perdu), puis M2.2, M2.3, M2.5, M2.4.

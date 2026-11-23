@@ -42,7 +42,7 @@ describe("Learn content", () => {
   });
 
   it("ships the Breakout 1h article and falls back to English", () => {
-    expect(articles("strategies").map((a) => a.id)).toContain("breakout-1h");
+    expect(articles("strategies").map((a) => a.id)).toEqual(["volume-spike", "breakout-1h", "rebound", "rotation", "pullback"]);
     expect(article("strategies", "breakout-1h", "de")?.lang).toBe("en");                  // T-L06
   });
 
@@ -102,8 +102,8 @@ describe("pages (T-L04)", () => {
   });
 
   it("says when no bot runs the strategy, and renders a strategy without article", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(json({ ...breakout(), id: "rebound", name: "Rebound after excess", bot: null, stats: null, trades: [] }))));
-    render(<MemoryRouter initialEntries={["/guide/strategies/rebound"]}>
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(json({ ...breakout(), id: "brand-new", name: "Brand new", bot: null, stats: null, trades: [] }))));
+    render(<MemoryRouter initialEntries={["/guide/strategies/brand-new"]}>
       <Routes><Route path="/guide/strategies/:id" element={<StrategySheet />} /></Routes></MemoryRouter>);
     expect(await screen.findByText("No paper bot running this strategy.")).toBeInTheDocument();
     expect(screen.getByText("The full article for this strategy is coming soon.")).toBeInTheDocument();

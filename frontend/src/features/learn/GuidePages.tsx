@@ -146,7 +146,7 @@ export function RadarZone({ zone, id }: { zone: Article["radarZone"]; id: string
   return (
     <figure className="hl-guide-block hl-guide-radar" data-testid="block-radar">
       <svg viewBox={`0 0 ${S} ${S + 16}`} role="img"
-        aria-label={`Zone where it buys: ${x0} to ${x1} percentage points versus BTC, volatility ${2 ** y0}× to ${2 ** y1}× BTC's`}>
+        aria-label={`Zone where it buys: ${x0} to ${x1} percentage points versus BTC, volatility ${(2 ** y0).toFixed(1)}× to ${(2 ** y1).toFixed(1)}× BTC's`}>
         {[1 / 3, 2 / 3, 1].map((k) => <circle key={k} cx={c} cy={c} r={R * k} className="ring" />)}
         <line x1={c - R} x2={c + R} y1={c} y2={c} className="ring" /><line x1={c} x2={c} y1={c - R} y2={c + R} className="ring" />
         <rect x={px(x0)} y={py(y1)} width={px(x1) - px(x0)} height={py(y0) - py(y1)} rx={4}
