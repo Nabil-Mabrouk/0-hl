@@ -103,9 +103,11 @@ services:
       - internal-net
       # Lecture directe de services partagés : fleet (onglet Leads, toute la
       # flotte), module_leads (vue projet-locale du landing collector) et
-      # module_analytics (service geoip partagé, Chap 13) en ont besoin — un
-      # projet ordinaire sans aucun des trois n'a aucune raison de joindre ce
-      # réseau interne à la flotte.
+      # module_analytics (service geoip partagé, Chap 13) et module_agentic
+      # (llm-proxy partagé, Chap 18 — oubli corrigé le 2026-11-21) en ont
+      # besoin — un projet ordinaire sans aucun d'eux n'a aucune raison de
+      # joindre ce réseau interne à la flotte. Backend SEUL : le worker joint
+      # le proxy par llm-net, jamais par ce réseau (Chap 1).
       - shared-services-net
     depends_on:
       db:
@@ -195,6 +197,10 @@ services:
     networks:
       - internal-net
       - egress-net
+      # Accès au llm-proxy partagé (Chap 1/18, demande 0-hl 2026-11-23) :
+      # réseau de shared_services où SEUL llm-proxy est branché — jamais
+      # shared-services-net, qui exposerait le Postgres de la flotte.
+      - llm-net
     depends_on:
       db:
         condition: service_healthy
@@ -210,6 +216,11 @@ networks:
   # par le nom de projet Compose), jamais partagé, aucun port publié.
   egress-net:
     driver: bridge
+  # Créé par shared_services (nom explicite, jamais préfixé) : doit exister
+  # avant le premier `docker compose up` du projet en prod.
+  llm-net:
+    external: true
+    name: ${LLM_NETWORK:-gitsky-llm-net}
   # Réseau interne de shared_services (Chap 18) — jamais créé ici, seulement
   # rejoint. Nom réel dépendant du nom de projet Compose de shared_services
   # sur le serveur : vérifier avec `docker network ls` au premier déploiement
