@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import logging
+import uuid
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
@@ -121,10 +122,27 @@ async def _ensure_strategy(db: AsyncSession) -> StrategyVersion:
     return sv
 
 
+async def seed_bot(db: AsyncSession, name: str) -> Bot | None:
+    """The bot the seed created under `name`, whatever it is called now (ADR-032 point 4).
+
+    Identity = the `BOT_CREATED` audit of `system:seed` carrying that starting name, so a
+    renamed bot is not recreated and a deleted one does not come back. Bots that predate the
+    audit trail (none in production) fall back to the name."""
+    rows = (await db.execute(select(AuditEvent.entity_id, AuditEvent.diff).where(
+        AuditEvent.actor == SEED_ACTOR, AuditEvent.action == "BOT_CREATED",
+        AuditEvent.entity_type == "bot").order_by(AuditEvent.occurred_at))).all()
+    for entity_id, diff in rows:
+        if (diff or {}).get("name") == name:
+            bot = await db.get(Bot, uuid.UUID(str(entity_id)))
+            if bot is not None:
+                return bot
+    return await db.scalar(select(Bot).where(Bot.name == name, Bot.deleted_at.is_(None)))
+
+
 async def _ensure_bot(
     db: AsyncSession, sv: StrategyVersion, pv: RiskPolicyVersion
 ) -> Bot:
-    bot = await db.scalar(select(Bot).where(Bot.name == SEED_BOT_NAME))
+    bot = await seed_bot(db, SEED_BOT_NAME)
     if bot is None:
         bot = await create_bot(
             db, name=SEED_BOT_NAME, environment=Environment.PAPER, strategy_version=sv,
@@ -139,7 +157,7 @@ async def _ensure_bot(
     rebound = await db.scalar(select(AuditEvent.id).where(
         AuditEvent.entity_type == "bot", AuditEvent.entity_id == str(bot.id),
         AuditEvent.action == "BOT_REBOUND").limit(1)) is not None
-    if never_started and not rebound and (bot.strategy_version_id, bot.risk_policy_version_id) != (sv.id, pv.id):
+    if never_started and not rebound and bot.deleted_at is None and (bot.strategy_version_id, bot.risk_policy_version_id) != (sv.id, pv.id):
         before = {"strategy_version_id": bot.strategy_version_id,
                   "risk_policy_version_id": bot.risk_policy_version_id}
         bot.strategy_version_id, bot.risk_policy_version_id = sv.id, pv.id
@@ -213,7 +231,7 @@ async def _ensure_observation(db: AsyncSession) -> None:
                 log.info("seed: strategy %s@%s published", config["strategy_id"], config["version"])
 
         async def bot(config=config, bot_name=bot_name) -> None:
-            if await db.scalar(select(Bot.id).where(Bot.name == bot_name)) is not None:
+            if await seed_bot(db, bot_name) is not None:   # renamed or deleted: never recreated
                 return
             sv = await get_strategy_version(db, config["strategy_id"], config["version"])
             pv = await db.scalar(

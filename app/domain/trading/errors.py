@@ -30,6 +30,13 @@ class StateConflict(DomainError):
     http_status = 409
 
 
+class StaleVersion(DomainError):
+    """`row_version` sent by the client is no longer current (ADR-032 rename / delete)."""
+
+    code = "STALE_VERSION"
+    http_status = 409
+
+
 class VersionImmutable(DomainError):
     """A non-DRAFT strategy/policy version cannot be modified (INV-06)."""
 

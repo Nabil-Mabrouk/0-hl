@@ -107,6 +107,50 @@ Deuxième stratégie implémentée, **candidate du gate M2** (13-roadmap « Jalo
 
 **État de validation par défaut :** `RESEARCH_ONLY` ; aucune activation LIVE automatique.
 
+## STRAT-04 — Variante Kraken Spot « Buy pressure » (ADR-031, validée)
+
+Sixième stratégie et premier test du **flux d'ordres** sur des horizons de plusieurs heures. Kraken indique pour chaque transaction le côté de celui qui a pris la liquidité (taker) ; 0-hl en garde chaque minute le notionnel acheteur et vendeur. STRAT-01 n'en utilisait que 5 minutes, sans information mesurable (09-recherche/03). Paramètres [`examples/strategy-buy-pressure.json`](../examples/strategy-buy-pressure.json), grille [`examples/grid-buy-pressure.json`](../examples/grid-buy-pressure.json).
+
+**Hypothèse testable.** Quand les acheteurs prennent nettement plus de liquidité que les vendeurs sur une heure, et déjà sur quatre heures, alors que le prix n'a encore que peu monté (0 à +2 % sur 1 h), la demande n'est pas encore absorbée : la paire continue de monter plus souvent qu'elle ne touche un stop de 2,5 %, d'un écart supérieur aux frais.
+
+**Features nouvelles (features de la paire, 06-agents/03).**
+- `buy_share_1h` (fraction) = Σ notionnel acheteur / Σ notionnel des minutes `[t−61 min, t−1 min)` ; au moins 54 minutes `live` au notionnel acheteur connu, sinon `UNKNOWN` (`INSUFFICIENT_HISTORY`) ; notionnel total nul ⇒ `UNKNOWN` (`NO_NOTIONAL`).
+- `buy_share_4h` (fraction) : idem sur `[t−241 min, t−1 min)`, au moins 216 minutes.
+- `change_1h` (log_return) = log(dernier close / close d'il y a 60 minutes), même règle que `trend_4h`.
+- Les minutes `backfill` n'ont pas de côté : elles ne comptent pas. Comme pour les autres features, la dernière minute doit être `live`.
+
+**Entrée v0.1.0 (toutes vraies).** `buy_share_1h ≥ 0,58` ; `buy_share_4h ≥ 0,53` ; `0 < change_1h ≤ 0,02` ; `window_notional_usd ≥ 25 000` ; `spread_bps ≤ 30` ; contrôle qualité `PASS` ; une position par paire ; cooldown par paire **4 h**.
+
+**Sortie v0.1.0.** Stop 2,5 % ; objectif 2R ; **sortie sur condition** `buy_share_1h < 0,50` (la pression a disparu) ; sortie temporelle **6 h** ; sortie si la paire passe hors `online`. Policy `paper-default`.
+
+**Grille (162 variantes).** `buy_share_1h` ∈ {0,55 ; 0,58 ; 0,62} ; `buy_share_4h` ∈ {0,50 ; 0,53 ; 0,56} ; plafond de `change_1h` ∈ {0,01 ; 0,02 ; 0,04} ; stop ∈ {2 ; 2,5 ; 3,5} % ; seuil de sortie ∈ {0,45 ; 0,50}.
+
+**Contrôle préalable des seuils.** Avant la première exécution, une mesure **descriptive** de `buy_share_1h` (percentiles 50, 75, 90 et 95 sur toutes les paires et minutes jugeables, sans aucun résultat de trade) est consignée ici. Si le 90e percentile est inférieur à 0,55, la grille de `buy_share_1h` devient {p75 ; p90 ; p95} arrondis au centième, et celle de `buy_share_4h` est décalée d'autant, **avant** toute exécution. Aucun autre ajustement.
+
+**Filtre de flux sur Breakout 1h.** [`examples/strategy-breakout-1h-flow.json`](../examples/strategy-breakout-1h-flow.json) = STRAT-02 v0.1.0 plus `buy_share_1h ≥ f` ; grille [`examples/grid-breakout-flow.json`](../examples/grid-breakout-flow.json) : f ∈ {0 ; 0,52 ; 0,55 ; 0,58}. f = 0 rejoue Breakout 1h sans filtre, à une différence près : une minute où `buy_share_1h` est `UNKNOWN` n'entre pas, si bien que les quatre variantes voient exactement les mêmes minutes. Sorties inchangées, pour isoler l'effet du filtre.
+
+**Critères (fixés avant tout résultat).**
+- Les deux études : ceux de 09-recherche/05 (≥ 20 trades sur la partie 2, net moyen > 0, profit factor ≥ 1,2, brut ≥ référence + 0,3 point, net de la partie 1 > 0), sans adaptation.
+- Filtre : en plus, le résultat **brut** moyen de la meilleure variante filtrée dépasse d'au moins **0,3 point** celui de f = 0 sur la partie 2. Sinon, le flux n'apporte rien à la cassure, même si l'ensemble reste perdant.
+
+**Ce qu'il faut attendre.** Environ 9 jours de minutes `live` au 26/11 : la première exécution manquera probablement de trades sur la partie 2. Le taux de passage de chaque condition (rapport de l'étude générique) dira déjà si une pression acheteuse soutenue est fréquente. Relance hebdomadaire avec les autres études (prochaine vers le 28/11).
+
+**État de validation.** `RESEARCH_ONLY` pour le LIVE. Lancée en `PAPER` d'observation sur `paper-kraken-06` sans attendre le verdict de l'étude, qui reste la référence pour la juger (ADR-027 ; plafond de 10 bots, ADR-032). Fiche Learn `/guide/strategies/buy-pressure` publiée avec le bot (UI-17).
+
+**Exécution.**
+- `python -m app.domain.trading.research.study --file docs/GROK_BOT_TERMINAL_BIBLE_V2_COMPLETE/grok-bot-bible-v2/examples/strategy-buy-pressure.json --grid docs/GROK_BOT_TERMINAL_BIBLE_V2_COMPLETE/grok-bot-bible-v2/examples/grid-buy-pressure.json --days 30`
+- `python -m app.domain.trading.research.study --file docs/GROK_BOT_TERMINAL_BIBLE_V2_COMPLETE/grok-bot-bible-v2/examples/strategy-breakout-1h-flow.json --grid docs/GROK_BOT_TERMINAL_BIBLE_V2_COMPLETE/grok-bot-bible-v2/examples/grid-breakout-flow.json --days 30`
+
+**Tests.**
+
+| ID | Vérification |
+|---|---|
+| T-S4-01 | `buy_share_1h` / `buy_share_4h` exacts sur un jeu connu ; minutes `backfill` ignorées ; sous 54 / 216 minutes ⇒ `UNKNOWN` ; notionnel nul ⇒ `UNKNOWN` ; dernière minute non `live` ⇒ `UNKNOWN` |
+| T-S4-02 | `change_1h` = même calcul que `trend_4h` avec un décalage de 60 minutes |
+| T-S4-03 | les trois features sont servies par `GET /api/v1/features`, acceptées par la validation d'une version (UI-05) et calculées à l'identique par le moteur et par l'étude générique (T-R41) |
+| T-S4-04 | `strategy-buy-pressure.json`, `strategy-breakout-1h-flow.json` et leurs grilles sont valides (schéma, cohérence ; 162 et 4 variantes) |
+| T-S4-05 | seed : `buy-pressure@0.1.0` publiée et `paper-kraken-06` créé `READY` une seule fois ; copie de `seed_data/` identique à l'exemple ; fiche Learn présente et égale au brouillon validé |
+
 ## STRAT-05 — Trend Multi-Timeframe
 
 **Hypothèse testable :** l’alignement de tendances sur TF multiples peut réduire les faux signaux

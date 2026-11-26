@@ -77,6 +77,23 @@ Objectif : pouvoir juger une stratégie **avant** de la faire tourner, sur des s
 | S12.1 Étude STRAT-12 | exécution de l'étude générique sur `strategy-pullback.json` et `grid-pullback.json` en production, résultats consignés | 05-strategies/02, 09-recherche/08 |
 | S12.2 Lancement paper d'observation (ADR-027) | publication de `pullback@0.1.0` → `paper-kraken-05` | 05-strategies/04, 06-agents/04 |
 
+**Gestion des bots (ADR-032, validée le 2026-11-26).** À livrer avant S4.2 (le 6ᵉ bot exige le nouveau plafond).
+
+| Lot | Contenu | Références |
+|---|---|---|
+| B.1 Backend | plafond 10 ; `hl_bot.deleted_at` et index unique partiel du nom (migration) ; renommer, supprimer (API, commande d'administration, audits, événements) ; bots supprimés exclus des listes, radar, chiffres publics et fiches Learn ; seed par audit et non par nom ; T-B-01..06 | 06-agents/04, 10-backend/03 |
+| B.2 Écrans | Bots : *Rename*, *Delete*, compteur « n / 10 » ; Trades et Stats : mention « deleted » et filtre ; T-B-07 | UI-02, 06-agents/04 |
+
+*Notes d'implémentation B.1 (2026-11-26).* Migration `a8c3e5f17d42` : colonne `hl_bot.deleted_at`, contrainte `hl_bot_name_key` remplacée par l'index unique partiel `uq_hl_bot_name_live` (`deleted_at IS NULL`). Domaine : `rename_bot`, `delete_bot`, `delete_blockers`, `count_active_bots` (`lifecycle.py`) ; erreur `STALE_VERSION`. Le seed (bot d'amorçage, bots d'observation) et le démarrage automatique ADR-013 retrouvent leurs bots par l'audit `BOT_CREATED` de `system:seed` (`seed_bot`). Exclus des bots supprimés : `GET /bots` (sauf `include_deleted`), `/health`, univers du flux, chiffres publics, outils IA, fiches Learn, recette, rattachement. Tests `tests/domain/test_bot_management.py` (T-B-01..06) et index partiel vérifié sur PostgreSQL.
+
+**Pression acheteuse Kraken (ADR-031, validée le 2026-11-26).**
+
+| Lot | Contenu | Références |
+|---|---|---|
+| S4.0 Features | `buy_share_1h`, `buy_share_4h`, `change_1h` dans le SCANNER, le catalogue `/features` et l'étude générique ; exemples et grilles valides ; T-S4-01..04 | 06-agents/03, 05-strategies/02 |
+| S4.1 Études | contrôle préalable des seuils (percentiles consignés) ; étude générique de `buy-pressure` (162 variantes) et du filtre de flux sur Breakout 1h (4 variantes) en production ; résultats consignés, blocs `study` des fiches Learn mis à jour ; relance hebdomadaire | 05-strategies/02, 09-recherche/08, UI-17 |
+| S4.2 Bot d'observation et fiche Learn | seed : `buy-pressure@0.1.0` → `paper-kraken-06` ; brouillon de la fiche Learn validé par l'opérateur puis publié ; T-S4-05 | 10-backend/03, UI-17 |
+
 **Services IA (ADR-026, UI-16 validée le 2026-11-21).**
 
 | Lot | Contenu | Références |

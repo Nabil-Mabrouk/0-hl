@@ -8,6 +8,7 @@ Usage (production): docker exec 0-hl_worker python -m app.domain.trading.admin -
   policy   (same verbs) | confirm ID@VER
   bot      list | bind NAME --strategy ID@VER --policy ID@VER --reason R
            create NAME --strategy ID@VER --policy ID@VER [--capital 10000] --reason R
+           rename NAME NEW_NAME --reason R | delete NAME --reason R   (ADR-032)
 
 Calls the same domain functions as the API (same validation, audits and errors); the user
 named by --as must hold the role the API would require. --dry-run validates and shows the
@@ -46,7 +47,7 @@ NEEDS: dict[tuple[str, str], tuple[TradingRole, ...]] = {
     ("strategy", "delete"): (A,), ("strategy", "publish"): (R,), ("strategy", "deprecate"): (R,),
     **{("policy", v): (R,) for v in ("create", "duplicate", "edit", "delete", "publish", "confirm",
                                      "deprecate")},
-    ("bot", "bind"): (O, R), ("bot", "create"): (O, R),
+    ("bot", "bind"): (O, R), ("bot", "create"): (O, R), ("bot", "rename"): (O,), ("bot", "delete"): (O, R),
 }
 
 
@@ -97,7 +98,8 @@ async def run(db: AsyncSession, args: argparse.Namespace) -> Any:
     kind, verb = args.kind, args.verb
     if kind == "bot":
         if verb == "list":
-            return [bot_json(b) for b in (await db.scalars(select(Bot).order_by(Bot.name))).all()]
+            return [bot_json(b) for b in (await db.scalars(
+                select(Bot).where(Bot.deleted_at.is_(None)).order_by(Bot.name))).all()]
         if verb == "create":
             from decimal import Decimal, InvalidOperation
             try:
@@ -108,9 +110,16 @@ async def run(db: AsyncSession, args: argparse.Namespace) -> Any:
                                             risk_policy_version=await _policy(db, args.policy), capital=capital,
                                             actor=actor, reason=args.reason or "")
             return bot_json(bot) | {"capital_usd": capital}
-        bot = await db.scalar(select(Bot).where(Bot.name == args.target))
+        bot = await db.scalar(select(Bot).where(Bot.name == args.target, Bot.deleted_at.is_(None)))
         if bot is None:
             raise NotFound(f"bot {args.target} introuvable")
+        if verb == "rename":
+            return bot_json(await lc.rename_bot(db, bot, name=args.other or "", actor=actor,
+                                                reason=args.reason or ""))
+        if verb == "delete":
+            return bot_json(await lc.delete_bot(db, bot, actor=actor, reason=args.reason or ""))
+        if verb != "bind":
+            raise ValidationFailed(f"verbe inconnu : bot {verb}")
         bot = await lc.bind_bot(db, bot, strategy_version=await _strategy(db, args.strategy),
                                 risk_policy_version=await _policy(db, args.policy), actor=actor,
                                 reason=args.reason or "")

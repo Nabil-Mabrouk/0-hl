@@ -101,7 +101,7 @@ async def r2_02_sessions(db: AsyncSession) -> Check:
 
 async def r2_03_bots(db: AsyncSession) -> Check:
     bots = (await db.scalars(select(Bot))).all()
-    active = [b for b in bots if b.status is not BotStatus.STOPPED]
+    active = [b for b in bots if b.status is not BotStatus.STOPPED and b.deleted_at is None]
     bad = [f"bot {b.name} en {b.environment.value}" for b in bots if b.environment is not Environment.PAPER]
     if len(active) > MAX_ACTIVE_BOTS:
         bad.append(f"{len(active)} bots non arrêtés (plafond {MAX_ACTIVE_BOTS})")

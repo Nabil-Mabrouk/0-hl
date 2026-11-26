@@ -376,7 +376,7 @@ class MarketDataService:
         rows = await db.execute(
             select(StrategyVersion.config, StrategyVersion.status)
             .join(Bot, Bot.strategy_version_id == StrategyVersion.id)
-            .where(Bot.status.in_(ACTIVE_BOT_STATUSES))
+            .where(Bot.status.in_(ACTIVE_BOT_STATUSES), Bot.deleted_at.is_(None))
         )
         params: list[UniverseParams] = []
         for config, status in rows:

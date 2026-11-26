@@ -1,0 +1,102 @@
+{
+  "strategy_id": "breakout-1h-flow",
+  "version": "0.1.0",
+  "status": "DRAFT",
+  "universe": {
+    "venues": [
+      "kraken_spot"
+    ],
+    "quote_currencies": [
+      "USD"
+    ],
+    "top_n_by_volume": 40,
+    "refresh_seconds": 3600,
+    "exclude_stablecoins": true,
+    "min_volume_24h_usd": "1000000"
+  },
+  "entry": {
+    "operator": "AND",
+    "conditions": [
+      {
+        "feature": "window_notional_usd",
+        "op": "gte",
+        "threshold": "25000",
+        "unit": "USD",
+        "window_seconds": 300,
+        "ttl_ms": 5000
+      },
+      {
+        "feature": "volume_spike",
+        "op": "gte",
+        "threshold": "2.0",
+        "unit": "ratio",
+        "window_seconds": 300,
+        "ttl_ms": 5000
+      },
+      {
+        "feature": "breakout_1h",
+        "op": "gt",
+        "threshold": "0",
+        "unit": "log_return",
+        "window_seconds": 3600,
+        "ttl_ms": 5000
+      },
+      {
+        "feature": "breakout_1h",
+        "op": "lte",
+        "threshold": "0.01",
+        "unit": "log_return",
+        "window_seconds": 3600,
+        "ttl_ms": 5000
+      },
+      {
+        "feature": "range_1h",
+        "op": "gte",
+        "threshold": "0.008",
+        "unit": "log_return",
+        "window_seconds": 3600,
+        "ttl_ms": 5000
+      },
+      {
+        "feature": "range_1h",
+        "op": "lte",
+        "threshold": "0.05",
+        "unit": "log_return",
+        "window_seconds": 3600,
+        "ttl_ms": 5000
+      },
+      {
+        "feature": "trend_4h",
+        "op": "gt",
+        "threshold": "0",
+        "unit": "log_return",
+        "window_seconds": 14400,
+        "ttl_ms": 5000
+      },
+      {
+        "feature": "spread_bps",
+        "op": "lte",
+        "threshold": "30",
+        "unit": "bps",
+        "window_seconds": 1,
+        "ttl_ms": 3000
+      },
+      {
+        "feature": "buy_share_1h",
+        "op": "gte",
+        "threshold": "0.55",
+        "unit": "fraction",
+        "window_seconds": 3600,
+        "ttl_ms": 5000
+      }
+    ]
+  },
+  "exit": {
+    "initial_stop_pct": "2.5",
+    "take_profit_r": "2",
+    "max_hold_seconds": 21600,
+    "exit_on_status_change": true
+  },
+  "cooldown_seconds": 14400,
+  "risk_policy_id": "paper-default"
+}

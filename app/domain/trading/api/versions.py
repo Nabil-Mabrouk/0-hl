@@ -30,6 +30,10 @@ RiskOfficer = Annotated[TradingPrincipal, Depends(require_trading_roles(
     TradingRole.RISK_OFFICER, audit_action="VERSION_GOVERNANCE"))]
 Binder = Annotated[TradingPrincipal, Depends(require_trading_roles(
     TradingRole.OPERATOR, TradingRole.RISK_OFFICER, audit_action="BOT_BIND"))]
+Renamer = Annotated[TradingPrincipal, Depends(require_trading_roles(
+    TradingRole.OPERATOR, audit_action="BOT_RENAME"))]
+Deleter = Annotated[TradingPrincipal, Depends(require_trading_roles(
+    TradingRole.OPERATOR, TradingRole.RISK_OFFICER, audit_action="BOT_DELETE"))]
 
 
 class _Body(BaseModel):
@@ -64,6 +68,15 @@ class CreateBotBody(Reasoned):
     strategy_version_id: str
     risk_policy_version_id: str
     capital_usd: str = "10000"
+
+
+class RenameBotBody(Reasoned):
+    name: str = Field(min_length=1, max_length=64)
+    row_version: int | None = None
+
+
+class DeleteBotBody(Reasoned):
+    row_version: int | None = None
 
 
 class BindBody(Reasoned):
@@ -325,3 +338,30 @@ async def bind(bot_id: str, body: BindBody, p: Binder, db: DB,
                             actor=p.actor, reason=body.reason, if_match=expected)
     await db.commit()
     return ok(bot_json(bot), headers={"ETag": f'"{bot.row_version}"'})
+
+
+async def _bot(db: AsyncSession, bot_id: str) -> Bot:
+    bot = await db.get(Bot, parse_uuid(bot_id, "bot"))
+    if bot is None:
+        raise NotFound(f"unknown bot {bot_id}")
+    return bot
+
+
+@router.patch("/bots/{bot_id}")
+async def rename_bot_route(bot_id: str, body: RenameBotBody, p: Renamer, db: DB):
+    """ADR-032 (06-agents/04 « Gestion des bots »): rename at any status, audited."""
+    bot = await lc.rename_bot(db, await _bot(db, bot_id), name=body.name, actor=p.actor,
+                              reason=body.reason, row_version=body.row_version)
+    await db.commit()
+    return ok(bot_json(bot), headers={"ETag": f'"{bot.row_version}"'})
+
+
+@router.post("/bots/{bot_id}/delete")
+async def delete_bot_route(bot_id: str, body: DeleteBotBody, p: Deleter, db: DB):
+    """ADR-032: delete = archive (READY or STOPPED, nothing open); history kept."""
+    if not (p.has_any(TradingRole.OPERATOR) and p.has_any(TradingRole.RISK_OFFICER)):
+        raise PermissionDenied("deleting a bot requires OPERATOR and RISK_OFFICER")
+    bot = await lc.delete_bot(db, await _bot(db, bot_id), actor=p.actor, reason=body.reason,
+                              row_version=body.row_version)
+    await db.commit()
+    return ok(bot_json(bot))

@@ -40,7 +40,8 @@ async def _bot_for(db: AsyncSession, strategy_id: str) -> tuple[Bot, StrategyVer
     """The non-stopped bot running the strategy, else the most recently created one."""
     rows = (await db.execute(select(Bot, StrategyVersion).join(
         StrategyVersion, StrategyVersion.id == Bot.strategy_version_id).where(
-        StrategyVersion.strategy_id == strategy_id).order_by(Bot.created_at.desc()))).all()
+        StrategyVersion.strategy_id == strategy_id, Bot.deleted_at.is_(None))
+        .order_by(Bot.created_at.desc()))).all()
     for bot, sv in rows:
         if bot.status is not BotStatus.STOPPED:
             return bot, sv

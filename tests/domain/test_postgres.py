@@ -77,3 +77,28 @@ async def test_inv01_check_constraint_on_postgres(pg_sessions):
         ))
         with pytest.raises(IntegrityError):
             await db.flush()
+
+
+async def test_bot_name_unique_only_among_non_deleted_bots(pg_sessions):
+    """ADR-032: partial unique index `uq_hl_bot_name_live`."""
+    from app.domain.trading.models import Bot
+    from app.domain.trading.types import utcnow
+
+    async with pg_sessions() as db:
+        bot = (await run_seed(db)).bot
+
+        def twin():
+            return Bot(name=bot.name, environment=bot.environment, status=bot.status,
+                       strategy_version_id=bot.strategy_version_id,
+                       risk_policy_version_id=bot.risk_policy_version_id)
+
+        dup = twin()
+        db.add(dup)
+        with pytest.raises(IntegrityError):
+            await db.flush()
+        await db.rollback()
+        bot = (await run_seed(db)).bot
+        bot.deleted_at = utcnow()
+        await db.flush()
+        db.add(twin())
+        await db.flush()                     # the name of a deleted bot is free again

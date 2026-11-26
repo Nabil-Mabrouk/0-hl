@@ -146,7 +146,8 @@ def bot_json(bot: Bot) -> dict[str, Any]:
             "status": bot.status.value, "row_version": bot.row_version,
             "strategy_version_id": bot.strategy_version_id,
             "risk_policy_version_id": bot.risk_policy_version_id,
-            "created_at": bot.created_at, "updated_at": bot.updated_at}
+            "created_at": bot.created_at, "updated_at": bot.updated_at,
+            "deleted_at": bot.deleted_at}
 
 
 def session_json(s: BotSession | None, now: datetime) -> dict[str, Any] | None:

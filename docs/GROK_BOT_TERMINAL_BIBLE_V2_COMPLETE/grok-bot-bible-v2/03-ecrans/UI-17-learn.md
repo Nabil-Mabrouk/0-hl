@@ -67,6 +67,16 @@ study: { date: 2026-11-21, verdict: "No launch", criteria: "0 of 5", summary: "�
 Texte Markdown, avec les lignes réservées {{live}}, {{rules}}, {{radar}}, {{trades}}, {{study}}, {{versions}}.
 ```
 
+## Maintien du contenu (consigne de l'opérateur, 2026-11-26)
+
+Le site public doit toujours décrire les stratégies telles qu'elles tournent. Toute évolution de stratégie inclut, **dans le même lot**, la mise à jour de la rubrique Learn de 0-hl.com :
+- **nouvelle stratégie publiée** (bot paper) : fiche `content/en/strategies/<id>.md` (brouillon dans `examples/learn/en/strategies/`, validé par l'opérateur avant le code, test d'égalité), couleur et zone du radar, et mention dans le hub ;
+- **nouvelle version publiée** d'une stratégie existante : texte de la fiche relu (les règles et l'historique des versions se mettent à jour seuls depuis l'API ; le texte libre non), mis à jour s'il décrit une règle qui a changé ;
+- **nouvelle étude ou relance** : bloc `study` (date, verdict, critères, résumé) des fiches concernées ;
+- **concepts nouveaux** (feature, sortie, notion de marché) : article *Basics* concerné ou glossaire complété.
+
+Une stratégie seulement étudiée, sans version publiée, n'a pas de fiche : son résultat est mentionné dans la fiche de la stratégie qu'elle modifie le cas échéant (ex. filtre de flux sur Breakout 1h, ADR-031).
+
 ## API publique
 
 Sans authentification, lecture seule, cache par processus de 60 s ; **aucun montant absolu** (ni capital, ni P&L en USD, ni taille en USD), aucun identifiant interne ni donnée d'utilisateur (ADR-028).

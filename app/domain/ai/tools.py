@@ -93,7 +93,7 @@ class NoArgs(_Args):
 
 
 async def list_bots(db: AsyncSession, a: NoArgs) -> Any:
-    bots = (await db.scalars(select(Bot).order_by(Bot.name))).all()
+    bots = (await db.scalars(select(Bot).where(Bot.deleted_at.is_(None)).order_by(Bot.name))).all()
     out = []
     for b in bots:
         sv = await db.get(StrategyVersion, b.strategy_version_id)

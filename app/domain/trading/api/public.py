@@ -36,7 +36,7 @@ _cache: dict[str, Any] = {"at": 0.0, "data": None}
 async def public_stats(db: AsyncSession, now: datetime) -> dict[str, Any]:
     day = now - timedelta(hours=24)
     count = lambda stmt: db.scalar(select(func.count()).select_from(stmt.subquery()))  # noqa: E731
-    bots_total = await db.scalar(select(func.count()).select_from(Bot)) or 0
+    bots_total = await db.scalar(select(func.count()).select_from(Bot).where(Bot.deleted_at.is_(None))) or 0
     bots_running = await db.scalar(select(func.count()).select_from(Bot).where(Bot.status == BotStatus.RUNNING)) or 0
     closed = select(Position.id).where(Position.status == PositionStatus.CLOSED)
     trades_total = await count(closed) or 0

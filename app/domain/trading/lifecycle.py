@@ -32,6 +32,7 @@ from app.domain.trading.errors import (
     BotNotRebindable,
     PreconditionFailed,
     ReviewDelayPending,
+    StaleVersion,
     StateConflict,
     StrategyNotPublished,
     ValidationFailed,
@@ -52,8 +53,8 @@ from app.domain.trading.versioning import (
 )
 
 REVIEW_DELAY = timedelta(minutes=10)                   # ADR-006 solo rule
-# M2.4 (06-agents/04, validated 2026-11-20)
-MAX_ACTIVE_BOTS = 5
+# M2.4 (06-agents/04, validated 2026-11-20); 10 since ADR-032 (5 before)
+MAX_ACTIVE_BOTS = 10
 MIN_CAPITAL, MAX_CAPITAL, DEFAULT_CAPITAL = Decimal(100), Decimal(1_000_000), Decimal(10_000)
 BOT_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$")
 REBINDABLE = (BotStatus.READY, BotStatus.STOPPED)
@@ -337,6 +338,8 @@ async def bind_bot(db: AsyncSession, bot: Bot, *, strategy_version: StrategyVers
     """Attach a PAPER bot at rest to published versions (05-strategies/04 « Règles » 7)."""
     if not reason or not reason.strip():
         raise ValidationFailed("a reason is required to bind a bot")
+    if bot.deleted_at is not None:
+        raise BotNotRebindable("the bot is deleted", details={"deleted_at": bot.deleted_at})
     if if_match is not None and if_match != bot.row_version:
         raise PreconditionFailed("the bot was modified since it was read",
                                  details={"current": bot.row_version})
@@ -383,7 +386,7 @@ async def bind_bot(db: AsyncSession, bot: Bot, *, strategy_version: StrategyVers
 async def bots_bound_to(db: AsyncSession) -> dict[Any, list[str]]:
     """version id -> names of the bots attached to it (strategy or policy)."""
     out: dict[Any, list[str]] = {}
-    for b in (await db.scalars(select(Bot).order_by(Bot.name))).all():
+    for b in (await db.scalars(select(Bot).where(Bot.deleted_at.is_(None)).order_by(Bot.name))).all():
         out.setdefault(b.strategy_version_id, []).append(b.name)
         out.setdefault(b.risk_policy_version_id, []).append(b.name)
     return out
@@ -414,9 +417,9 @@ async def create_paper_bot(db: AsyncSession, *, name: str, strategy_version: Str
         raise StrategyNotPublished(f"strategy version is {strategy_version.status.value}")
     if risk_policy_version.status is not PolicyVersionStatus.PUBLISHED:
         raise StrategyNotPublished(f"risk policy version is {risk_policy_version.status.value}")
-    if await db.scalar(select(Bot.id).where(Bot.name == name)) is not None:
+    if await _name_taken(db, name):
         raise StateConflict(f"a bot named {name} already exists")
-    active = len((await db.scalars(select(Bot.id).where(Bot.status != BotStatus.STOPPED))).all())
+    active = await count_active_bots(db)
     if active >= MAX_ACTIVE_BOTS:
         raise BotLimitReached(f"at most {MAX_ACTIVE_BOTS} bots that are not STOPPED",
                               details={"active": active, "limit": MAX_ACTIVE_BOTS})
@@ -430,6 +433,106 @@ async def create_paper_bot(db: AsyncSession, *, name: str, strategy_version: Str
                        diff={"name": name, "capital_usd": format(capital, "f"),
                              "strategy": f"{strategy_version.strategy_id}@{strategy_version.version}",
                              "risk_policy": f"{risk_policy_version.policy_id}@{risk_policy_version.version}"})
+    return bot
+
+
+async def _name_taken(db: AsyncSession, name: str) -> bool:
+    return await db.scalar(select(Bot.id).where(Bot.name == name, Bot.deleted_at.is_(None))) is not None
+
+
+async def count_active_bots(db: AsyncSession) -> int:
+    """Bots counted against MAX_ACTIVE_BOTS: not STOPPED and not deleted (ADR-032 point 3)."""
+    return len((await db.scalars(select(Bot.id).where(
+        Bot.status != BotStatus.STOPPED, Bot.deleted_at.is_(None)))).all())
+
+
+# ----------------------------------------------------------------- ADR-032 bot management
+DELETABLE = (BotStatus.READY, BotStatus.STOPPED)
+
+
+def _check_row_version(bot: Bot, row_version: int | None) -> None:
+    if row_version is not None and row_version != bot.row_version:
+        raise StaleVersion("the bot was modified since it was read",
+                           details={"expected": row_version, "current": bot.row_version})
+
+
+def _require_reason(reason: str) -> None:
+    if not reason or not reason.strip():
+        raise ValidationFailed("invalid request", details={"errors": [
+            {"path": "reason", "message": "motif obligatoire"}]})
+
+
+async def rename_bot(db: AsyncSession, bot: Bot, *, name: str, actor: str, reason: str,
+                     row_version: int | None = None) -> Bot:
+    """Rename at any status (06-agents/04 « Gestion des bots »): history follows the bot id."""
+    if bot.deleted_at is not None:
+        raise StateConflict("a deleted bot cannot be renamed", details={"deleted_at": bot.deleted_at})
+    _check_row_version(bot, row_version)
+    errors: list[dict[str, str]] = []
+    if not BOT_NAME.match(name or ""):
+        errors.append({"path": "name", "message": "3 à 64 caractères : minuscules, chiffres et « - »"})
+    if not reason or not reason.strip():
+        errors.append({"path": "reason", "message": "motif obligatoire"})
+    if errors:
+        raise ValidationFailed("invalid bot", details={"errors": errors})
+    if name == bot.name:
+        raise ValidationFailed("invalid bot", details={"errors": [
+            {"path": "name", "message": "le nouveau nom est identique à l'actuel"}]})
+    if await _name_taken(db, name):
+        raise StateConflict(f"a bot named {name} already exists",
+                            details={"errors": [{"path": "name", "message": "nom déjà pris"}]})
+    before = bot.name
+    bot.name = name
+    bot.row_version += 1
+    bot.updated_at = utcnow()
+    await db.flush()
+    change = {"from": before, "to": name}
+    await record_audit(db, actor=actor, action="BOT_RENAMED", entity_type="bot", entity_id=bot.id,
+                       reason=reason, diff=change)
+    await append_event(db, event_type="BOT_RENAMED", aggregate_type="bot", aggregate_id=bot.id,
+                       bot_id=bot.id, source="api", payload=change | {"reason": reason})
+    return bot
+
+
+async def delete_blockers(db: AsyncSession, bot: Bot) -> list[str]:
+    """Why the bot cannot be deleted now (empty list ⇒ deletable)."""
+    from app.domain.trading.models import OrderIntent
+    out: list[str] = []
+    if bot.deleted_at is not None:
+        return ["already deleted"]
+    if bot.status not in DELETABLE:
+        out.append("stop the bot first")
+    if await db.scalar(select(Position.id).where(
+            Position.bot_id == bot.id, Position.status.in_(OPEN_POSITIONS)).limit(1)) is not None:
+        out.append("close its open positions first")
+    if await db.scalar(select(OrderIntent.id).where(
+            OrderIntent.bot_id == bot.id, OrderIntent.status == "CREATED").limit(1)) is not None:
+        out.append("wait for its pending order intents")
+    return out
+
+
+async def delete_bot(db: AsyncSession, bot: Bot, *, actor: str, reason: str,
+                     row_version: int | None = None) -> Bot:
+    """Delete = archive (ADR-032 point 2): `deleted_at` set, nothing erased, name freed."""
+    _check_row_version(bot, row_version)
+    _require_reason(reason)
+    blockers = await delete_blockers(db, bot)
+    if blockers:
+        raise StateConflict(f"bot {bot.name} cannot be deleted: {'; '.join(blockers)}",
+                            details={"status": bot.status.value, "blockers": blockers})
+    from app.domain.trading.ledger import ACCOUNT_CASH, balance
+    cash = await balance(db, bot.id, ACCOUNT_CASH)
+    now = utcnow()
+    bot.deleted_at = now
+    bot.row_version += 1
+    bot.updated_at = now
+    await db.flush()
+    diff = {"name": bot.name, "status": bot.status.value,
+            "final_cash_usd": format(cash, "f")}
+    await record_audit(db, actor=actor, action="BOT_DELETED", entity_type="bot", entity_id=bot.id,
+                       reason=reason, self_approved=True, diff=diff)
+    await append_event(db, event_type="BOT_DELETED", aggregate_type="bot", aggregate_id=bot.id,
+                       bot_id=bot.id, source="api", payload=diff | {"reason": reason})
     return bot
 
 

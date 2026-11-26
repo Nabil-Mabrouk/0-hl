@@ -336,3 +336,27 @@ Hiérarchie : **service** (ce que l'utilisateur demande) → **agent** (qui rais
 4. Budget, journal et alertes d'UI-16 (plafond commun de 10 USD / jour) ; `hl_ai_run.user_id` devient facultatif pour les exécutions système.
 5. Lots MR.1 (faits, graphiques, rapports « données seules ») à MR.4 (relecture des premiers rapports réels).
 
+
+## ADR-031 — Pression acheteuse Kraken : features de flux et deux études (validée le 2026-11-26)
+
+**Constat (2026-11-25/26).** Un serveur MCP public d'« order flow » a attiré l'attention de l'opérateur. Revue : il n'apporte rien d'exploitable directement (données seulement en direct, sans historique, pour un assistant et non pour le worker). En revanche, 0-hl enregistre déjà, chaque minute et pour chaque paire, le notionnel **acheteur et vendeur** (côté taker fourni par Kraken, `hl_trade_minute.buy_notional_usd` / `sell_notional_usd`, minutes `live` seulement) ; seule la feature `buy_notional_share` sur **5 minutes** l'utilise, dans STRAT-01, où l'étude 09-recherche/03 n'a trouvé aucune information (ADR-020). Le flux sur des horizons d'une à quatre heures n'a jamais été testé.
+
+**Décision (validée par l'opérateur le 2026-11-26).**
+1. Trois features de paire ajoutées au catalogue du SCANNER (06-agents/03) : `buy_share_1h`, `buy_share_4h` (fraction) et `change_1h` (log_return). Calculées depuis les minutes déjà lues (historique de 250 min) : aucune nouvelle collecte, aucune migration.
+2. **STRAT-04 « Buy pressure »**, variante Kraken Spot (05-strategies/02), étudiée par l'étude générique (09-recherche/08) avec une grille de 162 variantes.
+3. **Filtre de flux sur Breakout 1h** : la version STRAT-02 v0.1.0 plus une condition `buy_share_1h ≥ f`, étudiée pour f ∈ {0 (sans filtre) ; 0,52 ; 0,55 ; 0,58}. Elle répond à la question « le flux distingue-t-il les vraies cassures des fausses ? ».
+4. Critères fixés avant tout résultat : ceux de 09-recherche/05, plus, pour le filtre, un gain brut d'au moins 0,3 point sur la variante sans filtre (partie 2).
+5. **Bot d'observation** (ADR-027, possible grâce au plafond de 10 bots d'ADR-032) : `buy-pressure@0.1.0` publiée pour PAPER et rattachée à un nouveau bot `paper-kraken-06` créé par le seed, `READY`, démarré par l'opérateur. Le filtre de flux sur Breakout 1h reste une étude, sans bot.
+6. Hors périmètre : autres plateformes, dérivés (funding, open interest, liquidations), détail sous la minute (footprint, icebergs). Ils exigeraient une nouvelle collecte et un ADR séparé.
+7. **Site** : la fiche Learn de « Buy pressure » est écrite (brouillon validé par l'opérateur) et publiée avec le bot ; après chaque étude, les verdicts datés des fiches concernées (Buy pressure, Breakout 1h pour le filtre) sont mis à jour (UI-17 « Maintien du contenu »).
+
+
+## ADR-032 — Renommer et supprimer un bot ; plafond porté à 10 bots (validée le 2026-11-26)
+
+**Demande de l'opérateur (2026-11-26).** Pouvoir renommer un bot, le supprimer, et faire tourner jusqu'à 10 bots au lieu de 5.
+
+**Décision (validée par l'opérateur le 2026-11-26).** Conception détaillée dans [06-agents/04](../06-agents/04-plusieurs-bots-m2.md) « Gestion des bots (ADR-032) ».
+1. **Renommer** : à tout statut, mêmes règles de nom qu'à la création, nom unique parmi les bots non supprimés ; l'historique (trades, événements, audits) suit le bot par son identifiant et s'affiche sous le nouveau nom. Les rapports de marché déjà publiés gardent le nom figé à leur date.
+2. **Supprimer = archiver.** Les trades, le ledger, les événements et les audits sont en ajout seul et référencent le bot : une suppression physique les casserait. Un bot supprimé reçoit `deleted_at`, disparaît des listes, du Terminal, du radar et des chiffres publics « bots », libère son nom et ne compte plus dans le plafond ; son historique reste consultable (Trades et Stats, mention « deleted »). Conditions : bot `READY` ou `STOPPED`, aucune position ouverte ni intention en cours. Irréversible depuis l'interface.
+3. **Plafond : 10 bots non arrêtés** (au lieu de 5). Les bots `STOPPED` et supprimés ne comptent pas. La charge du worker est vérifiée en production : le cycle de décision de chaque minute doit rester terminé avant la minute suivante.
+4. **Seed** : il ne retrouve plus les bots d'observation par leur nom (un bot renommé serait recréé, un bot supprimé réapparaîtrait) ; il ne crée un bot que s'il ne l'a **jamais** créé (audit `BOT_CREATED_BY_OPERATOR` de l'acteur `system:seed` portant ce nom de départ).

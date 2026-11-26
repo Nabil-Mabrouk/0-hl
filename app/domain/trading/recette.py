@@ -284,7 +284,8 @@ async def info_strategy(db: AsyncSession, bot: Bot, since: datetime) -> Check:
 
 async def info_other_bots(db: AsyncSession, bot: Bot, since: datetime) -> Check:
     """M2.4 (06-agents/04 « Recette »): one summary line per other bot."""
-    others = (await db.scalars(select(Bot).where(Bot.id != bot.id).order_by(Bot.name))).all()
+    others = (await db.scalars(select(Bot).where(Bot.id != bot.id, Bot.deleted_at.is_(None))
+                               .order_by(Bot.name))).all()
     details, data = [], {}
     for b in others:
         nets = (await db.scalars(select(Position.realized_pnl_net).where(
@@ -303,7 +304,8 @@ async def build_report(sessions: async_sessionmaker[AsyncSession], *, bot_name: 
     now = now or utcnow()
     since = now - timedelta(hours=hours)
     async with sessions() as db:
-        stmt = select(Bot).where(Bot.name == bot_name) if bot_name else select(Bot).order_by(Bot.created_at)
+        stmt = select(Bot).where(Bot.deleted_at.is_(None))
+        stmt = stmt.where(Bot.name == bot_name) if bot_name else stmt.order_by(Bot.created_at)
         bot = await db.scalar(stmt.limit(1))
         if bot is None:
             raise SystemExit(f"bot introuvable : {bot_name or '(aucun bot)'}")

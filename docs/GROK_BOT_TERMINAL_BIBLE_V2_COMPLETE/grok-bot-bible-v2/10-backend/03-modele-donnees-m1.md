@@ -113,7 +113,11 @@ Chaque étape vérifie l'existence avant de créer ; deux exécutions successive
 **Bots d'observation (ADR-027).** Après les étapes 1 à 4, le seed crée, s'ils n'existent pas :
 5. Politique `rotation` version `1` ([`examples/risk-policy-rotation.json`](../examples/risk-policy-rotation.json)), publiée par `system:seed`.
 6. Stratégies `breakout-1h`, `rebound`, `rotation` et `pullback` version `0.1.0` (fichiers `examples/strategy-*.json`), publiées par `system:seed` pour PAPER uniquement (audit `self_approved=true`, motif « ADR-027 observation paper »).
-7. Bots `paper-kraken-02` (`breakout-1h`), `-03` (`rebound`), `-04` (`rotation`, policy `rotation`), `-05` (`pullback`), créés par la même fonction que « New bot » (06-agents/04 : mêmes validations, limite de 5 bots non arrêtés, dépôt paper de 10 000 USD), à l'état `READY` : **le démarrage reste une commande de l'opérateur**.
+7. Bots `paper-kraken-02` (`breakout-1h`), `-03` (`rebound`), `-04` (`rotation`, policy `rotation`), `-05` (`pullback`), créés par la même fonction que « New bot » (06-agents/04 : mêmes validations, limite de bots non arrêtés, dépôt paper de 10 000 USD), à l'état `READY` : **le démarrage reste une commande de l'opérateur**.
+
+8. *(ADR-031)* Stratégie `buy-pressure` version `0.1.0` et bot `paper-kraken-06`, mêmes règles.
+
+**Identité d'un bot d'observation (ADR-032).** Un bot se renomme et se supprime : le seed ne le cherche donc pas par son nom. Il ne crée un bot que s'il n'existe **aucun** audit `BOT_CREATED_BY_OPERATOR` de l'acteur `system:seed` pour ce nom de départ (bot renommé : pas recréé ; bot supprimé : ne réapparaît pas). Même règle pour le bot d'amorçage `paper-kraken-01` (étape 3).
 
 Règles propres à ces étapes : une version ou un bot qui existe déjà (quel que soit son statut : brouillon, retiré, bot en pause ou arrêté) n'est **jamais** modifié, republié ni recréé ; un bot n'est créé que si sa stratégie et sa policy sont publiées. Chaque élément est créé dans sa propre sous-transaction : un échec (par exemple la limite de bots atteinte) est journalisé (`seed: observation … skipped`) et n'empêche ni les autres éléments ni le démarrage du worker. Les copies se trouvent dans `app/domain/trading/seed_data/` et un test vérifie qu'elles restent identiques aux exemples.
 

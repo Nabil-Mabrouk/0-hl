@@ -74,7 +74,7 @@ async def market_radar(p: Reader, db: DB, window: str = Query("1h", pattern="^(1
 @router.get("/health")
 async def health(p: Reader, db: DB):
     now = utcnow()
-    bots = (await db.scalars(select(Bot).order_by(Bot.name))).all()
+    bots = (await db.scalars(select(Bot).where(Bot.deleted_at.is_(None)).order_by(Bot.name))).all()
     scan = await db.scalar(select(DomainEvent).where(
         DomainEvent.event_type == "SCAN_CYCLE_COMPLETED").order_by(DomainEvent.position.desc()).limit(1))
     feed = await feed_summary(db, now)
@@ -86,17 +86,24 @@ async def health(p: Reader, db: DB):
 
 
 @router.get("/bots")
-async def list_bots(p: Reader, db: DB):
-    from app.domain.trading.lifecycle import initial_capital
-    bots = (await db.scalars(select(Bot).order_by(Bot.name))).all()
+async def list_bots(p: Reader, db: DB, include_deleted: bool = Query(False)):
+    """ADR-032: deleted (archived) bots only with `include_deleted=true` (Trades, Stats)."""
+    from app.domain.trading.lifecycle import MAX_ACTIVE_BOTS, count_active_bots, initial_capital
+    stmt = select(Bot).order_by(Bot.name)
+    if not include_deleted:
+        stmt = stmt.where(Bot.deleted_at.is_(None))
+    bots = (await db.scalars(stmt)).all()
     capital = await initial_capital(db)
     sv = {v.id: v for v in (await db.scalars(select(StrategyVersion))).all()}
     pv = {v.id: v for v in (await db.scalars(select(RiskPolicyVersion))).all()}
+    from app.domain.trading.lifecycle import delete_blockers
+    blockers = {b.id: await delete_blockers(db, b) for b in bots}
     return ok({"items": [bot_json(b) | {
         "capital_usd": capital.get(b.id),
+        "delete_blockers": blockers[b.id],
         "strategy": {"strategy_id": sv[b.strategy_version_id].strategy_id, "version": sv[b.strategy_version_id].version},
         "risk_policy": {"policy_id": pv[b.risk_policy_version_id].policy_id, "version": pv[b.risk_policy_version_id].version},
-    } for b in bots]})
+    } for b in bots], "active": await count_active_bots(db), "limit": MAX_ACTIVE_BOTS})
 
 
 @router.get("/bots/{bot_id}")
@@ -133,6 +140,8 @@ async def send_command(
     idempotency_key: Annotated[str, Header(alias="Idempotency-Key", min_length=8, max_length=128)],
 ):
     bot = await _bot(db, bot_id)
+    if bot.deleted_at is not None:
+        raise StateConflict("the bot is deleted", details={"deleted_at": bot.deleted_at})
     allowed = p.has_any(TradingRole.OPERATOR) or (
         body.command is CommandType.EMERGENCY_STOP and p.has_any(TradingRole.RISK_OFFICER))
     if not allowed:

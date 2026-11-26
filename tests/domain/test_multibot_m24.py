@@ -67,7 +67,7 @@ async def test_create_bot_rules_capital_and_limit(w, session_factory):  # noqa: 
     assert nope.json()["code"] == "STRATEGY_NOT_PUBLISHED"
     assert (await w.c.post("/api/v1/bots", json=_body(w, name="bot-e"), headers=_h_obs(w))).status_code == 403
 
-    for i in range(3):                                                 # seed + bot-b + 3 = 5
+    for i in range(8):                                                 # seed + bot-b + 8 = 10 (ADR-032)
         assert (await w.c.post("/api/v1/bots", json=_body(w, name=f"bot-x{i}"), headers=w.a())).status_code == 201
     full = await w.c.post("/api/v1/bots", json=_body(w, name="bot-y"), headers=w.a())
     assert full.status_code == 409 and full.json()["code"] == "BOT_LIMIT_REACHED"

@@ -33,6 +33,8 @@
 - `FORBIDDEN` : explication de permission requise sans exposer des secrets.
 - `CONFLICT` : comparer version locale/distante avant soumission.
 
+**Gestion des bots (ADR-032).** *Rename* et *Delete* sur chaque ligne, compteur « n / 10 bots » ; conception, règles et tests : [06-agents/04](../06-agents/04-plusieurs-bots-m2.md) « Gestion des bots ».
+
 ## Contrat API et flux
 
 Les lectures sont `GET /api/v1/...` filtrées par `bot_id`/`session_id` lorsque pertinent. Les mutations sont `POST`, `PATCH` ou commandes dédiées avec `Idempotency-Key` et `If-Match` pour configurations versionnées. Le WebSocket émet des deltas, suivis d'un snapshot de rattrapage en cas de gap de séquence. Toute mutation critique génère `AUDIT_EVENT`.

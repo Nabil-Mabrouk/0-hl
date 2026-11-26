@@ -1,0 +1,26 @@
+{
+  "entry.conditions[0].threshold": [
+    "0.55",
+    "0.58",
+    "0.62"
+  ],
+  "entry.conditions[1].threshold": [
+    "0.50",
+    "0.53",
+    "0.56"
+  ],
+  "entry.conditions[3].threshold": [
+    "0.01",
+    "0.02",
+    "0.04"
+  ],
+  "exit.initial_stop_pct": [
+    "2",
+    "2.5",
+    "3.5"
+  ],
+  "exit.conditions.conditions[0].threshold": [
+    "0.45",
+    "0.50"
+  ]
+}

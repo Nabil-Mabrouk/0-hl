@@ -27,6 +27,7 @@ from sqlalchemy import (
     Uuid,
     event,
     inspect,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -283,9 +284,14 @@ event.listen(RiskPolicyVersion, "before_update", _guard_immutable_config)
 # --------------------------------------------------------------------------- #
 class Bot(Base):
     __tablename__ = "hl_bot"
+    # ADR-032: a deleted (archived) bot frees its name — unique among non-deleted bots only
+    __table_args__ = (
+        Index("uq_hl_bot_name_live", "name", unique=True,
+              postgresql_where=text("deleted_at IS NULL"), sqlite_where=text("deleted_at IS NULL")),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=new_id)
-    name: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(64), nullable=False)
     environment: Mapped[Environment] = mapped_column(
         _enum(Environment, "hl_environment"), nullable=False
     )
@@ -299,6 +305,7 @@ class Bot(Base):
     row_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
+    deleted_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)  # ADR-032
 
 
 class BotSession(Base):

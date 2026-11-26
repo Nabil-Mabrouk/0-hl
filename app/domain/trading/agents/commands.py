@@ -50,11 +50,10 @@ async def create_command(
 async def ensure_autostart(db: AsyncSession) -> list[Command]:
     """ADR-013: the seed bot only — PAPER + READY + never had a session ⇒ one START, ever.
     Bots created by the operator (M2.4) start on an operator START only."""
-    from app.domain.trading.seed import SEED_BOT_NAME
+    from app.domain.trading.seed import SEED_BOT_NAME, seed_bot
     created: list[Command] = []
-    bots = (await db.scalars(select(Bot).where(
-        Bot.environment == Environment.PAPER, Bot.status == BotStatus.READY,
-        Bot.name == SEED_BOT_NAME))).all()
+    seed = await seed_bot(db, SEED_BOT_NAME)            # ADR-032: identity, not the current name
+    bots = [] if seed is None or seed.deleted_at is not None or seed.environment is not Environment.PAPER         or seed.status is not BotStatus.READY else [seed]
     for bot in bots:
         had_session = await db.scalar(select(BotSession.id).where(BotSession.bot_id == bot.id).limit(1))
         if had_session is not None:
@@ -116,6 +115,8 @@ async def process_pending_commands(db: AsyncSession, now: datetime) -> list[Comm
         try:
             if cmd.deadline_at is not None and now > cmd.deadline_at:
                 raise _Rejection("DEADLINE_EXCEEDED", "command deadline exceeded")
+            if bot.deleted_at is not None:                   # ADR-032: an archived bot never runs
+                raise _Rejection("BOT_DELETED", "the bot is deleted")
             async with db.begin_nested():
                 cmd.result = await _apply(db, cmd, bot, now)
             cmd.status = CommandStatus.COMPLETED
