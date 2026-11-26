@@ -11,7 +11,7 @@
   },
   "00-guide/02-decisions.md": {
     "path": "02-projects/0-hl/spec/registre-des-decisions-d-architecture-adr.md",
-    "sha256": "995c117f496822d9afa0be99075a37402ab966de29aca54bb89299c11c4c4baf",
+    "sha256": "afab0dbf33a0c7ce99c3bc6dcfeb608126d2277cba9648a7be2bca055d668ee0",
     "order": 3
   },
   "01-produit/01-vision-et-perimetre.md": {
@@ -41,7 +41,7 @@
   },
   "03-ecrans/UI-02-bots-sessions.md": {
     "path": "02-projects/0-hl/spec/ui-02-bots-sessions.md",
-    "sha256": "f55866acbc7685fe4a62db1301c376aab0f8710b5e06fe551bfb936aba72f0f9",
+    "sha256": "db55e3b6b90c10f74c046a049916b8c8baaae82eba8eec13682baf2aa0c66bf4",
     "order": 11
   },
   "03-ecrans/UI-03-portfolio-trades.md": {
@@ -131,7 +131,7 @@
   },
   "05-strategies/02-catalogue-strategies.md": {
     "path": "02-projects/0-hl/spec/catalogue-des-strategies-configurables.md",
-    "sha256": "7b5c6bceee30ec86edea6cb6ef1c68004979e8c89eeebfad80581865b007b654",
+    "sha256": "4d7b8e1a89d677300b907ca8273f9f9f5df4938bc2ffeb44f07d1fd15eae7fde",
     "order": 33
   },
   "05-strategies/03-risque-mathematique.md": {
@@ -151,7 +151,7 @@
   },
   "06-agents/03-agents-m1.md": {
     "path": "02-projects/0-hl/spec/agents-de-decision-conception-m1-3.md",
-    "sha256": "800a9244a1f6a4d61ee99bf8ed84ec7a60544dcd5b804eca125734b32f77706b",
+    "sha256": "9992d5204a6d1ca94cf48641df33b6b21906380ebe9b6089e32ecc6deaf71d7d",
     "order": 38
   },
   "07-data/01-connecteurs-et-normalisation.md": {
@@ -216,7 +216,7 @@
   },
   "10-backend/03-modele-donnees-m1.md": {
     "path": "02-projects/0-hl/spec/modele-de-donnees-et-fondations-m1-1.md",
-    "sha256": "c5a63577920bba7130569091ff0fbeeb830567d896505761614293c718c2ec33",
+    "sha256": "b96a5e7ca038e5838280ccdd55b9ac6b3497107b3087c0c32b1f99219420b28e",
     "order": 56
   },
   "10-backend/04-api-m1.md": {
@@ -246,7 +246,7 @@
   },
   "13-roadmap/01-plan-execution.md": {
     "path": "02-projects/0-hl/spec/roadmap-backlog-et-consignes-aux-agents-developpeurs.md",
-    "sha256": "01aa73678097c44a837bc264fe7d56cb8224371a331168fee1572763021a6980",
+    "sha256": "fc8a645e0e0a1127c47424f18f0f79f590c89a229eb1a496d9d9ebc15d53eea6",
     "order": 63
   },
   "14-references/01-sources-et-limites.md": {
@@ -271,7 +271,7 @@
   },
   "06-agents/04-plusieurs-bots-m2.md": {
     "path": "02-projects/0-hl/spec/plusieurs-bots-paper-conception-m2-4-adr-021.md",
-    "sha256": "36fb74d50de0659c17a0548652fc2965a76e4be5c468a569f4fb79d620221f7e",
+    "sha256": "a895db0775f132642b7db202a9623abfe4a73fd31596c88deea34eb901a6248c",
     "order": 39
   },
   "12-tests/03-recette-m2.md": {
@@ -316,7 +316,7 @@
   },
   "03-ecrans/UI-17-learn.md": {
     "path": "02-projects/0-hl/spec/ui-17-learn-rubrique-publique-et-fiches-de-strategie-vivantes.md",
-    "sha256": "37f77b0ee7747edadd2c271eadb0267b0185ec8b6799c31a5d79661a4ad99c76",
+    "sha256": "b8190bcd8facaa6edb483f1a655a3fc9e9541305d5c17c802123c4fa4b692d33",
     "order": 26
   },
   "examples/learn/en/strategies/breakout-1h.md": {
