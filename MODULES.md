@@ -46,20 +46,18 @@ survivent en pratique à un `copier update` (fusion à 3 voies tant que le
 template ne touche pas aux mêmes lignes), mais rien ne le garantit
 formellement comme pour `app/domain/`.
 
-## Analytics (`MODULE_ANALYTICS`)
 
-**Fournit** : suivi automatique des pages vues (IP hashée, pays, ville,
-chemin) via `app/modules/analytics/middleware.py`, agrégé par
-`app/modules/analytics/router.py` (endpoints admin `/world`, `/paths`,
-`/timeline`).
+## Mesure d'audience (Umami, châssis — toujours présent)
 
-**Étendre en sécurité** : aucun point d'extension — pas d'API d'événements
-personnalisés, pas de champ « type d'événement ». Le tracking est purement
-automatique (page vue / pays / jour), rien à appeler depuis votre code.
+**Fournit** : visiteurs, pays, pages vues, temps passé, via l'instance Umami
+partagée de la flotte (Chap 13). `frontend/src/components/analytics/UmamiTracker.tsx`
+charge le script quand `/health` expose la clé `umami` — c'est-à-dire quand
+l'opérateur a posé `UMAMI_SCRIPT_URL` et `UMAMI_WEBSITE_ID` dans `.env.local`
+sur le serveur. Rien à faire dans votre code.
 
-**Ne touchez pas** : `app/modules/analytics/*` — entièrement châssis. Un
+**Ne touchez pas** : `UmamiTracker.tsx` et son montage dans `main.tsx`. Un
 besoin d'événements personnalisés est un changement de châssis, à discuter
-avant de diverger plutôt qu'à patcher localement.
+avant de diverger.
 
 ## Onboarding (`MODULE_ONBOARDING`)
 
